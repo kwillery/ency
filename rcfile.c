@@ -11,7 +11,7 @@
 #include "rcfile.h"
 #include "data.h"
 
-FILE *open_rc_file (char *filename)
+static FILE *open_rc_file (char *filename)
 {
 	FILE *file=NULL;
 	char *temp=NULL;
@@ -75,7 +75,7 @@ FILE *open_rc_file (char *filename)
 	return NULL;
 }
 
-char *rcfile_get_text (char **line, char stop_at, int stop_at_whitespace)
+static char *rcfile_get_text (char **line, char stop_at, int stop_at_whitespace)
 {
 	char *l = *line;
 	char *m;
@@ -124,7 +124,7 @@ char *rcfile_get_text (char **line, char stop_at, int stop_at_whitespace)
 	return strdup (m);
 }
 
-struct rcfile_args *new_rcfile_args (char *line)
+static struct rcfile_args *new_rcfile_args (char *line)
 {
 	struct rcfile_args *arg_root=NULL;
 	struct rcfile_args *arg_last=NULL;
@@ -157,7 +157,7 @@ struct rcfile_args *new_rcfile_args (char *line)
 	return arg_root;
 }
 
-struct rcfile_cmd *new_rcfile_cmd (char *line)
+static struct rcfile_cmd *new_rcfile_cmd (char *line)
 {
 	struct rcfile_cmd *cmd=NULL;
 	char *l, *n;
@@ -198,7 +198,7 @@ struct rcfile_cmd *new_rcfile_cmd (char *line)
 	return cmd;
 }
 
-struct rcfile_cmd *rc_file_get_cmd (FILE *inp)
+static struct rcfile_cmd *rc_file_get_cmd (FILE *inp)
 {
 	char line[256]="";
 	char c, *t;
@@ -217,7 +217,7 @@ struct rcfile_cmd *rc_file_get_cmd (FILE *inp)
 	return new_rcfile_cmd (line);
 }
 
-char *get_rc_arg (struct rcfile_args *arg, char *name)
+static char *get_rc_arg (struct rcfile_args *arg, char *name)
 {
 	if (!arg)
 		return NULL;
@@ -239,7 +239,7 @@ char *get_rc_arg (struct rcfile_args *arg, char *name)
 	return NULL;
 }
 
-struct st_part *append_part_from_rc_file (struct st_part *part_root, struct rcfile_args *arg)
+static struct st_part *append_part_from_rc_file (struct st_part *part_root, struct rcfile_args *arg)
 {
 	struct st_part *part=NULL, *part_last=NULL;
 	char *name, *type, *section, *start, *count;
@@ -308,7 +308,7 @@ struct st_part *append_part_from_rc_file (struct st_part *part_root, struct rcfi
 	return part_root;
 }
 
-struct st_data_exception *append_exception_from_rc_file (struct st_data_exception *ex_root, struct rcfile_args *arg)
+static struct st_data_exception *append_exception_from_rc_file (struct st_data_exception *ex_root, struct rcfile_args *arg)
 {
 	struct st_data_exception *ex=NULL, *ex_last=NULL;
 	char *type, *from, *to;
@@ -341,7 +341,7 @@ struct st_data_exception *append_exception_from_rc_file (struct st_data_exceptio
 	return ex_root;
 }
 
-void free_rc_args (struct rcfile_args *arg)
+static void free_rc_args (struct rcfile_args *arg)
 {
 	struct rcfile_args *old_arg;
 
@@ -358,7 +358,7 @@ void free_rc_args (struct rcfile_args *arg)
 	}
 }
 
-void free_rc_cmd (struct rcfile_cmd *cmd)
+static void free_rc_cmd (struct rcfile_cmd *cmd)
 {
 	free_rc_args (cmd->args);
 
@@ -368,7 +368,7 @@ void free_rc_cmd (struct rcfile_cmd *cmd)
 	free (cmd);
 }
 
-struct st_data_filenode *make_filenode_from_rc_file (FILE *inp)
+static struct st_data_filenode *make_filenode_from_rc_file (FILE *inp)
 {
 	struct st_data_filenode *new_node=NULL;
 	struct rcfile_cmd *cmd=NULL;

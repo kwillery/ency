@@ -299,7 +299,7 @@ void st_copy_part_entry (struct ency_titles **to, struct ency_titles *from)
 	}
 }
 
-struct st_table *st_new_table ()
+static struct st_table *st_new_table ()
 {
 	struct st_table *tbl=NULL;
 
