@@ -717,7 +717,7 @@ static struct st_table *read_table (FILE *input, struct st_table *root)
 
 		if (strstr (temp_text, "\""))
 		{
-			fseek (input, -7, SEEK_CUR);
+			fseek (input, -6, SEEK_CUR);
 			while ((c = getc (input)) != '\"');
 			str_text = (strstr (temp_text, "\""));
 			str_text[0] = 0;
@@ -737,14 +737,7 @@ static struct st_table *read_table (FILE *input, struct st_table *root)
 		while ((c = getc (input)) != '\"');
 		while ((c = getc (input)) != '\"')
 		{
-			if (c == 0xA5)
-			{
-				getc (input);
-			}
-			else
-			{
-				temp_text[text_size++] = st_cleantext (c);
-			}
+			temp_text[text_size++] = st_cleantext (c);
 		}
 		temp_text[text_size] = 0;
 
