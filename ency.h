@@ -101,6 +101,9 @@ int st_finish (void);
 int st_set_filename (char *);
 char *st_get_filename (void);
 
+/* forces opening of unsupported file */
+void st_force_unknown_file (int);
+
 /* For checking a directory to see if a data file is there */
 char *st_autofind (int, char *);
 

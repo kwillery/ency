@@ -271,6 +271,14 @@ Only one section can be specified, but multiple options can be used with the '|'
 <p>
 More on this later; It is a new function and may (probably will) change.
 
+<sect1>st_force_unknown_file<label id="st_force_unknown_file">
+<p>
+<verb>
+void st_force_unknown_file (int true)
+</verb>
+<p>
+If <tt/true/ is 1, then a call to st_open (whether made by you or another function you called) will not fail if the file is unrecognised. 0 sets it back to the default value of only opening recognised files.
+
 <sect1>*_find_list<label id="*_find_list">
 <p>
 <em/NOTE/ These are being phased out in favour of <ref id="st_find" name="st_find"> and may disappear soon.

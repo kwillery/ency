@@ -36,6 +36,7 @@ static char *ency_filename = NULL;
 
 int st_return_body = 1;
 int st_ignore_case = 0;
+static int force_unknown = 0;
 static int upto = 0;
 static int st_file_type = 0;
 
@@ -280,6 +281,11 @@ void st_copy_part_entry (struct ency_titles **to, struct ency_titles *from)
 }
 
 /* file stuff */
+void st_force_unknown_file (int true)
+{
+  force_unknown = true;
+}
+
 int st_set_filename (char *filename)
 {
   int type = 255;
@@ -288,7 +294,7 @@ int st_set_filename (char *filename)
   ency_filename = strdup (filename);
   if (ency_filename) {
     type = st_fingerprint ();
-    if (0 <= type < ST_FILE_TYPES) {
+    if ((!force_unknown) || (0 <= type < ST_FILE_TYPES)) {
       st_file_type = type;
       st_clear_cache();
       return (1);
@@ -1013,12 +1019,15 @@ static struct st_ency_formatting *st_return_fmt (void)
     while ((c = getc (inp)) != ']') {
       if (st_return_body)
 	switch (c) {
+	case 'b':
 	case 'B':
 	  curr_fmt->bold = 1;
 	  break;
+	case 'u':
 	case 'U':
 	  curr_fmt->underline = 1;
 	  break;
+	case 'i':
 	case 'I':
 	  curr_fmt->italic = 1;
 	  break;
@@ -1056,7 +1065,7 @@ static char *st_return_text (void)
 
   text_starts_at = ftell (inp);
 
-  while (!bye) {
+  while (!bye && !feof(inp)) {
     c=getc(inp);
     if (c == 0) bye=1;
     else
