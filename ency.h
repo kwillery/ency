@@ -75,7 +75,7 @@ typedef enum
 	picture,
 	video,
 	audio,
-	swf
+	swf,
 } media_type;
 
 struct st_ency_formatting
@@ -135,6 +135,7 @@ struct st_media
 	struct st_photo video;
 	struct st_photo audio;
 	struct st_photo swf;
+	char *resource;
 };
 
 /* Initialisation & De-init */
