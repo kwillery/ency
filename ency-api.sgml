@@ -41,7 +41,7 @@ TYPES is how many types there are, 0 to (TYPES-1). This calls st_count_filetypes
 <p>
 CURR is the last one loaded/used, and is only used with <tt/<ref id="st_fileinfo_get_name" name="st_fileinfo_get_name()"> /
 <p>
-
+There are two more encyclopediae that I know of, the TNG and DS9 'Companions', both of which include scripts (apparently). Until I get a copy of these two, I can't support them. If someone is willing to let me borrow/buy/steal them, or doesn't mind testing ency pre-releases, please get in touch! 
 
 <sect1>ST_SECT_*<label id="ST_SECT_*">
 <p>
@@ -136,6 +136,7 @@ struct ency_titles
 	float score;
 };
 </verb>
+</p><p>
 <tt/name/ is the entry's actual title.
 <tt/title/ is the entry's title that is written as part of the entry.
 <tt/text/ is the entry's text (body).
@@ -146,6 +147,8 @@ struct ency_titles
 <tt/score/ is used when doing fulltext searches. (See <tt/<ref id="st_find" name="st_find()">/ and <tt/<ref id="ST_OPT_*" name="ST_OPT_FT">/. It is a number out of 100, but is *not* a percentage. (Well...).
 <p>
 The difference between <tt/name/ and <tt/title/ may be hard to understand; <tt/name/ is what the 'official' software puts in the listbox at the top of the screen. <tt/title/ is the first piece of bold text to be placed in the text box at the bottom. (Also, -&gt;name changes when <tt/<ref id="ST_OPT_*" name="ST_OPT_SORTEPIS">/ is used, whereas <tt/title/ never does.
+</p>
+</sect1>
 
 <sect1>st_photo<label id="st_photo">
 <p>
@@ -155,10 +158,11 @@ struct st_photo {
   char caption[50];
 };
 </verb>
+</p><p>
 This struct is returned in <tt/<ref id="st_media" name="st_media">/ structs (see <tt/<ref id="st_get_media" name="st_get_media">/)
 <tt/file/ is the first 7 characters of the filename of the photo (or now, video, sound, or swf) is being referred to.
 <tt/file/ should be processed by <tt/<ref id="st_format_filename" name="st_format_filename">/ to get a usable filename. For pictures and swfs, it is often possible to call <tt/<ref id="st_get_thumbnail" name="st_get_thumbnail"/ to get a 60x40 (usually) thumbnail picture.
-
+</p>
 
 <sect1>st_media<label id="st_media">
 
@@ -172,6 +176,7 @@ struct st_media {
   struct st_photo swf;
 };
 </verb>
+<p>
 There are six <tt/<ref id="st_photo" name="st_photo">/ structs in <tt/photos/. The <tt/video/, <tt/audio/, and <tt/swf/ structs are the same, but holds the video, audio, and 'flash' references instead.
 
 <sect>Functions
@@ -343,7 +348,7 @@ This function converts a 6-letter filename to a full filename. <tt/fnbasen/ is t
 <tt/base_path/ is where the media is located (eg. "/cdrom").
 <tt/media/ is from the <tt/<ref id="media_type" name="media_type">/ enum, and should be set depending on what part of an <tt/<ref id="st_media" name="st_media">/ is being passed.
 
-<sect1>st_get_thumbnail<label id="st_format_filename">
+<sect1>st_get_thumbnail<label id="st_get_thumbnail">
 <p>
 <verb>
 int st_get_thumbnail(char *name, char *file);
