@@ -114,12 +114,10 @@ int main (int argc, char *argv[])
   char search_string[50];
   char *temp_fn = NULL;
   struct ency_titles *thingy = NULL, *full_body = NULL;
-  struct ency_titles *kill_me = NULL;
   struct st_media *media = NULL;
   char base_path[] = "/cdrom"; /* where the media dirs etc. are */
   int i = 0;
   int use_media = 0;
-  int search_what = 0;
   int section = ST_SECT_ENCY;
   FILE *out=stdout;
   char *filename = NULL;
