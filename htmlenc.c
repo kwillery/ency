@@ -38,6 +38,9 @@ struct st_ency_formatting *loopies (char *txt, struct st_ency_formatting *fmt, F
 	int word_finish = 0;
 	char smeg[50];
 
+	if (*txt == '\n')
+		txt++;
+
 	while (strlen (txt))
 	{
 		sscanf (txt, "%s", smeg);
