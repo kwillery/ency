@@ -6,7 +6,6 @@
 #include <string.h>
 #include "ency.h"
 #include "encyfuncs.h"
-#include "data.h"
 
 int loaded_cmap=0;
 char *matches[256];
