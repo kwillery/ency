@@ -1155,6 +1155,11 @@ inline int st_find_start (FILE * input)
 					fseek (input, -2, SEEK_CUR);
 				}
 				break;
+			case 0xE2:
+				{
+					keep_going = 0;
+					fseek (input, -1, SEEK_CUR);
+				}
 			}
 		} else if (c == 'D')
 		{
