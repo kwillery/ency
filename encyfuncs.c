@@ -42,7 +42,6 @@ static char *ency_filename = NULL;
 
 int st_return_body = 1;
 int st_ignore_case = 0;
-static int force_unknown = 0;
 static int st_file_type = 0;
 
 struct st_wl
@@ -96,7 +95,7 @@ int st_init (void)
 {
 	load_xmlfile_info(NULL);
 	st_fingerprint ();
-	return (st_file_type >= 254 ? force_unknown : 1);
+	return (st_file_type >= 254 ? 0 : 1);
 }
 
 int st_finish (void)
@@ -290,11 +289,6 @@ static void st_clear_cache ()
 }
 
 /* file stuff */
-void st_force_unknown_file (int true)
-{
-/*	force_unknown = true; */
-}
-
 int st_set_filename (char *filename)
 {
 	int type;
@@ -304,7 +298,7 @@ int st_set_filename (char *filename)
 	if (ency_filename)
 	{
 		type = st_fingerprint();
-		if ((force_unknown && (type = ST_FILE_UNKNOWN)) || ((type >= 0) && (type < ST_FILE_TYPES)))
+		if ((type >= 0) && (type < ST_FILE_TYPES))
 		{
 			st_file_type = type;
 			st_clear_cache ();
@@ -363,14 +357,9 @@ int curr_open (long start)
 			}
 		}
 		else
-		{
-			if (st_set_filename (temp_fn) == 0)
-			{
-				st_force_unknown_file (1);
-				st_set_filename (temp_fn);
-			}
-		}
-	if (ency_filename == NULL) return (0);
+			st_set_filename (temp_fn);
+
+		if (ency_filename == NULL) return (0);
 	}
 	inp = fopen (ency_filename, "rb");
 
@@ -425,8 +414,7 @@ char *st_autofind (int st_file_version, char *base_dir)
 	const char *datadir = NULL, *filename = NULL;
 	char *lc_data_dir = NULL, *lc_filename = NULL;
 
-	if (((st_file_version < ST_FILE_TYPES) && (st_file_version >= 0)) ||
-			(st_file_version == ST_FILE_UNKNOWN))
+	if ((st_file_version < ST_FILE_TYPES) && (st_file_version >= 0))
 	{
 
 		datadir = st_fileinfo_get_data (st_file_version,data_dir);
@@ -2119,7 +2107,7 @@ struct st_media *st_get_media (char *search_string)
 	return (media);
 }
 
-char *get_video_dir (char *fnbasen)
+static char *get_video_dir (char *fnbasen)
 {
 	struct st_part *part=NULL;
 	char *dir;

@@ -30,15 +30,6 @@ struct st_part
 	struct st_part *next;
 };
 
-int load_xmlfile_info (char *filename);
-int count_files (void);
-void st_data_clear (void);
-int st_fingerprint (void);
-char *get_name_of_file (int file_type);
-const char *st_fileinfo_get_data (int file, st_filename_type type);
-struct st_part *get_part (int file, int type, int section, int number, int options);
-char *get_exception (int file, char *type, char *from);
-
 struct st_data_exception
 {
 	char *from;
@@ -62,7 +53,20 @@ struct st_data_filenode
 	struct st_data_filenode *next;
 };
 
+int load_xmlfile_info (char *filename);
+void st_data_clear (void);
+int count_files (void);
+int st_fingerprint (void);
+
 struct st_data_filenode *st_data_new_filenode (void);
 void st_data_append_filenode (struct st_data_filenode *new_file);
-struct st_part *new_part();
+
+char *get_name_of_file (int file_type);
+const char *st_fileinfo_get_data (int file, st_filename_type type);
+struct st_part *get_part (int file, int type, int section, int number, int options);
+char *get_exception (int file, char *type, char *from);
+
+struct st_part *new_part(void);
+
 #endif
+

@@ -28,6 +28,7 @@
 #include <ctype.h>
 #include <getopt.h>
 #include "data.h"
+#include "scan.h"
 
 struct block
 {
@@ -48,7 +49,7 @@ struct st_part *plast=NULL;
 
 int curr_id = 0;
 
-struct block *get_block(FILE *inp, int reverse)
+static struct block *get_block(FILE *inp, int reverse)
 {
 	struct block *b=NULL;
 	long mult=1;
@@ -84,7 +85,7 @@ struct block *get_block(FILE *inp, int reverse)
 	return b;
 }
 
-void identify_section (struct st_part *part)
+static void identify_section (struct st_part *part)
 {
 	char *temp;
 	int i;
@@ -147,7 +148,7 @@ void identify_section (struct st_part *part)
 	return;
 }
 
-void process_cast_block (FILE *inp, long size)
+static void process_cast_block (FILE *inp, long size)
 {
 	struct st_part *tmp, *curr;
 	unsigned char *block;
@@ -297,7 +298,7 @@ void process_cast_block (FILE *inp, long size)
 	free (block);
 }
 
-void load_cast_table (FILE *inp, int size)
+static void load_cast_table (FILE *inp, int size)
 {
 	long start;
 	struct casttable *curr=NULL, *last=NULL;
@@ -334,7 +335,7 @@ void load_cast_table (FILE *inp, int size)
 	fseek (inp, start, SEEK_SET);
 }
 
-void process_noncast_block (FILE *inp, long size)
+static void process_noncast_block (FILE *inp, long size)
 {
 	struct casttable *tmp_casts=NULL;
 	if (pcurr)
@@ -369,7 +370,7 @@ void process_noncast_block (FILE *inp, long size)
 	fseek (inp, size, SEEK_CUR);
 }
 
-int ignore_block (char *name, long size)
+static int ignore_block (char *name, long size)
 {
 	if (strcmp (name, "STXT"))
 		return 1;
@@ -377,7 +378,7 @@ int ignore_block (char *name, long size)
 		return 0;
 }
 
-void search_file (FILE *inp, int reverse)
+static void search_file (FILE *inp, int reverse)
 {
 	struct block *b=NULL;
 	char c;

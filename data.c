@@ -31,7 +31,7 @@ static char *strdup_if_valid (char *t)
 
 struct st_data_filenode *files=NULL;
 
-struct st_data_filenode *get_filenode (int file_type)
+static struct st_data_filenode *get_filenode (int file_type)
 {
 	struct st_data_filenode *tmp;
 	int i;
@@ -138,7 +138,7 @@ struct st_part *new_part()
 	return part;
 }
 
-struct st_part *new_part_from_xmlnode (xmlNode *node)
+static struct st_part *new_part_from_xmlnode (xmlNode *node)
 {
 	struct st_part *part=NULL;
 	char *start=NULL, *start_id=NULL, *bcount=NULL;
@@ -213,7 +213,7 @@ struct st_part *new_part_from_xmlnode (xmlNode *node)
 	return part;
 }
 
-struct st_data_exception *new_exception (char *type, char *from, char *to)
+static struct st_data_exception *new_exception (char *type, char *from, char *to)
 {
 	struct st_data_exception *ex;
 
@@ -227,7 +227,7 @@ struct st_data_exception *new_exception (char *type, char *from, char *to)
 	return ex;
 }
 
-struct st_data_exception *new_exception_from_xmlnode (xmlNode *node)
+static struct st_data_exception *new_exception_from_xmlnode (xmlNode *node)
 {
 	char *type, *from, *to;
 	struct st_data_exception *ex;
@@ -373,7 +373,7 @@ int count_files (void)
 	return i;
 }
 
-void make_text_fingerprint (unsigned char fp[16], unsigned char text_fp[16 * 3 + 1])
+static void make_text_fingerprint (unsigned char fp[16], unsigned char text_fp[16 * 3 + 1])
 {
 	char temp_ptr[4];
 	int i;

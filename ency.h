@@ -135,12 +135,10 @@ int st_finish (void);
 /* For controlling what file is opened */
 int st_set_filename (char *);
 char *st_get_filename (void);
+int st_count_filetypes(void);
 
 /* load the xml file containing file info */
 int st_load_xml_file (char *);
-
-/* forces opening of unsupported file */
-void st_force_unknown_file (int);
 
 /* For checking a directory to see if a data file is there */
 char *st_autofind (int, char *);
