@@ -86,7 +86,8 @@ static void st_clear_entry_list (void);
 /* init/de-init stuff */
 int st_init (void)
 {
-	load_xmlfile_info(NULL);
+	if (count_files() == 0) /* If there isnt an XML file already loaded... */
+		load_xmlfile_info(NULL);
 	st_file_type = st_fingerprint ();
 	return (st_file_type >= 254 ? 0 : 1);
 }
