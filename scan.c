@@ -147,92 +147,11 @@ void identify_section (struct st_part *part)
 	return;
 }
 
-#if 0
 void process_cast_block (FILE *inp, long size)
 {
 	struct st_part *tmp;
-	struct st_part *curr;
-	char *block;
-	char *t;
-
-//	printf ("\tFound CASt block");
-
-	block = malloc (size * sizeof (char));
-	fread (block, size, 1, inp);
-
-	switch (block[3] + block[6])
-	{
-		case 0:
-		case 1:
-		case 3:
-		case 7:
-			break;
-		default:
-//		printf (", Ignoring...");
-		free (block);
-		return;
-	}
-
-//	tmp = (struct part *) malloc (sizeof (struct part));
-//	tmp = (struct st_part *) malloc (sizeof (struct st_part));
-	tmp = new_part();
-
-	if (!parts)
-		parts = tmp;
-	else
-	{
-		if (plast)
-			plast->next = tmp;
-	}
-
-	if (!pcurr)
-		pcurr = tmp;
-
-	plast = tmp;
-
-	t = block + block[7] + 12;
-	*t = 0;
-	while (!*--t)
-		;
-	while (*--t)
-		;
-	t += 2;
-
-	tmp->name = (char *) malloc (sizeof (char) * *t + 1);
-	strncpy (tmp->name, t+1, *t);
-	tmp->name[(int) *t] = 0;
-
-//	printf (" (%s)", tmp->name);
-
-	identify_section (tmp);
-	/* We don't want duplicate names being used */
-	/* so we set later ones to Unimportant      */
-	curr = parts;
-//	printf (" [%d]", tmp->section);
-
-	while ((curr) && (curr != tmp))
-	{
-		if (!strcmp (curr->name, tmp->name))
-		{
-			tmp->section = 0;
-//			printf (" [Dupe - ignored]");
-			break;
-		}
-		curr = curr->next;
-	}
-
-	tmp->count = 1;
-	tmp->start_id = 0;
-	tmp->next = NULL;
-
-	free (block);
-}
-#else
-void process_cast_block (FILE *inp, long size)
-{
-	struct st_part *tmp;
-	char *block;
-	char *t=NULL;
+	unsigned char *block;
+	unsigned char *t=NULL;
 	int i;
 
 //	printf ("\tFound CASt block");
@@ -254,8 +173,8 @@ void process_cast_block (FILE *inp, long size)
 //	case 9: // ?? in omni1?
 //	case 1: // BITD
 	case 3: // STXT
-//	case 7: // ??
-			break;
+	case 7: // an odd STXT in ency99
+		break;
 		default:
 //		printf (", Ignoring [%d/%d]...", block[3], block[6]);
 		free (block);
@@ -277,12 +196,29 @@ void process_cast_block (FILE *inp, long size)
 
 	plast = tmp;
 
-	if (block[45])
+	if (size > 33 && block[33])
+	{
+		t = block + 32;
+		for (i=0;i<block[33];i++)
+			while (*t++ == 0)
+				if (t - block >= size)
+				{
+//					printf (" - ends early!!");
+					tmp->name = strdup ("it ended early!");
+					return;
+				}
+		tmp->name = (char *) malloc (sizeof (char) * *t + 1);
+	} else if (size > 45 && block[45])
 	{
 		t = block+44;
 		for (i=0;i<block[45];i++)
 			while (*t++ == 0)
-				;
+				if (t - block >= size)
+				{
+//					printf (" - ends early!!");
+					tmp->name = strdup ("it ended early!");
+					return;
+				}
 		tmp->name = (char *) malloc (sizeof (char) * *t + 1);
 	} else if (size > 57 && block[57])
 	{
@@ -322,12 +258,12 @@ void process_cast_block (FILE *inp, long size)
 		tmp->name = (char *) malloc (sizeof (char) * *t + 1);
 	}
 
-	if (tmp->name)
+	if (tmp->name && (t - block + *t < size))
 	{
 		strncpy (tmp->name, t+1, *t);
 		tmp->name[(int)*t] = 0;
 	} else
-		tmp->name = strdup (""); // Damn - can't get the name, Maybe it doesn't have one.
+		tmp->name = strdup ("???"); // Damn - can't get the name, Maybe it doesn't have one.
 
 //	printf (" (%s)", tmp->name);
 
@@ -344,7 +280,6 @@ void process_cast_block (FILE *inp, long size)
 
 	free (block);
 }
-#endif
 
 void load_cast_table (FILE *inp, int size)
 {

@@ -378,8 +378,8 @@ void process_cast_block (FILE *inp, long size)
 void process_cast_block (FILE *inp, long size)
 {
 	struct part *tmp;
-	char *block;
-	char *t=NULL;
+	unsigned char *block;
+	unsigned char *t=NULL;
 	int i;
 
 	printf ("\tFound CASt block");
@@ -401,7 +401,7 @@ void process_cast_block (FILE *inp, long size)
 //	case 9: // ?? in omni1?
 //	case 1: // BITD
 	case 3: // STXT
-//	case 7: // ??
+	case 7: // an odd STXT in ency99
 			break;
 		default:
 		printf (", Ignoring [%d/%d]...", block[3], block[6]);
@@ -427,12 +427,29 @@ void process_cast_block (FILE *inp, long size)
 
 	plast = tmp;
 
-	if (block[45])
+	if (size > 33 && block[33])
+	{
+		t = block + 32;
+		for (i=0;i<block[33];i++)
+			while (*t++ == 0)
+				if (t - block >= size)
+				{
+					printf (" - ends early!!");
+					tmp->name = strdup ("it ended early!");
+					return;
+				}
+		tmp->name = (char *) malloc (sizeof (char) * *t + 1);
+	} else if (size > 45 && block[45])
 	{
 		t = block+44;
 		for (i=0;i<block[45];i++)
 			while (*t++ == 0)
-				;
+				if (t - block >= size)
+				{
+					printf (" - ends early!!");
+					tmp->name = strdup ("it ended early!");
+					return;
+				}
 		tmp->name = (char *) malloc (sizeof (char) * *t + 1);
 	} else if (size > 57 && block[57])
 	{
@@ -472,7 +489,7 @@ void process_cast_block (FILE *inp, long size)
 		tmp->name = (char *) malloc (sizeof (char) * *t + 1);
 	}
 
-	if (tmp->name)
+	if (tmp->name && (t - block + *t < size))
 	{
 		strncpy (tmp->name, t+1, *t);
 		tmp->name[(int)*t] = 0;
