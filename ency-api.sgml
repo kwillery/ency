@@ -370,6 +370,15 @@ int st_fingerprint (void);
 </verb>
 This function checks the currently set file, and returns an <ref id="ST_FILE_*" name="ST_FILE_*"> number.
 
+<sect1>st_free_entry*<label id="st_free_entry*">
+<p>
+These functions are used to free structs
+<verb>
+int st_free_entry (struct ency_titles *);
+int st_free_entry_tree (struct ency_titles *);
+int st_free_entry_and_advance (struct ency_titles **);
+</verb>
+<tt/st_free_entry/ frees a single <ref id="ency_titles" name="ency_titles"> struct. <tt/st_free_entry_tree/ does that, but also removes all after it (referenced by the '->next'). <tt/st_free_entry_and_advance/ frees a single entry, then progresses to the next. (note the **, this means you will probably need a '&amp;' before the argument).
 
 <sect>Example Implementation
 <p>
@@ -404,7 +413,11 @@ int main (int argc, char *argv[])
   scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
 
   /* run any ency init stuff */
-  st_init ();
+  if (!st_init ())
+  {
+    printf ("Error opening data file.\n");
+    exit (1);
+  }
 
   /* tell ency to load the media lookup tables */
   st_load_media ();
@@ -451,25 +464,7 @@ int main (int argc, char *argv[])
       }
 
       /* free the returned stuff */
-      kill_me = thingy;
-      thingy = thingy->next;
-      fmt = kill_me->fmt;
-
-      while (fmt) {
-        kill_fmt = fmt;
-        fmt = fmt->next;
-        if (kill_fmt)
-          free (kill_fmt);
-      }
-
-      if (kill_me->title)
-        free (kill_me->title);
-
-      if (kill_me->text)
-        free (kill_me->text);
-
-      if (kill_me)
-        free (kill_me);
+      st_free_entry_and_advance (&thingy);
 
     }
     while (thingy != NULL);
