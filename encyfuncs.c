@@ -32,49 +32,48 @@
 
 FILE *inp;
 
-char *ency_filename;
-
+char *ency_filename = NULL;
 
 int st_return_body = 1;
 int st_ignore_case = 0;
 int upto = 0;
 int st_file_type = 0;
 
-long int st_table_starts_at[] =
+const long int st_table_starts_at[] =
 {0x410c4, 0, 0x388f2e, 0, 0x3CD470, 0, 0x2BBA98, 0, 0x322996, 0};
 
-long int st_caption_starts_at[] =
+const long int st_caption_starts_at[] =
 {0x4e5064, 0, 0x615552, 0, 0x646D0A, 0, 0x2C5F2C, 0, 1, 0};
 
-long int ency_starts_at[] =
+const long int ency_starts_at[] =
 {0x7bc28, 0x576574, 0, 0x3A9ED8, 0x56BB62, 0, 0x3FC3BE, 0x58B51E, 0x72E89C, 0, 0x1, 0, 0x1, 0};
 
-long int epis_starts_at[] =
+const long int epis_starts_at[] =
 {0x3b8e20, 0x50431A, 0, 0x5D961A, 0x622AA4, 0, 0x606630, 0x659F9E, 0, 0x2D2A6E, 0, 0x324B34, 0x390C40, 0};
 
-long int chro_starts_at[] =
+const long int chro_starts_at[] =
 {0x41e32c, 0, 0x62764A, 0, 0x66B9C4, 0, 0x1, 0, 0x1, 0};
 
 long int set_starts_at = 0x0;
 
-long int ency_lastone[] =
+const long int ency_lastone[] =
 {7068, 68, 0, 4092, 491, 0, 3905, 476, 1353, 0, 181, 0, 89, 42, 0};
 
-long int epis_lastone[] =
+const long int epis_lastone[] =
 {402, 3, 0, 261, 25, 0, 262, 93, 0, 0x1, 0, 0x1, 0};
 
-long int chro_lastone[] =
+const long int chro_lastone[] =
 {582, 0, 465, 0, 582, 0, 0x1, 0, 0x1, 0};
 
-long int st_table_lastone[] =
+const long int st_table_lastone[] =
 {26, 0, 26, 0, 26, 0, 23, 0, 15, 0};
 
-long int st_caption_lastone[] =
+const long int st_caption_lastone[] =
 {5, 0, 4, 0, 4, 0, 5, 0, 1, 0};
 
 long int curr_starts_at, curr_lastone, curr;
 
-struct st_file_info st_files[] =
+const struct st_file_info st_files[] =
 {
   {"Encyclopedia", "Data.cxt", "Ency98", "media98", "video98", 1,
    {0x52, 0x49, 0x46, 0x58, 0x0, 0x99, 0xD7, 0x6E, 0x4D, 0x43, 0x39, 0x35, 0x69, 0x6D, 0x61, 0x70}, 1},
@@ -105,6 +104,7 @@ curr_open (void)
 
   inp = fopen (ency_filename, "rb");
 
+  i = 0;
   if (inp)
     {
       i = fseek (inp, curr_starts_at, SEEK_SET);
@@ -119,26 +119,27 @@ curr_open (void)
 int
 st_open ()
 {
-  if (curr == 0)		// Defaults to ency
-
+  if (curr == 0)		/* Defaults to ency */
     curr_starts_at = ency_starts_at[upto];
-  if (curr == 1)		// Ency
 
+  if (curr == 1)		/* Ency */
     curr_starts_at = ency_starts_at[upto];
-  if (curr == 2)		// Epis
 
+  if (curr == 2)		/* Epis */
     curr_starts_at = epis_starts_at[upto];
-  if (curr == 3)		// Chro
 
+  if (curr == 3)		/* Chro */
     curr_starts_at = chro_starts_at[upto];
-  if (curr == 4)		// table
 
+  if (curr == 4)		/* table */
     curr_starts_at = st_table_starts_at[upto];
-  if (curr == 5)		// Set value
 
+  if (curr == 5)		/* Set value */
     curr_starts_at = set_starts_at;
-  if (curr == 6)
+
+  if (curr == 6)		/* Captions */
     curr_starts_at = st_caption_starts_at[upto];
+
   return (curr_open ());
 }
 
@@ -282,35 +283,22 @@ curr_return_fmt (void)
 
   root_fmt = last_fmt = curr_fmt = NULL;
 
-  if (st_return_body)
-    {
-      root_fmt = (struct st_ency_formatting *) malloc (sizeof (struct st_ency_formatting));
-      if (root_fmt == NULL)
-	{
-	  printf ("Memory allocation failed\n");
-	  exit (1);
-	}
-      memset (root_fmt, 0, sizeof (struct st_ency_formatting));
-      curr_fmt = root_fmt;
-    }
-
   c = getc (inp);
 
   while (c != '@')
     {
-      if (!first_time)
+      if (st_return_body)
 	{
-	  if (st_return_body)
+	  curr_fmt = (struct st_ency_formatting *) malloc (sizeof (struct st_ency_formatting));
+	  if (curr_fmt == NULL)
 	    {
-	      curr_fmt = (struct st_ency_formatting *) malloc (sizeof (struct st_ency_formatting));
-	      if (curr_fmt == NULL)
-		{
-		  printf ("Memory allocation failed\n");
-		  exit (1);
-		}
-	      memset (curr_fmt, 0, sizeof (struct st_ency_formatting));
+	      printf ("Memory allocation failed\n");
+	      exit (1);
 	    }
+	  memset (curr_fmt, 0, sizeof (struct st_ency_formatting));
 	}
+      if (first_time)
+	  root_fmt = curr_fmt;
 
       first_time = 0;
       i = 0;
@@ -620,7 +608,7 @@ curr_find_list (char title[], int exact)
   struct ency_titles *root_title, *curr_title, *last_title;
   int no_so_far = 0;
   char *ttl = 0, *temp_text = 0;
-  struct st_ency_formatting *text_fmt;
+  struct st_ency_formatting *text_fmt, *kill_fmt;
 
   root_title = curr_title = last_title = NULL;
 
@@ -629,15 +617,16 @@ curr_find_list (char title[], int exact)
       return (st_title_error (1));
     };
 
-  root_title = (struct ency_titles *) malloc (sizeof (struct ency_titles));
+/*
+   root_title = (struct ency_titles *) malloc (sizeof (struct ency_titles));
 
-  if (root_title == NULL)
-    {
-      return (st_title_error (2));
-    }
+   if (root_title == NULL)
+   {
+   return (st_title_error (2));
+   }
 
-  curr_title = root_title;
-
+   curr_title = root_title;
+ */
   do
     {
       if (!first_time)
@@ -684,17 +673,20 @@ curr_find_list (char title[], int exact)
 	  found_any_yet = 1;
 	  if (st_return_body)
 	    temp_text = ency_return_text ();
-	  // define the pointer
-	  if (curr_title != root_title)
-	    {
-	      curr_title = (struct ency_titles *) malloc (sizeof (struct ency_titles));
-	      if (curr_title == NULL)
-		{
-		  printf ("Memory allocation failed\n");
+	  /* define the pointer */
+/*        if (curr_title != root_title) */
+	  {
+	    curr_title = (struct ency_titles *) malloc (sizeof (struct ency_titles));
+	    if (curr_title == NULL)
+	      {
+		printf ("Memory allocation failed\n");
 //                exit (1);
-		}
-	    }
-// copy pointer stuff over
+	      }
+	  }
+	  if ((root_title) == NULL)
+	    root_title = curr_title;
+
+/* copy pointer stuff over */
 	  curr_title->err = 0;
 	  curr_title->filepos = this_one_starts_at;
 	  curr_title->title = ttl;
@@ -709,9 +701,20 @@ curr_find_list (char title[], int exact)
 	  last_title = curr_title;
 	  curr_title = (struct ency_titles *) NULL;
 	  ttl = temp_text = (char *) text_fmt = (struct st_ency_formatting *) NULL;
+/* */
 	}
       else
-	free (ttl);
+	/* It's not the one we want */
+	{
+	  free (ttl);
+	  while (text_fmt)
+	    {
+	      kill_fmt = text_fmt;
+	      text_fmt = text_fmt->next;
+	      free (kill_fmt);
+	    }
+	}
+
     }
   while (no_so_far != curr_lastone);
   curr_close ();

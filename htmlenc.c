@@ -32,6 +32,8 @@ extern int st_ignore_case;
 extern int st_return_body;
 extern int optind;		// for getopt()
 
+extern char *ency_filename;
+
 extern int st_file_type;
 
 int remove_fmt = 0;
@@ -57,6 +59,7 @@ loopies (char *txt, struct st_ency_formatting *fmt)
     {
       fmt2 = fmt;
       fmt = fmt->next;
+      if (remove_fmt) free (fmt2);
     }
   while (strlen (txt))
     {
@@ -194,7 +197,7 @@ printoff (struct ency_titles *stuff)
   struct st_ency_formatting *fmt1;
 
   printf ("<hr>\n");
-
+  remove_fmt = 0;
   tmp = stuff->title;
   fmt1 = stuff->fmt;
   words = 0;
@@ -264,12 +267,9 @@ main (int argc, char *argv[])
 	  do
 	    {
 	      full_body = get_title_at (thingy->filepos);
-// printf("**\n%s\n%s\n**",full_body->title,full_body->text);
 	      printoff (full_body);
-//        printoff (thingy);
 	      kill_me = thingy;
 	      thingy = thingy->next;
-//        free (kill_me->text);
 	      free (kill_me->title);
 	      free (kill_me);
 	      free (full_body->title);
@@ -289,5 +289,9 @@ main (int argc, char *argv[])
     }
   else
     printf ("An error has occurred.\n");
+
+  if (ency_filename)
+    free (ency_filename);
+
   return (0);
 }

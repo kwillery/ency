@@ -27,6 +27,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "ency.h"
+
 extern int st_ignore_case;
 extern int st_file_type;
 extern int optind;
@@ -39,6 +40,7 @@ main (int argc, char *argv[])
   char search_string[70];
   struct ency_titles *thingy = NULL;
   struct ency_titles *kill_me = NULL;
+  struct st_ency_formatting *fmt = NULL, *kill_fmt = NULL;
 
   i = getopt (argc, argv, "ech");
 
@@ -87,7 +89,22 @@ main (int argc, char *argv[])
 	      printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
 	      kill_me = thingy;
 	      thingy = thingy->next;
-	      free (kill_me);
+
+	      fmt = kill_me->fmt;
+
+	      while (fmt)
+		{
+		  kill_fmt = fmt;
+		  fmt = fmt->next;
+		  free (kill_fmt);
+		}
+
+	      if (kill_me->title)
+		free (kill_me->title);
+	      if (kill_me->text)
+		free (kill_me->text);
+	      if (kill_me)
+		free (kill_me);
 	    }
 	  while (thingy != NULL);
 	}
@@ -97,5 +114,9 @@ main (int argc, char *argv[])
     }
   else
     printf ("An error has occurred.\n");
+
+  if (ency_filename)
+    free (ency_filename);
+
   return (0);
 }
