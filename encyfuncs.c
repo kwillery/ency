@@ -83,6 +83,7 @@ static const long int st_caption_lastone[] =
 
 static const long st_video_table_lastone[] =
 {26, 0, 26, 0, 26, 0, 26, 0, 26, 0};
+
 static const long st_video_caption_lastone[] =
 {1, 0, 1, 0, 1, 0, 24, 0, 15, 0};
 
@@ -123,12 +124,12 @@ const struct st_file_info st_files[] =
 #define ST_SECT_VCPT 13
 
 /* for pictures */
-static struct st_table *st_ptbls = NULL;
-static struct st_caption *st_pcpts = NULL;
+static struct st_table *st_ptbls = NULL, *st_ptbls_tail = NULL;
+static struct st_caption *st_pcpts = NULL, *st_pcpts_tail = NULL;
 
 /* for videos */
-static struct st_table *st_vtbls = NULL;
-static struct st_caption *st_vcpts = NULL;
+static struct st_table *st_vtbls = NULL, *st_vtbls_tail = NULL;
+static struct st_caption *st_vcpts = NULL, *st_vcpts_tail = NULL;
 
 /* cache */
 static struct ency_titles *cache[3] =
@@ -156,7 +157,34 @@ int st_finish (void)
 }
 
 /* useful bits */
-static char st_cleantext (unsigned char c)
+static int is_all_ascii (char *string)
+{
+	while (*string)
+		if (isascii (*string++) == 0) return 0;
+	return 1;
+}
+
+static int ends_in_number (char *string, int expected_length)
+{
+	return (isdigit(string[expected_length]));
+}
+
+static int ends_in_quote (char *string, int expected_length)
+{
+	return ((string[1] == '\"') || (string[expected_length] == '\"'));
+}
+
+static int not_embedding_bracket (char *string)
+{
+	return ((string[0] != '[') && (string[1] != '['));
+}
+
+static int doesnt_have_junk (char *string)
+{
+	return (isalpha (string[0]) || isalpha (string[1]) || ispunct (string[0]) || ispunct (string[1]));
+}
+
+char st_cleantext (unsigned char c)
 {
 	switch (c)
 	{
@@ -197,6 +225,12 @@ static char st_cleantext (unsigned char c)
 	}
 }
 
+void st_cleanstring (char *string)
+{
+	while ((*string = st_cleantext (*string)))
+		string++;
+}
+
 static char *st_lcase (char *mcase)
 {
 	char *lcase = NULL;
@@ -212,6 +246,7 @@ static char *st_lcase (char *mcase)
 	return (lcase);
 }
 
+/* struct manipulation */
 void st_free_fmt (struct st_ency_formatting *fmt)
 {
 	if (fmt)
@@ -295,6 +330,126 @@ void st_copy_part_entry (struct ency_titles **to, struct ency_titles *from)
 	}
 }
 
+/* cache stuff */
+static void st_clear_cache ()
+{
+	int i;
+	for (i = 0; i < 3; i++)
+	{
+		st_free_entry_tree (cache[i]);
+		cache[i] = NULL;
+		cache_last[i] = NULL;
+	}
+}
+
+static void st_add_to_cache (int section, char *title, long filepos)
+{
+	struct ency_titles *temp_cache=NULL, *curr=NULL;
+
+	if ((section < 0) || (section > 2)) return;
+
+	temp_cache = malloc (sizeof (struct ency_titles));
+	if (!temp_cache) return;
+
+	temp_cache->title = strdup (title);
+	temp_cache->text = NULL;
+	temp_cache->fmt = NULL;
+	temp_cache->next = NULL;
+	temp_cache->filepos = filepos;
+
+	curr = cache_last[section];
+
+	if (!curr)
+	{
+		cache_last[section] = cache[section] = temp_cache;
+		return;
+	}
+
+	cache_last[section] = curr->next = temp_cache;
+
+	return;
+}
+
+static void add_to_table (struct st_table *list, int section)
+{
+	struct st_table *curr=NULL;
+	struct st_table **head=NULL;
+	struct st_table **tail=NULL;
+
+	if (!list)
+		return;
+
+	switch (section)
+	{
+	case ST_SECT_PTBL:
+		head = &st_ptbls;
+		tail = &st_ptbls_tail;
+		break;
+	case ST_SECT_VTBL:
+		break;
+	default:
+		return;
+	}
+	curr = *tail;
+
+	if (!curr)
+	{
+		*head = list;
+		while (list->next)
+			list = list->next;
+		*tail = list;
+		return;
+	} else
+	{
+		curr->next = list;
+		while (list->next)
+			list = list->next;
+		*tail = list;
+	}
+
+	return;
+}
+
+static void add_to_captions (struct st_caption *list, int section)
+{
+	struct st_caption *curr=NULL;
+	struct st_caption **head=NULL;
+	struct st_caption **tail=NULL;
+
+	if (!list)
+		return;
+
+	switch (section)
+	{
+	case ST_SECT_PCPT:
+		head = &st_pcpts;
+		tail = &st_pcpts_tail;
+		break;
+	case ST_SECT_VCPT:
+		break;
+	default:
+		return;
+	}
+	curr = *tail;
+
+	if (!curr)
+	{
+		*head = list;
+		while (list->next)
+			list = list->next;
+		*tail = list;
+		return;
+	} else
+	{
+		curr->next = list;
+		while (list->next)
+			list = list->next;
+		*tail = list;
+	}
+
+	return;
+}
+
 /* file stuff */
 void st_force_unknown_file (int true)
 {
@@ -345,28 +500,51 @@ char *st_fileinfo_get_name (int file_type)
 
 static const char *st_fileinfo_get_data (int file, st_filename_type type)
 {
-	if ((file < 0) || (file >= ST_FILE_TYPES))
-		return NULL;
-
-	switch (type)
+	if (file == ST_FILE_UNKNOWN)
 	{
+		switch (type)
+		{
 		case mainfilename:
-			return st_files[file].filename;
+			return ency_filename;
 		case data:
-			return st_files[file].data_dir;
+			return "";
 		case picture:
-			return st_files[file].pic_dir;
+			return "";
 		case video:
-			return st_files[file].vid_dir;
-		case append_char:
+			return "";
+/*		case append_char:
 			return st_files[file].append_char ? "yes" : NULL;
 		case prepend_year:
 			return st_files[file].prepend_year ? "yes" : NULL;
 		case append_series:
-			return st_files[file].append_series ? "yes" : NULL;
+			return st_files[file].append_series ? "yes" : NULL; */
 		default:
 			return NULL;
+		}
 	}
+
+	if ((file < 0) || (file >= ST_FILE_TYPES))
+			return NULL;
+	else
+		switch (type)
+		{
+			case mainfilename:
+				return st_files[file].filename;
+			case data:
+				return st_files[file].data_dir;
+			case picture:
+				return st_files[file].pic_dir;
+			case video:
+				return st_files[file].vid_dir;
+			case append_char:
+				return st_files[file].append_char ? "yes" : NULL;
+			case prepend_year:
+				return st_files[file].prepend_year ? "yes" : NULL;
+			case append_series:
+				return st_files[file].append_series ? "yes" : NULL;
+			default:
+				return NULL;
+		}
 }
 
 static struct st_part *get_part (int file, int section, int number)
@@ -638,15 +816,102 @@ char *st_autofind (int st_file_version, char *base_dir)
 }
 
 /* media stuff */
+static struct st_table *read_table (FILE *input, struct st_table *root)
+{
+	struct st_table *root_tbl = NULL;
+	struct st_table *curr_tbl = NULL;
+	struct st_table *last_tbl = NULL;
+
+	int text_size = 0;
+	unsigned char c = 0;
+	char *temp_text = NULL, *str_text = NULL;
+	int z;
+
+	if (root)
+	{
+		root_tbl = root;
+		last_tbl = root;
+		while (last_tbl->next)
+			last_tbl = last_tbl->next;
+	}
+
+	while ((c = getc (input)) != ']')
+	{	/* main loop */
+
+		curr_tbl = (struct st_table *) malloc (sizeof (struct st_table));
+
+		if (curr_tbl == NULL)
+		{
+			return NULL;
+		}
+
+		if (!root_tbl)
+			root_tbl = curr_tbl;
+
+		do
+		{
+			while ((c = getc (input)) != '\"');
+			c = getc (input);
+		}
+		while (!c);
+		ungetc (c, input);
+
+		temp_text = malloc (8);
+		text_size = 0;
+
+		fread (temp_text, 1, 6, input);
+		temp_text[6] = 0;
+		fgetc (input);
+		fgetc (input);
+		if (strstr (temp_text, "\""))
+		{
+			fseek (input, -7, SEEK_CUR);
+			while ((c = getc (input)) != '\"');
+			str_text = (strstr (temp_text, "\""));
+			str_text[0] = 0;
+		}
+
+		curr_tbl->fnbase = temp_text;
+		z = 0;
+		while ((temp_text[z] = tolower (temp_text[z])))
+			z++;
+
+/* TODO: make this 70 autodetected ala st_return text */
+		temp_text = malloc (70);
+		text_size = 0;
+
+		while ((c = getc (input)) != '\"');
+		while ((c = getc (input)) != '\"')
+		{
+			if (c == 0xA5)
+			{
+				getc (input);
+			}
+			else
+			{
+				temp_text[text_size++] = st_cleantext (c);
+			}
+		}
+		temp_text[text_size] = 0;
+
+		curr_tbl->title = temp_text;
+
+		curr_tbl->next = NULL;
+		if (last_tbl)
+			last_tbl->next = curr_tbl;
+		last_tbl = curr_tbl;
+		curr_tbl = NULL;
+	}	/* end main loop */
+
+	return (root_tbl);
+}
 
 static struct st_table *st_get_table ()
 {
-	int i, z;
-	struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
+	int i;
+	int count = 0;
+	struct st_table *root_tbl = NULL;
 	struct st_part *part;
-	int text_size = 0, count = 0;
-	unsigned char c = 0;
-	char *temp_text = NULL, *str_text = NULL;
 
 	curr = 4;
 
@@ -662,74 +927,7 @@ static struct st_table *st_get_table ()
 
 			for (i = 0; i < part->count; i++)
 			{
-				while ((c = getc (inp)) != ']')
-				{	/* main loop */
-
-					curr_tbl = (struct st_table *) malloc (sizeof (struct st_table));
-
-					if (curr_tbl == NULL)
-					{
-						return (NULL);
-					}
-
-					if (!root_tbl)
-						root_tbl = curr_tbl;
-
-					do
-					{
-						while ((c = getc (inp)) != '\"');
-						c = getc (inp);
-					}
-					while (!c);
-					ungetc (c, inp);
-
-					temp_text = malloc (8);
-					text_size = 0;
-
-					fread (temp_text, 1, 6, inp);
-					temp_text[6] = 0;
-					fgetc (inp);
-					fgetc (inp);
-					if (strstr (temp_text, "\""))
-					{
-						fseek (inp, -7, SEEK_CUR);
-						while ((c = getc (inp)) != '\"');
-						str_text = (strstr (temp_text, "\""));
-						str_text[0] = 0;
-					}
-
-					curr_tbl->fnbase = temp_text;
-					z = 0;
-					while ((temp_text[z] = tolower (temp_text[z])))
-						z++;
-
-/* TODO: make this 70 autodetected ala st_return text */
-					temp_text = malloc (70);
-					text_size = 0;
-
-					while ((c = getc (inp)) != '\"');
-					while ((c = getc (inp)) != '\"')
-					{
-						if (c == 0xA5)
-						{
-							getc (inp);
-						}
-						else
-						{
-							temp_text[text_size++] = st_cleantext (c);
-						}
-					}
-					temp_text[text_size] = 0;
-
-					curr_tbl->title = temp_text;
-
-					curr_tbl->next = NULL;
-					if (last_tbl)
-						last_tbl->next = curr_tbl;
-					last_tbl = curr_tbl;
-					curr_tbl = NULL;
-				}	/* end main loop */
-
+				root_tbl = read_table (inp, root_tbl);
 			}
 		}
 		st_close_file ();
@@ -739,14 +937,94 @@ static struct st_table *st_get_table ()
 	return (root_tbl);
 }
 
+static struct st_caption *read_captions (FILE *input, struct st_caption *root, int section)
+{
+	int z;
+	struct st_caption *root_cpt = NULL, *curr_cpt = NULL, *last_cpt = NULL;
+	char c = 0;
+	int text_size = 0;
+	char *temp_text = NULL;
+
+	if (root)
+	{
+		root_cpt = root;
+		last_cpt = root;
+		while (last_cpt->next)
+			last_cpt = last_cpt->next;
+	}
+
+	c = getc (inp);
+
+	while (c != ']')
+	{	/* main loop */
+		curr_cpt = (struct st_caption *) malloc (sizeof (struct st_caption));
+
+		if (curr_cpt == NULL)
+		{
+			return (NULL);
+		}
+		if (!root_cpt)
+			root_cpt = curr_cpt;
+
+		do
+		{
+			while ((c != '\"') && (c != '[') && (c = getc (inp)) != (' '));
+			c = getc (inp);
+		}
+		while (!c);
+		ungetc (c, inp);
+		if ((c = getc (inp)) != ' ')
+			c = ungetc (c, inp);
+		if ((c = getc (inp)) != '\"')
+			c = ungetc (c, inp);
+		if ((c = getc (inp)) != ':')
+		{
+			ungetc (c, inp);
+			c = 0;
+
+			temp_text = malloc (8);
+
+			text_size = (section == ST_SECT_PCPT) ? 7 : 6;
+
+			fread (temp_text, 1, text_size, inp);
+			temp_text[text_size] = 0;
+
+			z = 0;
+			while ((temp_text[z] = tolower (temp_text[z])))
+				z++;
+
+			c = getc (inp);
+			if (c == ' ') c = getc (inp);
+
+			curr_cpt->fnbasen = temp_text;
+
+			temp_text = malloc (70);
+			text_size = 0;
+
+			while ((c = getc (inp)) != '\"');
+			while ((c = getc (inp)) != '\"')
+				temp_text[text_size++] = st_cleantext (c);
+			temp_text[text_size] = 0;
+
+			curr_cpt->caption = temp_text;
+			c = getc (inp);
+
+			curr_cpt->next = NULL;
+			if (last_cpt)
+				last_cpt->next = curr_cpt;
+			last_cpt = curr_cpt;
+			curr_cpt = NULL;
+		}
+	}	/* end main loop */
+	return (root_cpt);
+}
+
 static struct st_caption *st_get_captions (int section)
 {
-	int i, z;
-	struct st_caption *root_cpt = NULL, *curr_cpt = NULL, *last_cpt = NULL;
+	int i;
+	int count = 0;
+	struct st_caption *root_cpt = NULL;
 	struct st_part *part;
-	char c = 0;
-	int text_size = 0, count = 0;
-	char *temp_text = NULL;
 
 	curr = 6;
 
@@ -761,70 +1039,7 @@ static struct st_caption *st_get_captions (int section)
 		{
 			for (i = 0; i < part->count; i++)
 			{
-				c = getc (inp);
-				while (c != ']')
-				{	/* main loop */
-					curr_cpt = (struct st_caption *) malloc (sizeof (struct
-							       st_caption));
-
-					if (curr_cpt == NULL)
-					{
-						return (NULL);
-					}
-					if (!root_cpt)
-						root_cpt = curr_cpt;
-
-					do
-					{
-						while ((c != '\"') && (c != '[') && (c = getc (inp)) != (' '));
-
-						c = getc (inp);
-					}
-					while (!c);
-					ungetc (c, inp);
-					if ((c = getc (inp)) != ' ')
-						c = ungetc (c, inp);
-					if ((c = getc (inp)) != '\"')
-						c = ungetc (c, inp);
-					if ((c = getc (inp)) != ':')
-					{
-						ungetc (c, inp);
-						c = 0;
-
-						temp_text = malloc (8);
-
-						text_size = (section == ST_SECT_PCPT) ? 7 : 6;
-
-						fread (temp_text, 1, text_size, inp);
-						temp_text[text_size] = 0;
-
-						z = 0;
-						while ((temp_text[z] = tolower (temp_text[z])))
-							z++;
-
-						c = getc (inp);
-						if (c == ' ') c = getc (inp);
-
-						curr_cpt->fnbasen = temp_text;
-
-						temp_text = malloc (70);
-						text_size = 0;
-
-						while ((c = getc (inp)) != '\"');
-						while ((c = getc (inp)) != '\"')
-							temp_text[text_size++] = st_cleantext (c);
-						temp_text[text_size] = 0;
-
-						curr_cpt->caption = temp_text;
-						c = getc (inp);
-
-						curr_cpt->next = NULL;
-						if (last_cpt)
-							last_cpt->next = curr_cpt;
-						last_cpt = curr_cpt;
-						curr_cpt = NULL;
-					}
-				}	/* end main loop */
+				root_cpt = read_captions (inp, root_cpt, section);
 
 			}
 		}
@@ -951,20 +1166,158 @@ static struct st_table *st_get_video_table (void)
 	return (root_tbl);
 }
 
+static void check_for_captions (FILE *inp)
+{
+	char c=0;
+	char fnbase[9]="        ";
+	char temp[9] = "        ";
+	long found_at;
+
+	found_at = ftell (inp);
+
+	fread (fnbase, 8, 1, inp);
+	st_cleanstring (fnbase);
+
+	if (is_all_ascii (fnbase) && ends_in_quote (fnbase, 7) && ends_in_number (fnbase, 6))
+	{
+		if (fnbase[1] == '\"')
+			fseek (inp, found_at + 2, SEEK_SET);
+
+		if (getc (inp) == ':')
+		{
+			fread (temp, 8, 1, inp);
+			if (not_embedding_bracket(temp))
+			{
+				if (doesnt_have_junk(temp))
+				{
+					*strchr (fnbase, '\"') = 0;
+
+					fseek (inp, found_at, SEEK_SET);
+					while ((c != ']') && (c != '\"'))
+						c = getc (inp);
+					if (c == ']')
+						return;
+					while ((c = getc (inp)) != '\"')
+						;
+					while ((c = getc (inp)) != '\"')
+						;
+					while ((c = getc (inp)) != '\"')
+						;
+
+					fread (temp, 8, 1, inp);
+					if (!is_all_ascii (temp))
+						return;
+					if (!ends_in_quote (temp, 7))
+						return;
+					if (!ends_in_number (temp, 6))
+						return;
+
+					fseek (inp, (found_at > 2) ? (found_at - 2) : found_at, SEEK_SET);
+					add_to_captions (read_captions (inp, NULL, ST_SECT_PCPT), ST_SECT_PCPT);
+					return;
+				}
+			}
+		}
+	}
+	fseek (inp, found_at, SEEK_SET);
+}
+
+static int check_for_table (FILE *inp)
+{
+	char c=0;
+	char fnbase[8]="       ";
+	char temp[8] = "       ";
+	long found_at;
+
+	found_at = ftell (inp);
+
+	fread (fnbase, 7, 1, inp);
+	st_cleanstring (fnbase);
+
+	if (is_all_ascii (fnbase) && ends_in_quote (fnbase, 6))
+	{
+		if (fnbase[1] == '\"')
+			fseek (inp, found_at + 2, SEEK_SET);
+
+		if (getc (inp) == ':')
+		{
+			fread (temp, 7, 1, inp);
+			if (not_embedding_bracket(temp))
+			{
+				if (doesnt_have_junk(temp))
+				{
+					fseek (inp, found_at, SEEK_SET);
+					while ((c != ']') && (c != '\"'))
+						c = getc (inp);
+					if (c == ']')
+						return 0;
+					while ((c = getc (inp)) != '\"')
+						;
+					while ((c = getc (inp)) != '\"')
+						;
+					while ((c = getc (inp)) != '\"')
+						;
+
+					fread (temp, 7, 1, inp);
+					if (!is_all_ascii (temp))
+						return 0;
+					if (!ends_in_quote (temp, 6))
+						return 0;
+
+					*strchr (fnbase, '\"') = 0;
+
+					fseek (inp, (found_at > 2) ? (found_at - 2) : found_at, SEEK_SET);
+					add_to_table (read_table (inp, NULL), ST_SECT_PTBL);
+
+					return 1;
+				}
+			}
+		}
+	}
+	fseek (inp, found_at, SEEK_SET);
+	return 0;
+}
+
+static void get_unknown_tables (FILE *inp)
+{
+	unsigned char c=0, old_c=0, old_old_c=0;
+
+	while (!feof(inp))
+	{
+		c = getc(inp);
+		if ((c == '\"') && (old_c == '[') && (old_old_c != 0x20))
+		{
+			if (!check_for_table(inp))
+				check_for_captions(inp);
+		}
+		old_old_c = old_c;
+		old_c = c;
+	}
+}
+
 int st_load_media (void)
 {
 	/*
 	 * Get the table & captions (if we don't already have them)
 	 */
-
-	if (!st_ptbls)
-		st_ptbls = st_get_table ();
-	if (!st_pcpts)
-		st_pcpts = st_get_captions (ST_SECT_PCPT);
-	if (!st_vtbls)
-		st_vtbls = st_get_video_table ();
-	if (!st_vcpts)
-		st_vcpts = st_get_captions (ST_SECT_VCPT);
+	if (st_file_type != ST_FILE_UNKNOWN) {
+		if (!st_ptbls)
+			st_ptbls = st_get_table ();
+		if (!st_pcpts)
+			st_pcpts = st_get_captions (ST_SECT_PCPT);
+		if (!st_vtbls)
+			st_vtbls = st_get_video_table ();
+		if (!st_vcpts)
+			st_vcpts = st_get_captions (ST_SECT_VCPT);
+	} else
+	{
+		curr = 5;
+		set_starts_at = 0;
+		
+		if (!st_open())
+			return 0;
+		get_unknown_tables (inp);
+	}
 
 	return (1);
 }
@@ -1075,45 +1428,6 @@ static int check_match (char *search_string, char *title, int exact)
 		free (lc_search_string);
 	}
 	return found;
-}
-
-static void st_clear_cache ()
-{
-	int i;
-	for (i = 0; i < 3; i++)
-	{
-		st_free_entry_tree (cache[i]);
-		cache[i] = NULL;
-		cache_last[i] = NULL;
-	}
-}
-
-static void st_add_to_cache (int section, char *title, long filepos)
-{
-	struct ency_titles *temp_cache=NULL, *curr=NULL;
-
-	if ((section < 0) || (section > 2)) return;
-
-	temp_cache = malloc (sizeof (struct ency_titles));
-	if (!temp_cache) return;
-
-	temp_cache->title = strdup (title);
-	temp_cache->text = NULL;
-	temp_cache->fmt = NULL;
-	temp_cache->next = NULL;
-	temp_cache->filepos = filepos;
-
-	curr = cache_last[section];
-
-	if (!curr)
-	{
-		cache_last[section] = cache[section] = temp_cache;
-		return;
-	}
-
-	cache_last[section] = curr->next = temp_cache;
-
-	return;
 }
 
 inline int st_find_start (FILE * input)
