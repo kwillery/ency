@@ -81,13 +81,23 @@ void free_data_filenode (struct st_data_filenode *file)
 {
 	struct st_block *block,*tmp_block;
 	struct st_data_exception *ex, *tmp_ex;
-	block = file->blocks;
-	while (block)
+	struct st_dfile *df, *tmp_df;
+
+	df = file->dfiles;
+	while (df)
 	{
-		tmp_block = block;
-		block = block->next;
-		free_block (tmp_block);
+		block = df->blocks;
+		while (block)
+		{
+			tmp_block = block;
+			block = block->next;
+			free_block (tmp_block);
+		}
+		tmp_df = df;
+		df = df->next;
+		free (tmp_df);
 	}
+
 	ex = file->exceptions;
 	while (ex)
 	{
@@ -143,6 +153,21 @@ struct st_block *new_block()
 	}
 
 	return block;
+}
+
+/* A quick & safe way to make a dfile. */
+struct st_dfile *new_dfile()
+{
+	struct st_dfile *df=NULL;
+	df = (struct st_dfile *) malloc (sizeof (struct st_dfile));
+
+	if (df)
+	{
+		df->type = 0;
+		df->next = NULL;
+	}
+
+	return df;
 }
 
 /* A quick, easy & safe way to make an exception */
@@ -295,9 +320,10 @@ static void data_scan (struct st_block *block)
 /* Gets a 'block' based on its type, section, and number in the list.
  * (The first one matching type & section is '0', the next that matches
  * is '1', etc.) */
-struct st_block *get_block (int file, int type, int section, int number, int options)
+struct st_block *get_block (int file, int dfiletype, int type, int section, int number, int options)
 {
 	struct st_data_filenode *file_node=NULL;
+	struct st_dfile *df=NULL;
 	struct st_block *block=NULL;
 	int i=0;
 
@@ -306,7 +332,18 @@ struct st_block *get_block (int file, int type, int section, int number, int opt
 	if (!file_node)
 		return NULL;
 
-	block = file_node->blocks;
+	df = file_node->dfiles;
+	while (df)
+	{
+		if (df->type == dfiletype)
+			break;
+		df = df->next;
+	}
+
+	if (!df)
+		return NULL;
+
+	block = df->blocks;
 
 	while (block)
 	{
@@ -330,9 +367,10 @@ struct st_block *get_block (int file, int type, int section, int number, int opt
 /* Similar to get_block(), but does it by block number.
  * (Usually 500+). This is mainly for getting the block an
  * entry is in. */
-struct st_block *get_block_by_id (int file, int block_id)
+struct st_block *get_block_by_id (int file, int dfiletype, int block_id)
 {
 	struct st_data_filenode *file_node=NULL;
+	struct st_dfile *df=NULL;
 	struct st_block *block=NULL;
 
 	file_node = get_filenode (file);
@@ -340,7 +378,18 @@ struct st_block *get_block_by_id (int file, int block_id)
 	if (!file_node)
 		return NULL;
 
-	block = file_node->blocks;
+	df = file_node->dfiles;
+	while (df)
+	{
+		if (df->type == dfiletype)
+			break;
+		df = df->next;
+	}
+
+	if (!df)
+		return NULL;
+
+	block = df->blocks;
 
 	while (block)
 	{
@@ -359,9 +408,10 @@ struct st_block *get_block_by_id (int file, int block_id)
 /* Similar to get_block(), but does it by block name.
  * (eg. "LU_A_ENCY"). This is mainly for getting the
  * block a thumbnail is in. */
-struct st_block *get_block_by_name (int file, char *name)
+struct st_block *get_block_by_name (int file, int dfiletype, char *name)
 {
         struct st_data_filenode *file_node=NULL;
+	struct st_dfile *df=NULL;
         struct st_block *block=NULL;
 
 	if (!name)
@@ -372,7 +422,18 @@ struct st_block *get_block_by_name (int file, char *name)
         if (!file_node)
                 return NULL;
 
-        block = file_node->blocks;
+	df = file_node->dfiles;
+	while (df)
+	{
+		if (df->type == dfiletype)
+			break;
+		df = df->next;
+	}
+
+	if (!df)
+		return NULL;
+
+	block = df->blocks;
 
         while (block)
         {
@@ -427,7 +488,7 @@ struct st_data_filenode *st_data_new_filenode (void)
 		new_node->videodir = NULL;
 		new_node->fingerprint = NULL;
 		new_node->append_char = 1;
-		new_node->blocks = NULL;
+		new_node->dfiles = NULL;
 		new_node->exceptions = NULL;
 		new_node->next = NULL;
 	}

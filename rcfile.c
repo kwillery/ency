@@ -398,8 +398,11 @@ static struct st_data_filenode *make_filenode_from_rc_file (FILE *inp)
 		/* We allocate the node here just in case there is nothing left
 		   in the rcfile when we start */
 		if (!new_node)
+		{
 			new_node = st_data_new_filenode ();
-
+			new_node->dfiles = new_dfile();
+			new_node->dfiles->type = ST_DFILE_DATA;
+		}
 		if (!strcasecmp (cmd->name, "name"))
 			new_node->name = strdup (get_rc_arg (cmd->args, NULL));
 		if (!strcasecmp (cmd->name, "mainfile"))
@@ -416,11 +419,11 @@ static struct st_data_filenode *make_filenode_from_rc_file (FILE *inp)
 			new_node->append_char = 1;
 		if (!strcasecmp (cmd->name, "needscan"))
 		{
-			new_node->blocks = new_block ();
-			new_node->blocks->type = ST_BLOCK_SCAN;
+			new_node->dfiles->blocks = new_block ();
+			new_node->dfiles->blocks->type = ST_BLOCK_SCAN;
 		}
 		if (!strcasecmp (cmd->name, "block"))
-			new_node->blocks = append_block_from_rc_file (new_node->blocks, cmd->args);
+			new_node->dfiles->blocks = append_block_from_rc_file (new_node->dfiles->blocks, cmd->args);
 		if (!strcasecmp (cmd->name, "exception"))
 			new_node->exceptions = append_exception_from_rc_file (new_node->exceptions, cmd->args);
 

@@ -740,7 +740,7 @@ static struct st_table *st_get_table ()
 	struct st_table *root_tbl = NULL;
 	struct st_block *block;
 
-	while ((block = get_block (st_file_type, ST_SECT_PTBL, 0, count, 0)))
+	while ((block = get_block (st_file_type, ST_DFILE_DATA, ST_SECT_PTBL, 0, count, 0)))
 	{
 		if (!(inp = open_block (block)))
 			return (NULL);
@@ -829,7 +829,7 @@ static struct st_caption *st_get_captions (int section)
 	struct st_caption *root_cpt = NULL;
 	struct st_block *block;
 
-	while ((block = get_block (st_file_type, section, 0, count, 0)))
+	while ((block = get_block (st_file_type, ST_DFILE_DATA, section, 0, count, 0)))
 	{
 		if (!(inp = open_block (block)))
 			return (NULL);
@@ -950,7 +950,7 @@ static struct st_table *st_get_video_table (int section)
 	struct st_block *block;
 	int count=0;
 
-	while ((block = get_block (st_file_type, ST_BLOCK_ATTRIB, section, count, 0)))
+	while ((block = get_block (st_file_type, ST_DFILE_DATA, ST_BLOCK_ATTRIB, section, count, 0)))
 	{
 		if (!(inp = open_block (block)))
 			return (root_tbl);
@@ -1519,7 +1519,7 @@ static void load_block_cache (int block_id)
 	int id;
 	struct st_block *block;
 
-	block = get_block_by_id (st_file_type, block_id);
+	block = get_block_by_id (st_file_type, ST_DFILE_DATA, block_id);
 
 	if (!block) /* just in case... */
 		return;
@@ -1798,7 +1798,7 @@ static void load_ft_list (int section)
 	FILE *inp=NULL;
 	int count=0;
 
-	while ((block = get_block (st_file_type, ST_BLOCK_FTLIST, section, count++, 0)))
+	while ((block = get_block (st_file_type, ST_DFILE_DATA, ST_BLOCK_FTLIST, section, count++, 0)))
 	{
 		if (!(inp = open_block (block)))
 			return;
@@ -2297,7 +2297,7 @@ static int is_flash_except (char *fnbase)
 	struct st_block *block;
 	int count=0;
 
-	while ((block = get_block (st_file_type, ST_BLOCK_FLASHEXCEPT, 0, count++, 0)))
+	while ((block = get_block (st_file_type, ST_DFILE_DATA, ST_BLOCK_FLASHEXCEPT, 0, count++, 0)))
 		if (in_simple_list (block->start, 6, fnbase))
 			return 1;
 	return 0;
@@ -2388,7 +2388,7 @@ static char *get_video_dir (char *fnbasen)
 	char *dir;
 	int count=0;
 
-	while ((block = get_block (st_file_type, ST_SECT_VLST, 0, count++, 0)))
+	while ((block = get_block (st_file_type, ST_DFILE_DATA, ST_SECT_VLST, 0, count++, 0)))
 		if (in_simple_list (block->start, 12, fnbasen))
 		{
 			dir = block->dir;
@@ -2480,7 +2480,7 @@ char *st_format_filename (char *fnbasen, char *base_path, media_type media)
 	return (filename);
 }
 
-int st_get_picture(char *name, char *file, long width, long height)
+int st_get_picture(char *name, char *file, int dfile_type, long width, long height)
 {
 	struct st_block *block=NULL;
 	int ret;
@@ -2489,7 +2489,7 @@ int st_get_picture(char *name, char *file, long width, long height)
 	if (!name)
 		return 1;
 
-	block = get_block_by_name (st_file_type, name);
+	block = get_block_by_name (st_file_type, dfile_type, name);
 
 	if (!block)
 		return 1;
@@ -2515,5 +2515,5 @@ int st_get_thumbnail(char *name, char *file)
 	strcpy (newname, name);
 	strcat (newname, "T.pic");
 
-	return st_get_picture (newname, file, 60, 40);
+	return st_get_picture (newname, file, ST_DFILE_PICON, 60, 40);
 }
