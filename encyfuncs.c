@@ -1881,10 +1881,57 @@ static struct ency_titles *sort_by_epis (struct ency_titles *root, int section)
 	return (new_root);
 }
 
+struct ency_titles *sort_alphabetical (struct ency_titles *root)
+{
+        struct ency_titles *lowest, *last_lowest;
+        struct ency_titles *curr, *last;
+        struct ency_titles *new_root=NULL;
+
+        while (root)
+        {
+                curr = root;
+                last = NULL;
+                lowest = root;
+                last_lowest = NULL;
+
+                while (curr)
+                {
+                        if (strcasecmp (curr->title, lowest->title) < 0)
+                        {
+                                lowest = curr;
+                                last_lowest = last;
+                        }
+                        last = curr;
+                        curr = curr->next;
+                }
+
+                curr = new_root;
+                if (curr)
+                {
+                        while (curr->next)
+                        {
+                                curr = curr->next;
+                        }
+                        curr->next = lowest;
+                } else
+                        new_root = lowest;
+
+                if (last_lowest)
+                        last_lowest->next = lowest->next;
+                if (lowest == root)
+                        root = root->next;
+
+                lowest->next = NULL;
+        }
+        return (new_root);
+}
+
 static struct ency_titles *sort_entries (struct ency_titles *root, int section, int options)
 {
 	if (options & ST_OPT_SORTEPIS)
 		return (sort_by_epis (root, section));
+	else if (options & ST_OPT_SORTALPHA)
+		return (sort_alphabetical (root));
 	else
 		return (root);
 }
