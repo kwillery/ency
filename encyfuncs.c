@@ -988,15 +988,14 @@ static void st_clear_cache()
 }
 
 /* brand new one :) */
-static int
-st_find_start (void)
+int st_find_start (FILE *input)
 {
   unsigned char c = 0, old_c = 0, old_old_c = 0, old_old_old_c = 0;
   int keep_going = 1;
   while (keep_going)
     {
-      if (feof (inp)) return 0;
-      c = getc (inp);
+      if (feof (input)) return 0;
+      c = getc (input);
       if (c == '1')
         {
           switch (old_c)
@@ -1005,21 +1004,21 @@ st_find_start (void)
               if (old_old_c == 0xd)
               {
                 keep_going = 0;
-                fseek (inp, -2, SEEK_CUR);
+                fseek (input, -2, SEEK_CUR);
  	         }
               break;
             case 0x16:
               if (old_old_c == 0)
                 {
                   keep_going = 0;
-                  fseek (inp, -1, SEEK_CUR);
+                  fseek (input, -1, SEEK_CUR);
                 }
               break;
             case '@':
               if ((old_old_c == 0x16) && (old_old_old_c == 0))
                 {
                   keep_going = 0;
-                  fseek (inp, -1, SEEK_CUR);
+                  fseek (input, -1, SEEK_CUR);
                 }
               break;
             }
@@ -1028,7 +1027,7 @@ st_find_start (void)
       old_old_c = old_c;
       old_c = c;
     }
-  return (feof(inp) ? 0 : 1);
+  return (feof(input) ? 0 : 1);
 }
 
 
@@ -1231,7 +1230,7 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
 
   do {
     if (!first_time)
-      st_find_start ();
+      st_find_start (inp);
     this_one_starts_at = ftell (inp);
 
     first_time = 0;
@@ -1508,7 +1507,7 @@ static struct ency_titles *st_find_unknown (char *search_string, int exact)
         return (st_find_in_cache (0, search_string, exact));
     if (st_open())
     {
-        while (st_find_start())
+        while (st_find_start(inp))
         {
             /* get_title_at opens the file again, so... */
             input_temp = inp;

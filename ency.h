@@ -142,4 +142,7 @@ void st_free_fmt_and_advance (struct st_ency_formatting **);
 
 void st_copy_part_entry (struct ency_titles **, struct ency_titles *);
 
+/* lower-level functions */
+int st_find_start (FILE *input);
+
 #endif
