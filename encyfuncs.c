@@ -156,6 +156,9 @@ static char st_cleantext (unsigned char c)
   case 0x94:
     return ('\"');
     break;
+  case 0x95:
+    return ('*');
+    break;
   case 0x97:
     return (':');
     break;
@@ -984,27 +987,6 @@ static void st_clear_cache()
   }
 }
 
-/* old one
-static void st_find_start (void)
-{
-  unsigned char c=0,old_c=0;
-  int keep_going = 1;
-  while (keep_going)
-    {
-      c=getc (inp);
-      switch (c)
-	{
-	case '~':
-	  keep_going = 0;
-	  break;
-	case 0x16:
-	  if (old_c == 0) keep_going = 0;
-	  break;
-	}
-      old_c = c;
-    }
-}
-*/
 /* brand new one :) */
 static int
 st_find_start (void)
@@ -1020,8 +1002,11 @@ st_find_start (void)
           switch (old_c)
             {
             case '~':
-              keep_going = 0;
-              fseek (inp, -2, SEEK_CUR);
+              if (old_old_c == 0xd)
+              {
+                keep_going = 0;
+                fseek (inp, -2, SEEK_CUR);
+ 	         }
               break;
             case 0x16:
               if (old_old_c == 0)
