@@ -34,7 +34,7 @@ extern int optind;
 
 void print_usage (void)
 {
-  printf ("findenc - Searches the Star Trek encyclopedias\nUsage: findenc [OPTION...] [search string]\n\n  --chronology\t(-c)\tSearches the chronology section\n  --episode\t(-e)\tSearches the episode guide section\n   (Default: Search the encyclopedia section)\n  --media\t(-m)\tDisplays associated media\n");
+  printf ("findenc - Searches the Star Trek encyclopedias\nUsage: findenc [OPTION...] [search string]\n\n  --chronology\t(-c)\tSearches the chronology section\n  --episode\t(-e)\tSearches the episode guide section\n   (Default: Search the encyclopedia section)\n  --media\t(-m)\tDisplays associated media\n  --unknown\t(-u)\tOpens the data file even if it's not recognised\n");
   exit(1);
 }
 
@@ -52,12 +52,13 @@ int main (int argc, char *argv[])
     {"help", 0, 0, 'h'},
     {"media", 0, 0, 'm'},
     {"episode", 0, 0, 'e'},
-    {"chronology", 0, 0 ,'c'},
+    {"chronology", 0, 0 , 'c'},
+    {"unknown", 0, 0, 'u'},
     {0, 0, 0, 0}};
 
   strcpy (search_string, "");
 
-  while ((i = getopt_long (argc, argv, "echm", long_opts, 0)) != EOF) {
+  while ((i = getopt_long (argc, argv, "echmu", long_opts, 0)) != EOF) {
     switch (i)
       {
       case 'm':
@@ -71,6 +72,9 @@ int main (int argc, char *argv[])
 	break;
       case 'h':
 	print_usage ();
+	break;
+      case 'u':
+	st_force_unknown_file(1);
 	break;
       default:
 	print_usage ();
