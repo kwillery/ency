@@ -130,7 +130,62 @@ static xmlNode *get_file_info (int number)
 
 void load_file_info()
 {
-	xmlroot = xmlParseFile ("encyfiles.xml");
+	char *temp=NULL;
+	char *home=NULL;
+	char *fn=NULL;
+	int i;
+
+	char *home_locations[] =
+	{
+		"/.ency/encyfiles.xml",
+		"/.encyfiles.xml",
+		NULL
+	};
+
+	char *locations[] = 
+	{
+		"encyfiles.xml",
+		"/etc/encyfiles.xml",
+		"/usr/local/etc/encyfiles.xml",
+		"/usr/local/etc/encyfiles.xml",
+		"/usr/share/ency/encyfiles.xml",
+		"/usr/lib/ency/encyfiles.xml",
+		"/usr/local/share/ency/encyfiles.xml",
+		"/usr/local/lib/ency/encyfiles.xml",
+		NULL
+	};
+
+	if ((fn = getenv ("ENCY_XML_FILENAME")))
+	{
+		if ((xmlroot = xmlParseFile (fn)))
+			return;
+	}
+
+	home = getenv ("HOME");
+	if (home)
+		for (i=0;home_locations[i];i++)
+		{
+			fn = home_locations[i];
+			temp = malloc (strlen (fn) + strlen (home) + 1);
+			strcpy (temp, home);
+			strcat (temp, fn);
+			if ((xmlroot = xmlParseFile (temp)))
+			{
+				free (temp);
+				return;
+			}
+			free (temp);
+		}
+
+	for (i=0;locations[i];i++)
+	{
+		if ((xmlroot = xmlParseFile (locations[i])))
+			return;
+	}
+
+	fprintf (stderr, "Can\'t find the encyfiles.xml file!\n");
+	fprintf (stderr, "Dying...\n");
+	exit (1);
 }
 
 static char *get_text_fingerprint (xmlNode *file_data)
