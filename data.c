@@ -21,6 +21,14 @@
 #include "data.h"
 #include "scan.h"
 
+static char *strdup_if_valid (char *t)
+{
+	if (t)
+		return strdup (t);
+	else
+		return NULL;
+}
+
 struct st_data_filenode *files=NULL;
 
 struct st_data_filenode *get_filenode (int file_type)
@@ -241,15 +249,15 @@ int load_xmlfile_info (char *filename)
 			while (dnode)
 			{
 				if (!strcmp (dnode->name, "name"))
-					new_node->name = strdup (xmlNodeGetContent (dnode));
+					new_node->name = strdup_if_valid (xmlNodeGetContent (dnode));
 				else if (!strcmp (dnode->name, "mainfile"))
-					new_node->mainfile = strdup (xmlNodeGetContent (dnode));
+					new_node->mainfile = strdup_if_valid (xmlNodeGetContent (dnode));
 				else if (!strcmp (dnode->name, "datadir"))
-					new_node->datadir = strdup (xmlNodeGetContent (dnode));
+					new_node->datadir = strdup_if_valid (xmlNodeGetContent (dnode));
 				else if (!strcmp (dnode->name, "photodir"))
-					new_node->photodir = strdup (xmlNodeGetContent (dnode));
+					new_node->photodir = strdup_if_valid (xmlNodeGetContent (dnode));
 				else if (!strcmp (dnode->name, "videodir"))
-					new_node->videodir = strdup (xmlNodeGetContent (dnode));
+					new_node->videodir = strdup_if_valid (xmlNodeGetContent (dnode));
 				else if (!strcmp (dnode->name, "videolist") || !strcmp (dnode->name, "ptable") || !strcmp (dnode->name, "pcaption") || !strcmp (dnode->name, "vtable") || !strcmp (dnode->name, "vcaption"))
 				{
 					curr_parts = new_part_from_xmlnode (dnode);
@@ -260,7 +268,7 @@ int load_xmlfile_info (char *filename)
 					last_parts = curr_parts;
 				}
 				else if (!strcmp (dnode->name, "fingerprint"))
-					new_node->fingerprint = strdup (xmlNodeGetContent (dnode));
+					new_node->fingerprint = strdup_if_valid (xmlNodeGetContent (dnode));
 				else if (!strcmp (dnode->name, "append_char"))
 					new_node->append_char = 1;
 				else if (!strcmp (dnode->name, "section"))
@@ -269,6 +277,8 @@ int load_xmlfile_info (char *filename)
 					while (snode)
 					{
 						curr_parts = new_part_from_xmlnode (snode);
+						if (!curr_parts)
+							break;
 						if (last_parts)
 							last_parts->next = curr_parts;
 						else
