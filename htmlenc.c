@@ -108,6 +108,43 @@ int printoff (struct ency_titles *stuff, FILE * output)
 	return (0);
 }
 
+void print_one_media (struct st_photo media, char *base_path, media_type mtype, char *stype, FILE *out)
+{
+	char *temp_fn;
+	if (strlen (media.file))
+	{
+		temp_fn = st_format_filename (media.file, base_path, mtype);
+		fprintf (out, "<li><a href=\"%s\">%s</a> (%s)</li>\n", temp_fn, media.caption, stype ? stype : "unknown");
+		free (temp_fn);
+	}
+}
+
+void print_media(struct st_media *media, char *base_path, FILE *out)
+{
+	int i;
+
+	if (!media)
+		return;
+
+	fprintf (out, "<b>Associated media</b>\n<ul>");
+
+	for (i = 0; i < 6; i++)
+		print_one_media (media->photos[i], base_path, picture, "picture", out);
+
+	print_one_media (media->video, base_path, video, "video", out);
+
+	print_one_media (media->swf, base_path, swf, "flash", out);
+
+	print_one_media (media->audio, base_path, audio, "audio", out);
+
+	if (media->resource)
+		fprintf (out, "<li>There is an associated resource: %s (DXR)</li>\n", media->resource);
+
+	fprintf (out, "</ul>");
+
+	free (media);
+}
+
 void print_usage (void)
 {
 	printf (" htmlenc - Searches the Star Trek encyclopedias\nUsage: htmlenc [OPTION...] [search string]\n\n  --chronology\t(-c)\tSearches the chronology section\n  --episode\t(-e)\tSearches the episode guide section\n   (Default: Search the encyclopedia section)\n  --media\t(-m)\tDisplays associated media\n  --fulltext\t(-f)\tPerform a fulltext search\n  --ultraclean\t(-u)\tRemove accented characters\n  --save FILE\t(-s)\tSaves to a given file\n");
@@ -117,7 +154,6 @@ void print_usage (void)
 int main (int argc, char *argv[])
 {
 	char search_string[256]="";
-	char *temp_fn = NULL;
 	struct ency_titles *thingy = NULL, *full_body = NULL;
 	struct st_media *media = NULL;
 	char base_path[] = "/cdrom";	/* where the media dirs etc. are */
@@ -178,6 +214,7 @@ int main (int argc, char *argv[])
 	if (use_media)
 		st_load_media ();
 
+	/* If there is an output file, open it */
 	if (filename)
 		if (!(out = fopen (filename, "w")))
 		{
@@ -185,6 +222,7 @@ int main (int argc, char *argv[])
 			exit (1);
 		}
 
+	/* Get a string to search for, either from the command line or read from the user */
 	if (argc > optind)
 	{
 		strcpy (search_string, argv[optind]);
@@ -200,16 +238,18 @@ int main (int argc, char *argv[])
 		scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
 	}
 
+	/* Do the search */
 	thingy = st_find (search_string, section, options);
 
-	i = 0;
+	/* Header */
 	fprintf (out, "<html>\n");
 	fprintf (out, "<head><title>Search results for: %s</title></head>", search_string);
 	fprintf (out, "<h1>Star Trek %s</h1>\n", st_fileinfo_get_name (ST_FILE_CURR));
 	fprintf (out, "You searched for <b>%s</b>%s.<br>\n", search_string, (options & ST_OPT_FT) ? " in full-text mode" : "");
 	fprintf (out, "<hr><b>Found:</b><br>\n");
 
-	full_body = thingy;
+	/* Go through the list once, to have a TOC of sorts at the top of the page */
+	full_body = thingy; /* N.B. full_body is a temporary variable here, not like later */
 	while (full_body)
 	{
 		if (ultraclean)
@@ -221,13 +261,16 @@ int main (int argc, char *argv[])
 		full_body = full_body->next;
 	}
 
+	/* Print the actual entries */
 	count = 0;
 	if ((thingy != NULL) && (thingy->name != NULL))
 	{
 		do
 		{
+			/* Get the text, formatting, etc. */
 			full_body = st_get_title_at (thingy->filepos);
 
+			/* Remove accented characters etc. if we have to */
 			if (ultraclean)
 			{
 				st_ultraclean_string (full_body->name);
@@ -235,61 +278,38 @@ int main (int argc, char *argv[])
 				st_ultraclean_string (full_body->text);
 			}
 
+			/* Anchor for above TOC-like links */
 			fprintf (out, "<hr>\n<a name=\"%d\">\n", count++);
+
+			/* Print the entry */
 			printoff (full_body, out);
 
 			if (use_media)
-				media = st_get_media (thingy->name);
-
-			if (media)
 			{
-				fprintf (out, "<b>Associated media</b>\n<ul>");
-				for (i = 0; i < 6; i++)
-					if (strlen (media->photos[i].file))
-					{	/* if there is photos #i */
-						temp_fn = st_format_filename (media->photos[i].file, base_path, picture);
-						fprintf (out, "<li><a href=\"%s\">%s</a> (picture)</li>\n", temp_fn, media->photos[i].caption);
-						free (temp_fn);
-					}
-				if (strlen (media->video.file))
-				{
-					temp_fn = st_format_filename (media->video.file, base_path, video);
-					fprintf (out, "<li><a href=\"%s\">%s</a> (video)</li>\n", temp_fn, media->video.caption);
-					free (temp_fn);
-				}
-				if (strlen (media->swf.file))
-				{
-					temp_fn = st_format_filename (media->swf.file, base_path, swf);
-					fprintf (out, "<li><a href=\"%s\">%s</a> (flash)</li>\n", temp_fn, media->swf.caption);
-					free (temp_fn);
-				}
-				if (strlen (media->audio.file))
-				{
-					temp_fn = st_format_filename (media->audio.file, base_path, audio);
-					fprintf (out, "<li><a href=\"%s\">%s</a> (audio)</li>\n", temp_fn, media->audio.caption);
-					free (temp_fn);
-				}
-				free (media);
-				media = NULL;
-
-				fprintf (out, "</ul>");
+				media = st_get_media (thingy->name);
+				print_media (media, base_path, out);
 			}
 
-			st_free_entry_and_advance (&thingy);
 			st_free_entry (full_body);
+			st_free_entry_and_advance (&thingy);
 		}
 		while (thingy != NULL);
 	}
 	else
 		fprintf (out, "No matches<br>\n");
 
+	/* Footer */
 	fprintf (out, "<hr>\nThe Star Trek ency reader: ");
 	fprintf (out, "<a href=\"http://users.bigpond.com/mibus/ency/\">http://users.bigpond.com/mibus/ency/</a><br>\n");
 	fprintf (out, "Queries, comments, and flames, to <a href=\"mailto:mibus@bigpond.com\">Robert Mibus &lt;mibus@bigpond.com&gt;</a>");
 
 	fprintf (out, "</html>\n");
 
+	/* Clean up and go home! :-) */
 	st_finish ();
 
 	return (0);
 }
+
+
+
