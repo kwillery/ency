@@ -2605,8 +2605,25 @@ int st_get_picture(char *name, char *file, int dfile_type, long width, long heig
 
 int st_get_thumbnail(char *name, char *file)
 {
+	int w=60, h=40;
+	struct st_block *block=NULL;
+
 	if (!name || !file)
 		return 1;
 
-	return st_get_picture (name, file, ST_DFILE_PICON, 60, 40);
+	block = get_block_by_name (st_file_type, ST_DFILE_PICON, name, ST_DATA_OPT_PREFIX);
+	if (!block)
+		return 2;
+
+	/* Some thumbnails aren't exactly 60x40, luckily mostly uncompressed ones */
+	if (block->size == 59*40)
+		w = 59;
+	else if (block->size == 58*40)
+		w = 58;
+	else if (block->size == 60*39)
+		h = 39;
+	else if (block->size == 60*38)
+		h = 38;
+
+	return st_get_picture (name, file, ST_DFILE_PICON, w, h);
 }
