@@ -23,7 +23,6 @@
 /*****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
-#include <malloc.h>
 #include <ctype.h>
 #include <string.h>
 #include <errno.h>
@@ -275,6 +274,9 @@ char *st_lcase_in_place (char *mcase)
 {
 	char *t;
 
+	if (mcase == NULL)
+		return NULL;
+
 	t = mcase;
 
 	while (*t)
@@ -293,7 +295,7 @@ void st_unload_data(void)
 	st_data_clear();
 }
 
-static int isblank (char c)
+static int e_isblank (char c)
 {
 	switch (c)
 	{
@@ -1105,14 +1107,14 @@ static int check_match (char *search_string, char *title, int options)
 
 /* Read the formatting info from 'inp' that lies
  * at the start of an entry.*/
-static struct st_ency_formatting *st_return_fmt (FILE *inp)
+struct st_ency_formatting *st_return_fmt (FILE *inp)
 {
 	struct st_ency_formatting *root_fmt = NULL, *last_fmt = NULL, *curr_fmt = NULL;
 	char c = 0;
 	int i = 0;
 	char fmt[8]="";
 
-	while (c != '@')
+	while (c != '@' && c != 0x0d)
 	{
 		curr_fmt = (struct st_ency_formatting *) malloc (sizeof (struct st_ency_formatting));
 		curr_fmt->next = NULL;
@@ -1126,7 +1128,7 @@ static struct st_ency_formatting *st_return_fmt (FILE *inp)
 			exit (1);
 		}
 
-		fscanf (inp,"%d : [ %d , %[#buiBUI] ] ",&curr_fmt->firstword,&curr_fmt->words,fmt);
+		fscanf (inp,"%d : [ %d , %[#buiBUI] ]",&curr_fmt->firstword,&curr_fmt->words,fmt);
 
 		c=getc(inp);
 
@@ -1169,7 +1171,7 @@ static struct st_ency_formatting *st_return_fmt (FILE *inp)
  * so we run over it to get the length first. Then
  * we fseek() back to the start, and finally read
  * the text in. */
-static char *st_return_text (FILE *inp)
+char *st_return_text (FILE *inp)
 {
 	long text_starts_at = 0;
 	int text_size = 1;
@@ -1998,7 +2000,7 @@ static struct ency_titles *st_find_fulltext (char *search_string, int section, i
 		/* get the next word */
 		sscanf (search_string, "%[a-zA-Z0-9.\"\'()-]", single_word);
 		search_string += strlen (single_word);
-		while (isblank (*search_string))
+		while (e_isblank (*search_string))
 			search_string++;
 		/* do the search (find_words() appends BTW) */
 		scores = find_words (scores, single_word, ftlist);
@@ -2360,7 +2362,6 @@ char *st_format_filename (char *fnbasen, char *base_path, media_type media)
 		case video:
 			strcat (filename, dir);
 			break;
-		default:
 		}
 
 		strcat (filename, "/");
@@ -2388,7 +2389,6 @@ char *st_format_filename (char *fnbasen, char *base_path, media_type media)
 		case video:
 			strcat (filename, "q.mov");
 			break;
-		default:
 		}
 	}
 	return (filename);
