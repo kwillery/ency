@@ -37,19 +37,21 @@ long old_ftell;
 
 int guess_section (char *title, char *text, int last_section)
 {
-	char *episode_starts[5] =
+	char *episode_starts[7] =
 	{
 		"Original Series",
 		"Next Generation",
 		"Deep Space Nine",
 		"Voyager episode",
-		"No episodes"
+		"No episodes",
+		"There are no episodes",
+		"There were no episodes"
 	};
 	int i;
 
 	/* Episodes */
 	if ((*title == '\"') || (strlen (title) == 1))
-		for (i = 0; i < 5; i++)
+		for (i = 0; i < 7; i++)
 		{
 			if (!strncmp (text, episode_starts[i], strlen (episode_starts[i])))
 				return 1;
@@ -74,7 +76,7 @@ int guess_section (char *title, char *text, int last_section)
 int main (int argc, char *argv[])
 {
 	char *sections[3] =
-	{"Encylopedia", "Episodes", "Chronology"};
+	{"Encyclopedia", "Episodes", "Chronology"};
 	int counts[3] =
 	{0, 0, 0};
 	long returned = 0;
@@ -127,8 +129,7 @@ int main (int argc, char *argv[])
 			}
 			last_start = tolower (*entry->title);
 #ifndef QUIET
-			printf ("found @ 0x%lx:  \t", ftell (inp));
-			printf ("%s\n", entry->title);
+			printf ("found @ 0x%lx:  \t%s\n", ftell (inp), entry->title);
 #endif
 			counts[last_section]++;
 			st_free_entry (entry);
