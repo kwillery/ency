@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/* Mibus's Ency 98 Reader: Reads the Star Trek Encyclopedia (1998 version)   */
+/* star trek ency reader: Reads the Star Trek Encyclopedia (1998 version)    */
 /* Also reads the various Omnipedias & Episode guides                        */
 /* Copyright (C) 1998 Robert Mibus                                           */
 /*                                                                           */
@@ -69,7 +69,7 @@ static const long int st_table_lastone[] =
 {26, 0, 26, 0, 26, 0, 2, 22, 0, 15, 0};
 
 static const long int st_caption_lastone[] =
-{5, 0, 4, 0, 4, 0, 5, 0, 5, 0};
+{5, 0, 4, 0, 4, 0, 5, 0, 4, 0};
 
 static long int curr_starts_at, curr_lastone, curr;
 
@@ -413,29 +413,22 @@ char *st_autofind (int st_file_version, char *base_dir)
 
 static int st_find_start (void)
 {
-  int c = 0;
-  int oldc = 0;
-
-  start_find_start:
-
-  while (c != '~') {
-    c = getc (inp);
-    if ((oldc == 0x16) && (c != 0x7E) && (c != 0x2E) && (c != 0x0D) && (c != 0x20) && (c != 0x5B) && (c)) {
-      ungetc (c, inp);
-      return (0);
+  unsigned char c=0,old_c=0;
+  int keep_going = 1;
+  while (keep_going)
+    {
+      c=getc (inp);
+      switch (c)
+	{
+	case '~':
+	  keep_going = 0;
+	  break;
+	case 0x16:
+	  if (old_c == 0) keep_going = 0;
+	  break;
+	}
+      old_c = c;
     }
-    oldc = c;
-  }
-
-  c = getc (inp);
-
-  if ((c == 0x0D) || (c == 0x20) || (c == 0x52)) {
-    c = ungetc (c, inp);
-    goto start_find_start;
-  } else {
-    c = ungetc (c, inp);
-    return (0);
-  }
 }
 
 static struct st_ency_formatting *st_return_fmt (void)
@@ -455,7 +448,6 @@ static struct st_ency_formatting *st_return_fmt (void)
 	printf ("Memory allocation failed\n");
 	exit (1);
       }
-      memset (curr_fmt, 0, sizeof (struct st_ency_formatting));
     }
     if (first_time)
       root_fmt = curr_fmt;
@@ -547,9 +539,10 @@ static char *st_return_text (void)
 
   temp_text = malloc (text_size + 1);
   fseek (inp, text_starts_at, SEEK_SET);
-  
+  fread (temp_text, 1, text_size, inp);
+ 
   for (i=0;i<text_size;i++)
-    temp_text[i] = st_cleantext(getc(inp));
+    temp_text[i] = st_cleantext(temp_text[i]);
   temp_text[i] = 0;
 
   return (temp_text);
@@ -872,7 +865,7 @@ struct st_table *st_get_table (void)
   int i = 0;
   struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
   int c = 0, text_size = 0;
-  char *temp_text = NULL;
+  char *temp_text = NULL, *str_text = NULL;
 
   upto = 0;
 
@@ -910,13 +903,17 @@ struct st_table *st_get_table (void)
 	    temp_text = malloc (8);
 	    text_size = 0;
 
-	    while ((c = getc (inp)) != '\"') {
-	      if (temp_text == NULL) {
-		return (NULL);
+	    fread (temp_text, 1, 6, inp);
+	    temp_text[6] = 0;
+	    fgetc(inp);fgetc(inp);
+	    if (strstr (temp_text, "\""))
+	      {
+		fseek (inp, -7, SEEK_CUR);
+		while ((c = getc (inp)) != '\"');
+		str_text = (strstr (temp_text, "\""));
+		str_text[0] = 0;
 	      }
-	      temp_text[text_size++] = tolower (st_cleantext (c));
-	    }
-	    temp_text[text_size] = 0;
+
 	    curr_tbl->fnbase = temp_text;
 
 /* TODO: make this 70 autodetected ala st_return text */
@@ -928,9 +925,6 @@ struct st_table *st_get_table (void)
 	      if (c == 0xA5) {
 		getc (inp);
 	      } else {
-		if (temp_text == NULL) {
-		  return (NULL);
-		}
 		temp_text[text_size++] = st_cleantext (c);
 	      }
 	    }
@@ -979,10 +973,9 @@ struct st_caption *st_get_captions (void)
       if (!st_open ()) {
 	return (NULL);
       } else {
-
 	for (i = 0; i < st_caption_lastone[upto]; i++) {
-	  while ((c = getc (inp)) != ']') {	/* main loop */
-
+	  c = getc(inp);
+	  while (c != ']') {	/* main loop */
 	    curr_cpt = (struct st_caption *) malloc (sizeof (struct
 							     st_caption));
 
@@ -1005,16 +998,14 @@ struct st_caption *st_get_captions (void)
 	      c = ungetc (c, inp);
 	    c = 0;
 
-	    temp_text = malloc (9);
+	    temp_text = malloc (8);
 	    text_size = 0;
 
-	    while (((c = getc (inp)) != ':') && (c != '\"')) {
-	      if (temp_text == NULL) {
-		return (NULL);
-	      }
-	      temp_text[text_size++] = tolower (st_cleantext (c));
-	    }
-	    temp_text[text_size] = 0;
+	    fread (temp_text, 1, 8, inp);
+	    temp_text[7] = 0;
+
+	    c = getc(inp);
+
 	    curr_cpt->fnbasen = temp_text;
 
 	    temp_text = malloc (70);
@@ -1022,14 +1013,12 @@ struct st_caption *st_get_captions (void)
 
 	    while ((c = getc (inp)) != '\"');
 	    while ((c = getc (inp)) != '\"') {
-	      if (temp_text == NULL) {
-		return (NULL);
-	      }
 	      temp_text[text_size++] = st_cleantext (c);
 	    }
 	    temp_text[text_size] = 0;
 
 	    curr_cpt->caption = temp_text;
+	    c=getc(inp);
 
 	    curr_cpt->next = NULL;
 	    if (last_cpt)
