@@ -47,21 +47,6 @@ If you use the eg_tng.dxr or eg_ds9.dxr (episode guide) files, you will need to 
 or:
   htmlenc -e yesterday
 
---XML--
-From ency 0.8.0 on, ency uses an xml file to store magic numbers and some other file-related stuff. By default it goes in /etc, though ency will also look in a few other places, most notably ~/.encyfiles.xml. ency will also look at the file pointed to by the ENCY_XML_FILENAME environment variable.
-
-Unknown files will be supported by adding entries to encyfiles.xml. Use 'scanenc -x encyfiles.xml datafile.cxt' (NB the encyfiles.xml does not mean the one you already have, it will create this file.) If you would then email me the resulting xml file, I would appreciate it alot. To use it yourself, add this to the start of the file:
-
--SNIP-
-<?xml version="1.0"?>
-<files>
--SNIP-
-
-And this to the end:
--SNIP-
-</files>
--SNIP-
-
 --REMEMBER--
 BUT MOST IMPORTANTLY:
 dont forget - if you can't get it to work, dont hesitate to mail me.

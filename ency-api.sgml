@@ -22,7 +22,6 @@ The 'ency' library currently supports five encyclopedias
 <item>The Star Trek Encyclopedia v3.0</item>
 </itemize>
 
-<p><em/Note that libency currently needs libxml 1.8.x to compile./</p>
 </sect>
 
 
@@ -233,27 +232,27 @@ This function locates a data file in a directory.
 <tt/filetype/ is a unique number identifying an encyclopedia to libency; N.B. that these numbers can change. Usually you just loop for each possible encyclopedia (see <tt/<ref id="st_count_filetypes" name="st_count_filetypes()">/), or just one picked by a user by it's name (see <tt/<ref id="st_fileinfo_get_name" name="st_fileinfo_get_name()">/).
 <tt/directory/ is the base directory to look in for the data file. If one is found, the full filename is returned, else <tt/NULL/ is returned. <ref id="st_set_filename" name="st_set_filename"> can then be used with the string.
 
-<sect1>xml files<label id="xml files">
+<sect1>rc files<label id="rc files">
 <p>
 <verb>
-int st_load_xml_file (char *);
+int st_load_rc_file (char *);
 void st_unload_data(void);
 </verb></p>
 <p>
-<tt/st_load_xml_file()/ loads a specified XML file for use by libency. Any encyclopedia definitions in it will be added to any lists already loaded, with preference given to file(s) loaded earlier. <tt/st_unload_data()/ clears this internal list. (I recommend <em/*against*/ giving it files it won't understand :-). By default, libency will try to load encyfiles.xml from these locations:
+<tt/st_load_rc_file()/ loads a specified rc file for use by libency. Any encyclopedia definitions in it will be added to any lists already loaded, with preference given to file(s) loaded earlier. <tt/st_unload_data()/ clears this internal list. (I recommend <em/*against*/ giving it files it won't understand :-). By default, libency will try to load encyfiles.rc from these locations:
 <itemize>
-<item>Where the environment variable <tt/ENCY_XML_FILENAME/ points</item>
-<item><tt>$HOME/.ency/encyfiles.xml</tt></item>
-<item><tt>$HOME/.encyfiles.xml</tt></item>
-<item><tt>./encyfiles.xml</tt></item>
-<item><tt>/etc/encyfiles.xml</tt></item>
-<item><tt>/usr/local/etc/encyfiles.xml</tt></item>
-<item><tt>/usr/share/ency/encyfiles.xml</tt></item>
-<item><tt>/usr/local/share/ency/encyfiles.xml</tt></item>
+<item>Where the environment variable <tt/ENCY_RC_FILENAME/ points</item>
+<item><tt>$HOME/.ency/encyfiles.rc</tt></item>
+<item><tt>$HOME/.encyfiles.rc</tt></item>
+<item><tt>./encyfiles.rc</tt></item>
+<item><tt>/etc/encyfiles.rc</tt></item>
+<item><tt>/usr/local/etc/encyfiles.rc</tt></item>
+<item><tt>/usr/share/ency/encyfiles.rc</tt></item>
+<item><tt>/usr/local/share/ency/encyfiles.rc</tt></item>
 </itemize>
 </p>
 <p>
-<em>Note that <tt/st_load_xml_file()/ needs to be run before <tt/st_init()/, unless of course you run <tt/st_unload_data()/ first.</em>
+<em>Note that <tt/st_load_rc_file()/ needs to be run before <tt/st_init()/ if you want a custom rc file, unless of course you run <tt/st_unload_data()/ first.</em>
 </sect1>
 
 <sect1>st_find<label id="st_find">
@@ -357,13 +356,11 @@ int st_free_entry_and_advance (struct ency_titles **);
 
 <sect>Example Implementation
 <p>
-<em/libency needs libxml 1.8.x to compile./
-<p>
 Compile the following program as such:
-  <tt/gcc -o test test.c libency.a -lxml/
+  <tt/gcc -o test test.c libency.a/
 (assuming you have the ency source in this directory, and have called this program 'test.c')
 or (more likely)
-  <tt/gcc -o test test.c -lency -lxml/
+  <tt/gcc -o test test.c -lency/
 (assuming you have libency.a in /usr/lib, ency.h in /usr/include, and have named this program test.c, yada yada yada - your options may vary.)
 <p>
 <verb>
