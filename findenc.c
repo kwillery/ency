@@ -77,18 +77,20 @@ int main (int argc, char *argv[])
       }
   }
 
+  /* run any ency init stuff */
+  if (!st_init ())
+  {
+    printf ("Error opening data file.\n");
+    exit (1);
+  }
+
 /* get the search string, one way or another */
   if (argc > optind) {
-    if (!strcmp (argv[optind],"--help"))
-      print_usage ();
     strcpy (search_string, argv[optind]);
   } else {
     printf ("Enter search string :");
     scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
   }
-
-  /* run any ency init stuff */
-  st_init ();
 
   /* tell ency to load the media lookup tables */
   if (use_media)
