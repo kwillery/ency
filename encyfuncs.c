@@ -2289,7 +2289,7 @@ struct st_media *st_get_media (char *search_string)
 			}
 			if (ret_tbl->resource)
 				strcpy(media->resource, ret_tbl->resource);
-			if (strlen (media->video.file) || strlen (media->audio.file) || media->resource)
+			if (strlen (media->video.file) || strlen (media->audio.file) || strlen(media->resource))
 				media_found = 1;
 		}
 
