@@ -45,6 +45,7 @@
 #define ST_OPT_RETURN_BODY 2
 #define ST_OPT_MATCH_SUBSTRING 4
 #define ST_OPT_NO_CACHE 8
+#define ST_OPT_NO_FMT 16
 
 /* enums/structs */
 typedef enum

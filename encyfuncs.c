@@ -1396,10 +1396,13 @@ static struct ency_titles *curr_find_list (int section, char *search_string, int
 					   it this way saves time in the
 					   likely chance that the entry is
 					   the wrong one */
-					temp_pos = ftell (inp);
-					fseek (inp, this_one_starts_at, SEEK_SET);
-					text_fmt = st_return_fmt();
-					fseek (inp, temp_pos, SEEK_SET);
+					if (!(options & ST_OPT_NO_FMT))
+					{
+						temp_pos = ftell (inp);
+						fseek (inp, this_one_starts_at, SEEK_SET);
+						text_fmt = st_return_fmt();
+						fseek (inp, temp_pos, SEEK_SET);
+					}
 				}
 					
 
