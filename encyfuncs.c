@@ -1156,6 +1156,7 @@ inline int st_find_start (FILE * input)
 				}
 				break;
 			case 0xE2:
+				if (old_old_c)
 				{
 					keep_going = 0;
 					fseek (input, -1, SEEK_CUR);
