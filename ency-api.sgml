@@ -193,22 +193,22 @@ int st_finish (void);
 <tt/st_finish/ should be the last <tt/ency/ function run. It deinitialises the library, and free's memory used by it.
 
 
-<sect1>st_set_filename<label id="st_set_filename">
+<sect1>st_open_ency<label id="st_open_ency">
 <p>
 <verb>
-int st_set_filename (char *filename);
+int st_open_ency (char *directory);
 </verb>
-This function sets the filename which is to be opened.
-Often used in conjunction with <tt/<ref id="st_autofind" name="st_autofind">/.
+This function sets the directory for the encyclopedia which is to be opened.
+Often used in conjunction with <tt/<ref id="st_is_ency" name="st_is_ency">/.
 <p>
-If the filename is not set, ency will check for an environment variable called <tt/ENCY_FILENAME/. Failing that, ency will attempt to look for known files itself.
+If the filename is not set, ency will check for an environment variable called <tt/ENCY_DIR/. Failing that, ency will attempt to look for known files itself.
 
-<sect1>st_get_filename<label id="st_get_filename">
+<sect1>st_get_directory<label id="st_get_directory">
 <p>
 <verb>
-char *st_get_filename (void);
+char *st_get_directory (void);
 </verb>
-Returns the currently stored filename.
+Returns the currently stored directory name.
 <p><em/NOTE/: Do <em/not/ free the returned pointer.
 
 <sect1>st_count_filetypes<label id="st_count_filetypes">
@@ -222,15 +222,15 @@ char *st_fileinfo_get_name (int filetype);
 This returns a descriptive string for a given encyclopedia's name.
 Use either <tt/0/ to <tt/<ref id="st_count_filetypes" name="st_count_filetypes()">/-1, or <tt/<ref id="ST_FILE_*" name="ST_FILE_CURR">/.
 
-<sect1>st_autofind<label id="st_autofind">
+<sect1>st_is_ency<label id="st_is_ency">
 <p>
 <verb>
-char *st_autofind (int filetype, char *directory);
+int st_is_ency (int filetype, char *directory);
 </verb>
-This function locates a data file in a directory.
+This function determines whether a certain encyclopedia is in a directory.
 <p>
 <tt/filetype/ is a unique number identifying an encyclopedia to libency; N.B. that these numbers can change. Usually you just loop for each possible encyclopedia (see <tt/<ref id="st_count_filetypes" name="st_count_filetypes()">/), or just one picked by a user by it's name (see <tt/<ref id="st_fileinfo_get_name" name="st_fileinfo_get_name()">/).
-<tt/directory/ is the base directory to look in for the data file. If one is found, the full filename is returned, else <tt/NULL/ is returned. <ref id="st_set_filename" name="st_set_filename"> can then be used with the string.
+<tt/directory/ is the base directory to look in for the data file. If one is found, 1 is returned, else 0 is returned. If '1' is returned, <ref id="st_open_ency" name="st_open_ency"> can then be used with the directory name to open the encyclopedia.
 
 <sect1>rc files<label id="rc files">
 <p>
@@ -399,14 +399,6 @@ int main (int argc, char *argv[])
 
   /* tell ency to load the media lookup tables */
   st_load_media ();
-
-  /* if you want to manually set the filename
-   *   st_set_filename ("/dose/trek/Reference/eg_tng.dxr");
-   * if you want to look for an ency version in a directory,
-   *   st_autofind (ST_FILE_ENCY98, "/dose/trek/Reference");
-   * NOTE: st_autofind() only checks a few hard-coded directories,
-   * it is *not* a full search.
-   * else it defaults to "./Data.cxt" */
 
     thingy = st_find (search_string, ST_SECT_ENCY, options);
 
