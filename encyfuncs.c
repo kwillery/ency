@@ -126,19 +126,19 @@ char st_cleantext (unsigned char c)
 	{
 	case 13:
 		return ('\n');
-	case 0x88:
-		return ('a');
-	case 0x8E:
-		return ('e');
-	case 0x8F:
-		return ('e');
-	case 0x92:
+	case 0x88: /* 'a' '\' */
+		return 0xE0;
+	case 0x8E: /* 'e' '/' */
+		return 0xE9;
+	case 0x8F: /* 'e' '\' */
+		return 0xE8;
+	case 0x92: /* apostrophe */
 		return ('\'');
-	case 0x93:
+	case 0x93: /* open double-quote */
 		return ('\"');
-	case 0x94:
+	case 0x94: /* close double-quote */
 		return ('\"');
-	case 0x95:
+	case 0x95: /* bullet point */
 		return ('*');
 	case 0x96:
 		return ('-');
@@ -150,20 +150,31 @@ char st_cleantext (unsigned char c)
 		return ('-');
 	case 0xD1:
 		return ('-');
-	case 0xD2:
+	case 0xD2: /* open double-quote */
 		return ('\"');
-	case 0xD3:
+	case 0xD3: /* closed double-quote */
 		return ('\"');
 	case 0xD4:
 		return ('\'');
 	case 0xD5:
 		return ('\'');
-	case 0xE0:
-		return ('a');
-	case 0xE9:
-		return ('e');
 	default:
 		return (c);
+	}
+}
+
+static unsigned char st_ultra_cleanchar (unsigned char c)
+{
+	switch (c)
+	{
+	case 0xE0: /* cleaned 'a' '\' */
+		return ('a');
+	case 0xE8: /* cleaned 'e' '\' */
+		return ('e');
+	case 0xE9: /* cleaned 'e' '/' */
+		return ('e');
+	default:
+		return c;
 	}
 }
 
@@ -178,8 +189,11 @@ unsigned char *st_cleanstring (unsigned char *string)
 	/* Find out if we need to length the string */
 	s = string;
 	while (*s)
-		if (*s++ == 0x85)
+	{
+		if (*s == 0x85 || *s == 0xC9)
 			append+=2;
+		s++;
+	}
 
 	s = string;
 	if (append) /* We need to lengthen then clean */
@@ -187,7 +201,7 @@ unsigned char *st_cleanstring (unsigned char *string)
 		t = new_string = malloc (strlen(s) + append + 1);
 		while (*s)
 		{
-			if (*s == 0x85) /* 0x85 is '...' */
+			if (*s == 0x85 || *s == 0xC9) /* 0x85 and 0xC9 are both '...' */
 			{
 				strcpy (t, "...");
 				t += 3;
@@ -206,6 +220,18 @@ unsigned char *st_cleanstring (unsigned char *string)
 	}
 
 	return NULL;
+}
+
+void st_ultraclean_string (unsigned char *string)
+{
+	if (!string)
+		return;
+	/* remove accented characters from their input */
+	while (*string)
+	{
+		*string = st_ultra_cleanchar(*string);
+		string++;
+	}
 }
 
 char *st_lcase (char *mcase)
@@ -1185,6 +1211,8 @@ static int check_match (char *search_string, char *title, int options)
 {
 	int found = 0;
 
+	st_ultraclean_string (title = strdup(title));
+
 	if (!(options & ST_OPT_CASE_SENSITIVE))
 	{
 		title = st_lcase (title);
@@ -1200,11 +1228,10 @@ static int check_match (char *search_string, char *title, int options)
 		if (!strcmp (title, search_string))
 			found = 1;
 
+	free (title); /* the strdup()'ed version */
+
 	if (!(options & ST_OPT_CASE_SENSITIVE))
-	{
-		free (title);
 		free (search_string);
-	}
 
 	return found;
 }
@@ -2248,6 +2275,11 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 
 	if ((section == ST_SECT_EPIS) && (options & ST_OPT_SORTEPIS))
 		section = ST_SECT_EPIS_SORTED;
+
+	if (!search_string)
+		return NULL;
+
+	st_ultraclean_string (search_string);
 
 	switch (section)
 	{

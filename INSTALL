@@ -19,6 +19,10 @@ If you want a list of what photos are related, use "-m", eg:
   findenc -m kirk
 (it assumes your cd is mounted at '/cdrom' but its not important)
 
+If you use '-ec', the episode list will be sorted by series and episode #.
+
+Passing '-u' to either findenc or htmlenc will remove accented characters from the output (e.g. for piping to 'less').
+
 That's about it.
 
 You need to either be in a directory with a data file (see below) or

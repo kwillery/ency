@@ -32,7 +32,7 @@ extern int optind;
 
 void print_usage (void)
 {
-	printf ("findenc - Searches the Star Trek encyclopedias\nUsage: findenc [OPTION...] [search string]\n\n  --chronology\t(-c)\tSearches the chronology section\n  --episode\t(-e)\tSearches the episode guide section\n   (Default: Search the encyclopedia section)\n  --media\t(-m)\tDisplays associated media\n  --fulltext\t(-f)\tPerform a fulltext search\n");
+	printf ("findenc - Searches the Star Trek encyclopedias\nUsage: findenc [OPTION...] [search string]\n\n  --chronology\t(-c)\tSearches the chronology section\n  --episode\t(-e)\tSearches the episode guide section\n   (Default: Search the encyclopedia section)\n  --media\t(-m)\tDisplays associated media\n  --fulltext\t(-f)\tPerform a fulltext search\n  --ultraclean\t(-u)\tRemove accented characters\n");
 	exit (1);
 }
 
@@ -47,6 +47,7 @@ int main (int argc, char *argv[])
 	int use_media = 0;
 	int section = ST_SECT_ENCY;
 	int options = ST_OPT_MATCH_SUBSTRING | ST_OPT_RETURN_BODY | ST_OPT_NO_FMT;
+	int ultraclean=0;
 	static struct option long_opts[] =
 	{
 		{"help", 0, 0, 'h'},
@@ -54,9 +55,10 @@ int main (int argc, char *argv[])
 		{"episode", 0, 0, 'e'},
 		{"chronology", 0, 0, 'c'},
 		{"fulltext", 0, 0, 'f'},
+		{"ultraclean", 0, 0, 'u'},
 		{0, 0, 0, 0}};
 
-	while ((i = getopt_long (argc, argv, "echmf", long_opts, 0)) != EOF)
+	while ((i = getopt_long (argc, argv, "echmfu", long_opts, 0)) != EOF)
 	{
 		switch (i)
 		{
@@ -74,6 +76,9 @@ int main (int argc, char *argv[])
 			break;
 		case 'f':
 			options |= ST_OPT_FT;
+			break;
+		case 'u':
+			ultraclean = 1;
 			break;
 		case 'h':
 		default:
@@ -123,7 +128,12 @@ int main (int argc, char *argv[])
 	{
 		do
 		{
-
+			if (ultraclean)
+			{
+				st_ultraclean_string (thingy->name);
+				st_ultraclean_string (thingy->title);
+				st_ultraclean_string (thingy->text);
+			}
 			/* print the returned text */
 			if (options & ST_OPT_FT)
 				printf ("--<%s>-- [%.0f%%]\n%s\n\n%s\n\n", thingy->name, thingy->score, thingy->title, thingy->text);

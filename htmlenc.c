@@ -110,7 +110,7 @@ int printoff (struct ency_titles *stuff, FILE * output)
 
 void print_usage (void)
 {
-	printf (" htmlenc - Searches the Star Trek encyclopedias\nUsage: htmlenc [OPTION...] [search string]\n\n  --chronology\t(-c)\tSearches the chronology section\n  --episode\t(-e)\tSearches the episode guide section\n   (Default: Search the encyclopedia section)\n  --media\t(-m)\tDisplays associated media\n  --fulltext\t(-f)\tPerform a fulltext search\n  --save FILE\t(-s)\tSaves to a given file\n");
+	printf (" htmlenc - Searches the Star Trek encyclopedias\nUsage: htmlenc [OPTION...] [search string]\n\n  --chronology\t(-c)\tSearches the chronology section\n  --episode\t(-e)\tSearches the episode guide section\n   (Default: Search the encyclopedia section)\n  --media\t(-m)\tDisplays associated media\n  --fulltext\t(-f)\tPerform a fulltext search\n  --ultraclean\t(-u)\tRemove accented characters\n  --save FILE\t(-s)\tSaves to a given file\n");
 	exit (0);
 }
 
@@ -128,18 +128,19 @@ int main (int argc, char *argv[])
 	int options = ST_OPT_MATCH_SUBSTRING | ST_OPT_NO_FMT;
 	FILE *out = stdout;
 	char *filename = NULL;
-
+	int ultraclean=0;
 	static struct option long_opts[] =
 	{
 		{"help", 0, 0, 'h'},
 		{"media", 0, 0, 'm'},
 		{"episode", 0, 0, 'e'},
 		{"chronology", 0, 0, 'c'},
-		{"save", 0, 0, 's'},
 		{"fulltext", 0, 0, 'f'},
+		{"ultraclean", 0, 0, 'u'},
+		{"save", 0, 0, 's'},
 		{0, 0, 0, 0}};
 
-	while ((i = getopt_long (argc, argv, "ecmhs:f", long_opts, 0)) != EOF)
+	while ((i = getopt_long (argc, argv, "ecmhfus:", long_opts, 0)) != EOF)
 		switch (i)
 		{
 		case 'm':
@@ -159,6 +160,9 @@ int main (int argc, char *argv[])
 			break;
 		case 'f':
 			options |= ST_OPT_FT;
+			break;
+		case 'u':
+			ultraclean = 1;
 			break;
 		case 'h':
 		default:
@@ -208,6 +212,8 @@ int main (int argc, char *argv[])
 	full_body = thingy;
 	while (full_body)
 	{
+		if (ultraclean)
+			st_ultraclean_string (full_body->name);
 		if (options & ST_OPT_FT)
 			fprintf (out, "<a href=\"#%d\">%s</a> [%.0f%%]<br>\n", count++, full_body->name, full_body->score);
 		else
@@ -221,6 +227,13 @@ int main (int argc, char *argv[])
 		do
 		{
 			full_body = st_get_title_at (thingy->filepos);
+
+			if (ultraclean)
+			{
+				st_ultraclean_string (full_body->name);
+				st_ultraclean_string (full_body->title);
+				st_ultraclean_string (full_body->text);
+			}
 
 			fprintf (out, "<hr>\n<a name=\"%d\">\n", count++);
 			printoff (full_body, out);
