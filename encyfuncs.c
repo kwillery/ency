@@ -505,6 +505,47 @@ static void find_next_stxt_block (FILE *inp)
 	}
 }
 
+char *get_text_from_file (FILE *inp)
+{
+	char c, *text;
+	int size;
+	long start_pos;
+	int quotes=0;
+
+	if (!inp)
+		return NULL;
+	if (feof (inp))
+		return NULL;
+
+	start_pos = ftell (inp);
+	while (!feof (inp))
+	{
+		c = getc (inp);
+		if (c == '\"')
+		{
+			if (quotes)
+				break;
+			else
+			{
+				quotes = 1;
+				start_pos++;
+			}
+		} else if (((c == ':') || (c == ',') || (c == ']')) && !quotes)
+			break;
+	}
+	size = ftell (inp) - start_pos;
+	if (!size)
+		return NULL;
+	text = malloc (sizeof (char) * size);
+	if (!text)
+		return NULL;
+	fseek (inp, start_pos, SEEK_SET);
+	fread (text, size, sizeof (char), inp);
+	text[size-1] = 0;
+
+	return text;
+}
+
 static struct st_table *read_table (FILE *inp, struct st_table *root)
 {
 	struct st_table *root_tbl = NULL;
@@ -552,53 +593,25 @@ static struct st_table *read_table (FILE *inp, struct st_table *root)
 		if (!root_tbl)
 			root_tbl = curr_tbl;
 
-		do
-		{
-			while ((c = getc (inp)) != '\"');
+		curr_tbl->fnbase = get_text_from_file (inp);
+
+		do {
 			c = getc (inp);
-		}
-		while (!c);
+		} while ((c == ' ') || (c == ':'));
 		ungetc (c, inp);
 
-		temp_text = malloc (8);
-		text_size = 0;
-			
-		fread (temp_text, 1, 6, inp);
-		temp_text[6] = 0;
-
-		if (strstr (temp_text, "\""))
-		{
-			fseek (inp, -6, SEEK_CUR);
-			while ((c = getc (inp)) != '\"');
-			str_text = (strstr (temp_text, "\""));
-			str_text[0] = 0;
-		} else
-			while ((getc (inp) != '\"'))
-				;
-
-		curr_tbl->fnbase = temp_text;
-		z = 0;
-		while ((temp_text[z] = tolower (temp_text[z])))
-			z++;
-
-/* TODO: make this 70 autodetected ala st_return text */
-		temp_text = malloc (70);
-		text_size = 0;
-
-		while ((c = getc (inp)) != '\"');
-		while ((c = getc (inp)) != '\"')
-		{
-			temp_text[text_size++] = st_cleantext (c);
-		}
-		temp_text[text_size] = 0;
-
-		curr_tbl->title = temp_text;
-
+		curr_tbl->title = get_text_from_file (inp);
 		curr_tbl->next = NULL;
 		if (last_tbl)
 			last_tbl->next = curr_tbl;
 		last_tbl = curr_tbl;
 		curr_tbl = NULL;
+
+		do {
+			c = getc (inp);
+		} while (c == ',');
+		ungetc (c, inp);
+
 	}	/* end main loop */
 
 	return (root_tbl);
@@ -938,7 +951,6 @@ void st_unload_media (void)
 {
 	static struct st_table *st_oldptbls = NULL;
 	static struct st_caption *st_oldpcpts = NULL;
-	static struct st_table *st_oldvtbls = NULL;
 	static struct st_caption *st_oldvcpts = NULL;
 
 /* Free the caption & table info for the pictures */
@@ -985,23 +997,8 @@ void st_unload_media (void)
 		}
 	}
 
-	while (st_vtbls)
-	{
-		st_oldvtbls = st_vtbls;
-		st_vtbls = st_vtbls->next;
-		if (st_oldvtbls)
-		{
-			if (st_oldvtbls->fnbase)
-				free (st_oldvtbls->fnbase);
-			if (st_oldvtbls->title)
-				free (st_oldvtbls->title);
-			free (st_oldvtbls);
-		}
-	}
-
 	st_ptbls = NULL;
 	st_pcpts = NULL;
-	st_vtbls = NULL;
 	st_vcpts = NULL;
 }
 
