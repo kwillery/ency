@@ -216,8 +216,21 @@ char *st_get_directory (void);
 Returns the currently stored directory name.
 <p><em/NOTE/: Do <em/not/ free the returned pointer.
 
-<sect1>st_count_filetypes<label id="st_count_filetypes">
+<sect1>st_load_all<label id="st_load_all">
+<p>
+<verb>
+void st_load_all (void);
+</verb>
+<tt/st_load_all()/ loads internal parts of the encyclopedia for faster access. This is only useful if you want the first search to be fast, data is loaded whenever it is needed by default.
+</sect1>
 
+<sect1>st_count_filetypes<label id="st_count_filetypes">
+<p>
+<verb>
+int st_count_filetypes (void);
+</verb>
+<tt/st_count_filetypes()/ returns the number of known encyclopedia versions. (The versions are then numbered 0 to st_count_filetypes()-1).
+</sect1>
 
 <sect1>st_fileinfo_get_name<label id="st_fileinfo_get_name">
 <p>

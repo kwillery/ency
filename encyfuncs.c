@@ -2685,3 +2685,15 @@ int st_get_thumbnail(char *name, char *file)
 
 	return st_get_picture (name, file, ST_DFILE_PICON, w, h);
 }
+
+/* Load the various bits & pieces from an encyclopedia to make searching etc.
+   faster later */
+void st_load_all ()
+{
+	/* The attribs tables */
+	load_entry_list(-1);
+	/* The media LU tables */
+	st_load_media();
+	/* The picon names */
+	get_block_by_name (st_file_type, ST_DFILE_PICON, "", ST_DATA_OPT_PREFIX);
+}

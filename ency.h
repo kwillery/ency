@@ -146,6 +146,9 @@ int st_open_ency (char *directory);
 char *st_get_directory (void);
 int st_count_filetypes(void);
 
+/* Load internal bits & pieces for faster access */
+void st_load_all (void);
+
 /* load/unload the rc file containing file info */
 int st_load_rc_file (char *);
 void st_unload_data(void);
