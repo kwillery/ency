@@ -15,7 +15,7 @@
 /*                                                                           */
 /* You should have received a copy of the GNU General Public License         */
 /* along with this program; if not, write to the Free Software               */
-/* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.*/
+/* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. */
 /*                                                                           */
 /* Author:                                                                   */
 /*      Email   mibus@bigpond.com                                            */
@@ -46,64 +46,71 @@
 #define ST_OPT_MATCH_SUBSTRING 4
 
 /* structs */
-struct st_ency_formatting {
-  int firstword;
-  int words;
-  int bold;
-  int italic;
-  int underline;
-  struct st_ency_formatting *next;
+struct st_ency_formatting
+{
+	int firstword;
+	int words;
+	int bold;
+	int italic;
+	int underline;
+	struct st_ency_formatting *next;
 };
 
-struct ency_titles {
-  char *title;
-  char *text;
-  struct st_ency_formatting *fmt;
-  struct ency_titles *next;
-  int err;
-  long filepos;
+struct ency_titles
+{
+	char *title;
+	char *text;
+	struct st_ency_formatting *fmt;
+	struct ency_titles *next;
+	int err;
+	long filepos;
 };
 
-struct st_table {
-  char *title;
-  char *fnbase;
-  struct st_table *next;
+struct st_table
+{
+	char *title;
+	char *fnbase;
+	struct st_table *next;
 };
 
-struct st_caption {
-  char *fnbasen;
-  char *caption;
-  struct st_caption *next;
+struct st_caption
+{
+	char *fnbasen;
+	char *caption;
+	struct st_caption *next;
 };
 
-struct st_file_info {
-  char *name;
-  char *filename;
-  char *data_dir;
-  char *pic_dir;
-  char *vid_dir;
-  int append_char;
-  int fingerprint[16];
-  long int filesize;
+struct st_file_info
+{
+	char *name;
+	char *filename;
+	char *data_dir;
+	char *pic_dir;
+	char *vid_dir;
+	int append_char;
+	int fingerprint[16];
+	long int filesize;
 };
 
-struct st_photo {
-  char file[8];
-  char caption[50];
+struct st_photo
+{
+	char file[8];
+	char caption[50];
 };
 
-struct st_media {
-  struct st_photo photos[5];
-  struct st_photo video;
+struct st_media
+{
+	struct st_photo photos[5];
+	struct st_photo video;
 };
 
 struct st_part
 {
-        long start;
-        long count;
+	long start;
+	long count;
 };
 
-/* Initialisation & De-init*/
+/* Initialisation & De-init */
 int st_init (void);
 int st_finish (void);
 
@@ -151,6 +158,6 @@ void st_free_fmt_and_advance (struct st_ency_formatting **);
 void st_copy_part_entry (struct ency_titles **, struct ency_titles *);
 
 /* lower-level functions */
-int st_find_start (FILE *input);
+int st_find_start (FILE * input);
 
 #endif
