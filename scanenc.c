@@ -26,8 +26,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-
+#include <getopt.h>
 #include "ency.h"
+
+extern int optind;		/* for getopt() */
 
 /* define QUIET to print only the final total */
 
@@ -60,7 +62,7 @@ int doesnt_have_junk (char *string)
 	return (isalpha (string[0]) || isalpha (string[1]) || ispunct (string[0]) || ispunct (string[1]));
 }
 
-void check_for_captions (FILE *inp, FILE *outp)
+void check_for_captions (FILE *inp, FILE *outp, FILE *data)
 {
 	char c=0;
 	char fnbase[9]="        ";
@@ -119,7 +121,7 @@ void check_for_captions (FILE *inp, FILE *outp)
 	fseek (inp, found_at, SEEK_SET);
 }
 
-int check_for_table (FILE *inp, FILE *outp)
+int check_for_table (FILE *inp, FILE *outp, FILE *data)
 {
 	char c=0;
 	char fnbase[8]="       ";
@@ -176,7 +178,7 @@ int check_for_table (FILE *inp, FILE *outp)
 	return 0;
 }
 
-void find_media_tables (FILE *inp, FILE *outp)
+void find_media_tables (FILE *inp, FILE *outp, FILE *data)
 {
 	unsigned char c=0, old_c=0, old_old_c=0;
 
@@ -187,15 +189,15 @@ void find_media_tables (FILE *inp, FILE *outp)
 		{
 			if (c == '\"')
 			{
-				if (!check_for_table(inp, outp))
-					check_for_captions(inp, outp);
+				if (!check_for_table(inp, outp, data))
+					check_for_captions(inp, outp, data);
 			} else if (c == '3')
 			{
 				if ((getc (inp) == '9') && (getc (inp) == '5') && (getc (inp) == ':'))
 				{
 					fseek (inp, 0x21, SEEK_CUR);
 					if (getc (inp) == '\"')
-						check_for_table(inp, outp);
+						check_for_table(inp, outp, data);
 				}
 			}
 		}
@@ -253,9 +255,16 @@ int guess_section (char *title, char *text, int last_section)
 	return 0;
 }
 
+void usage()
+{
+	printf ("scanenc [-s outfile] [-x savefile] scanfile\n");
+	exit (1);
+
+}
+
 int main (int argc, char *argv[])
 {
-	FILE *inp=NULL, *outp=NULL;
+	FILE *inp=NULL, *outp=NULL, *data=NULL;
 	char *sections[3] =
 	{"Encyclopedia", "Episodes", "Chronology"};
 	int counts[3] =
@@ -267,31 +276,35 @@ int main (int argc, char *argv[])
 	int last_section = -1;
 	char *filename;
 	char *save_file=NULL;
+	char *save_data=NULL;
 	struct ency_titles *entry;
+	static struct option long_opts[] =
+	{
+		{"save", 0, 0, 's'},
+		{"export", 0, 0, 'x'},
+		{"help", 0, 0, 'h'},
+		{0, 0, 0, 0}};
 
-	if (argc > 1)
-	{
-		if (strcmp (argv[1], "-s") == 0)
+	while ((i = getopt_long (argc, argv, "s:x:h", long_opts, 0)) != EOF)
+		switch (i)
 		{
-			if (argc > 3)
-			{
-				save_file = argv[2];
-				filename = argv[3];
-			}
-			else
-			{
-				printf ("scanenc [-s outfile] scanfile\n");
-				exit (1);
-			}
+		case 's':
+			save_file = optarg;
+			break;
+		case 'x':
+			save_data = optarg;
+			break;
+		case 'h':
+		default:
+			usage ();
 		}
-		else
-			filename = argv[1];
-	}
-	else
+
+	if (argc > optind)
 	{
-		printf ("You must supply the main data file as the first parameter\n");
-		exit (1);
-	}
+		filename = argv[optind];
+	} else
+		usage();
+
 	inp = fopen (filename, "r b");
 	if (save_file)
 	{
@@ -299,6 +312,16 @@ int main (int argc, char *argv[])
 		if (!outp)
 		{
 			printf ("Error writing to %s\n",save_file);
+			exit;
+		}
+	}
+
+	if (save_data)
+	{
+		data = fopen (save_data, "w");
+		if (!outp)
+		{
+			printf ("Error writing to %s\n", save_data);
 			exit;
 		}
 	}
@@ -377,10 +400,12 @@ int main (int argc, char *argv[])
 	if (save_file)
 		fprintf (outp, "Scanning for media lists...\n");
 
-	find_media_tables (inp, outp);
+	find_media_tables (inp, outp, data);
 
 	if (outp)
 		fclose (outp);
+	if (data)
+		fclose (data);
 	fclose (inp);
 	return 0;
 }
