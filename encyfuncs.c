@@ -1189,10 +1189,8 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
       curr_title->filepos = this_one_starts_at;
       curr_title->title = title;
       curr_title->next = NULL;
-      if (st_return_body) {
-	curr_title->text = temp_text;
-	curr_title->fmt = text_fmt;
-      }
+      curr_title->text = temp_text;
+      curr_title->fmt = text_fmt;
       if (last_title != NULL)
 	last_title->next = curr_title;
       last_title = curr_title;
