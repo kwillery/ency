@@ -115,6 +115,8 @@ static int safe_strlen (const char *t)
 		return 0;
 }
 
+/* change characters to 'real' ones.
+(eg. smart dbl quotes -> normal dbl quotes */
 char st_cleantext (unsigned char c)
 {
 	switch (c)
@@ -330,6 +332,9 @@ static void st_clear_cache ()
 	cache_quick = NULL;
 }
 
+/* clean out the attrib list - we are either
+	- finishing, or, 
+	- done with this file */
 static void st_clear_entry_list ()
 {
 	struct st_table *tbl;
@@ -352,7 +357,9 @@ static void st_clear_entry_list ()
 	st_vtbls = NULL;
 }
 
-/* file stuff */
+/* try and set the filename libency will use
+ * NB this will fail & return 0 if the file
+ * can't be identified by st_fingerprint() */
 int st_set_filename (char *filename)
 {
 	int type;
@@ -393,6 +400,8 @@ int st_load_rc_file (char *filename)
 	return (load_rc_file_info (filename));
 }
 
+/* get the descriptive name of the file
+ * currently loaded (eg. "Encyclopedia 3.0"). */
 char *st_fileinfo_get_name (int file_type)
 {
 	if (file_type > ST_FILE_TYPES)
@@ -404,6 +413,10 @@ char *st_fileinfo_get_name (int file_type)
 	return get_name_of_file (file_type);
 }
 
+/* try to open the currently selected file, and
+ * seek to 'start'. if ency_filename is NULL, it will
+ * try to find an encyclopedia to load.
+ * It returns 0 for failure, the file pointer otherwise */
 FILE *curr_open (long start)
 {
 	FILE *inp;
@@ -446,6 +459,10 @@ FILE *curr_open (long start)
 	return (inp);
 }
 
+/* Look for a given encyclopedia version in a directory.
+ * Try lowering the case of the directory, etc. etc.
+ * This will also work if 'base_dir' is the actual
+ * filename */
 char *st_autofind (int st_file_version, char *base_dir)
 {
 	char *test_filename = NULL;
@@ -466,16 +483,13 @@ char *st_autofind (int st_file_version, char *base_dir)
 		test_filename = malloc (safe_strlen (base_dir) + safe_strlen (datadir) + safe_strlen (filename) + 3);
 		ency_filename = test_filename;
 
-		if (strcmp (base_dir, "."))
+		sprintf (test_filename, "%s", base_dir);
+		if (st_fingerprint () == st_file_version)
 		{
-			sprintf (test_filename, "%s", base_dir);
-			if (st_fingerprint () == st_file_version)
-			{
-				free (lc_data_dir);
-				free (lc_filename);
-				ency_filename = ency_fn_backup;
-				return (test_filename);
-			}
+			free (lc_data_dir);
+			free (lc_filename);
+			ency_filename = ency_fn_backup;
+			return (test_filename);
 		}
 
 		sprintf (test_filename, "%s/%s", base_dir, filename);
@@ -538,7 +552,10 @@ char *st_autofind (int st_file_version, char *base_dir)
 	return (NULL);
 }
 
-/* media stuff */
+/* Try to find the beginning of the next STXT block.
+ * This is very simple and could be easily
+ * fooled as it doesn't actually use the file's block
+ * format. (It just looks for "STXT" or "TXTS").*/
 static void find_next_stxt_block (FILE *inp)
 {
 	char d[5]="    ";
@@ -555,6 +572,9 @@ static void find_next_stxt_block (FILE *inp)
 	}
 }
 
+/* Read in a small block of text.
+ * It handles quoted text properly and
+ * everything! :-D */
 static inline char *get_text_from_file (FILE *inp)
 {
 	char c, *text;
@@ -596,6 +616,8 @@ static inline char *get_text_from_file (FILE *inp)
 	return text;
 }
 
+/* this is the same as get_text_from_file(), but
+ * has a maximum length and simpler error checking */
 static inline char *get_text_from_file_max_length (FILE *inp, int length)
 {
 	char c, text[length+1];
@@ -627,6 +649,8 @@ static inline char *get_text_from_file_max_length (FILE *inp, int length)
 	return strdup (text);
 }
 
+/* Reads an attrib table from 'inp' and appends
+ * it to 'root' */
 static struct st_table *read_table (FILE *inp, struct st_table *root)
 {
 	struct st_table *root_tbl = NULL;
@@ -690,6 +714,8 @@ static struct st_table *read_table (FILE *inp, struct st_table *root)
 	return root_tbl;
 }
 
+/* Loads all of the photo/picture lookup tables
+ * for the current file */
 static struct st_table *st_get_table ()
 {
 	FILE *inp;
@@ -721,7 +747,9 @@ static struct st_table *st_get_table ()
 	return (root_tbl);
 }
 
-static struct st_caption *read_captions (FILE *inp, struct st_caption *root, int section)
+
+/* Reads a caption table from 'inp', appends to 'root' */
+static struct st_caption *read_captions (FILE *inp, struct st_caption *root)
 {
 	struct st_caption *root_cpt = NULL, *curr_cpt = NULL, *last_cpt = NULL;
 	char c = 0;
@@ -782,6 +810,10 @@ static struct st_caption *read_captions (FILE *inp, struct st_caption *root, int
 	return (root_cpt);
 }
 
+/* Loads all of the media caption lookup tables
+ * for the current file. 'section' is either
+ * ST_SECT_PCPT or ST_SECT_VCPT for photo or video
+ * captions respectively */
 static struct st_caption *st_get_captions (int section)
 {
 	FILE *inp;
@@ -796,7 +828,7 @@ static struct st_caption *st_get_captions (int section)
 			return (NULL);
 		else
 			for (i = 0; i < part->count; i++)
-				root_cpt = read_captions (inp, root_cpt, section);
+				root_cpt = read_captions (inp, root_cpt);
 
 		count++;
 		fclose (inp);
@@ -804,6 +836,9 @@ static struct st_caption *st_get_captions (int section)
 	return (root_cpt);
 }
 
+/* Loads 'count' attribs tables in 'inp'. The
+ * section is given so it can be put into the
+ * entry's data. */
 static struct st_table *read_attribs_table (FILE *inp, int section, int count)
 {
 	struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
@@ -909,6 +944,7 @@ static struct st_table *read_attribs_table (FILE *inp, int section, int count)
 	return root_tbl;
 }
 
+/* Load the attribs tables for a given section */
 static struct st_table *st_get_video_table (int section)
 {
 	FILE *inp;
@@ -916,7 +952,7 @@ static struct st_table *st_get_video_table (int section)
 	struct st_part *part;
 	int count=0;
 
-	while ((part = get_part (st_file_type, ST_BLOCK_ATTRIB, section == ST_SECT_VTBL ? 0 : section, count, 0)))
+	while ((part = get_part (st_file_type, ST_BLOCK_ATTRIB, section, count, 0)))
 	{
 		if ((inp = curr_open (part->start)) == 0)
 			return (NULL);
@@ -939,6 +975,8 @@ static struct st_table *st_get_video_table (int section)
 	return (root_tbl);
 }
 
+/* Load all of the bits & pieces needed for
+ * st_get_media() to work properly. */
 int st_load_media (void)
 {
 	/*
@@ -956,6 +994,7 @@ int st_load_media (void)
 	return (1);
 }
 
+/* Have we already run st_load_media()? */
 int st_loaded_media (void)
 {
 	if (((st_pcpts) && (st_ptbls)) || ((st_vtbls) && (st_vcpts)))
@@ -964,6 +1003,9 @@ int st_loaded_media (void)
 		return (0);
 }
 
+/* Unload all of the photo tables, the photo captions,
+ * and the video captions. We don't unload the video
+ * tables 'cos it's really just the entrylist */
 void st_unload_media (void)
 {
 	static struct st_table *st_oldptbls = NULL;
@@ -1014,6 +1056,7 @@ void st_unload_media (void)
 		}
 	}
 
+	/* clean up... */
 	st_ptbls = NULL;
 	st_pcpts = NULL;
 	st_pcpts_quick = NULL;
@@ -1022,7 +1065,9 @@ void st_unload_media (void)
 }
 
 
-/* unsorted, mostly file/data stuff */
+/* Compare a title against a search string, taking
+ * into account any options set. Sort of an advanced
+ * strcmp() */
 static int check_match (char *search_string, char *title, int options)
 {
 	int found = 0;
@@ -1048,6 +1093,8 @@ static int check_match (char *search_string, char *title, int options)
 	return found;
 }
 
+/* Read the formatting info from 'inp' that lies
+ * at the start of an entry.*/
 static struct st_ency_formatting *st_return_fmt (FILE *inp)
 {
 	struct st_ency_formatting *root_fmt = NULL, *last_fmt = NULL, *curr_fmt = NULL;
@@ -1107,6 +1154,11 @@ static struct st_ency_formatting *st_return_fmt (FILE *inp)
 	return (root_fmt);
 }
 
+/* Read the body of an entry in from 'inp'. We
+ * don't know how long it will be before we start,
+ * so we run over it to get the length first. Then
+ * we fseek() back to the start, and finally read
+ * the text in. */
 static char *st_return_text (FILE *inp)
 {
 	long text_starts_at = 0;
@@ -1147,6 +1199,7 @@ static char *st_return_text (FILE *inp)
 	return (temp_text);
 }
 
+/* Read an entry's title in from 'inp' */
 static char *st_return_title (FILE *inp)
 {
 	char c;
@@ -1170,6 +1223,10 @@ static char *st_return_title (FILE *inp)
 	return (title);
 }
 
+/* This formats ency_titles' ->err to be a
+ * string. (->err sucks, BTW, and will
+ * probably disappear as soon as I have
+ * something better . :-) */
 char *st_nice_error (int error_no)
 {
 	switch (error_no)
@@ -1186,6 +1243,9 @@ char *st_nice_error (int error_no)
 	}
 }
 
+/* This creates an empty (bogus) entry, and
+ * puts an error number into it.
+ * (This also sucks, and should also disappear */
 static struct ency_titles *st_title_error (int error_no)
 {
 
@@ -1201,7 +1261,10 @@ static struct ency_titles *st_title_error (int error_no)
 	return (return_error);
 }
 
-/* sorted episode list stuff */
+/* Check to see if we have loaded a given
+ * section into the entry list.
+ * NB. if the section isn't present, it will
+ * return 0, but that shouldn't matter */
 static int entry_list_has_section (section)
 {
 	struct st_table *lst;
@@ -1215,6 +1278,8 @@ static int entry_list_has_section (section)
 	return 0;
 }
 
+/* Load up all of the entry lists for all
+ * sections (-1 == ST_SECT_ALL) */
 static int load_entry_lists (void)
 {
 	if (!entrylist_head)
@@ -1225,6 +1290,10 @@ static int load_entry_lists (void)
 	return 1;
 }
 
+/* Get the fnbase from a list when given
+ * the entry's title. This checks the
+ * exception list first, so it can be
+ * overridden from the rcfile */
 static char *get_fnbase (struct st_table *tbl, char *title)
 {
 	char *exception;
@@ -1241,6 +1310,10 @@ static char *get_fnbase (struct st_table *tbl, char *title)
 	return NULL;
 }
 
+/* Get the title from a list when given
+ * the entry's fnbase. This checks the
+ * exception list first, so it can be
+ * overridden from the rcfile */
 static char *get_title (struct st_table *tbl, char *fnbase)
 {
 	char *exception;
@@ -1259,6 +1332,10 @@ static char *get_title (struct st_table *tbl, char *fnbase)
 	return NULL;
 }
 
+/* Get the table entry from a list when given
+ * the entry's fnbase. This checks the
+ * exception list first, so it can be
+ * overridden from the rcfile */
 static struct st_table *get_table_entry_by_fnbase (struct st_table *tbl, char *fnbase)
 {
 	char *exception;
@@ -1275,6 +1352,10 @@ static struct st_table *get_table_entry_by_fnbase (struct st_table *tbl, char *f
 	return NULL;
 }
 
+/* Get the table entry from a list when given
+ * the entry's title. This checks the
+ * exception list first, so it can be
+ * overridden from the rcfile */
 static struct st_table *get_table_entry_by_title (struct st_table *tbl, char *title)
 {
 	char *exception;
@@ -1291,22 +1372,13 @@ static struct st_table *get_table_entry_by_title (struct st_table *tbl, char *ti
 			return tbl;
 		tbl = tbl->next;
 	}
-	if (strlen (title) > 14)
-		if (!strncmp (title + 5, "Star Trek", 9))
-			return (get_table_entry_by_title (root, title + 4));
-
-	if (*title != '*')
-	{
-		temp = (char *) malloc (strlen (title) + 3);
-		sprintf (temp, "* %s", title);
-		root = get_table_entry_by_title (root, temp);
-		free (temp);
-		return root;
-	}
 
 	return NULL;
 }
 
+/* Read an entry from 'inp'. The retrieval
+ * of the formatting & the body. is dependant
+ * on what options are set (in 'options' :-). */
 static struct ency_titles *read_entry (FILE *inp, int options)
 {
 	char c;
@@ -1353,6 +1425,8 @@ static struct ency_titles *read_entry (FILE *inp, int options)
 	return (root_title);
 }
 
+/* Read an entry located at 'filepos' from
+ * the current file using 'options'. */
 struct ency_titles *st_read_title_at (long filepos, int options)
 {
 	FILE *inp;
@@ -1371,11 +1445,18 @@ struct ency_titles *st_read_title_at (long filepos, int options)
 	return (ret);
 }
 
+/* Read an entry located at 'filepos' from
+ * the current file using the default options. */
 struct ency_titles *st_get_title_at (long filepos)
 {
 	return (st_read_title_at (filepos, ST_OPT_RETURN_BODY));
 }
 
+/* Add an entry's offset to the (sorted)
+ * block cache.
+ * The block cache associates the block ID &
+ * entry ID in the attribs table to a point in
+ * the actual file */
 static void add_to_block_cache (int block_id, int id, long filepos)
 {
 	struct ency_titles *new_entry=NULL, *tmp=NULL, *otmp=NULL;
@@ -1410,6 +1491,8 @@ static void add_to_block_cache (int block_id, int id, long filepos)
 	cache_last->id = id;
 }
 
+/* Load the block cache for block 'block_id' in
+ * the current file. */
 static void load_block_cache (int block_id)
 {
 	FILE *inp;
@@ -1452,6 +1535,11 @@ static void load_block_cache (int block_id)
 	}
 }
 
+/* This scans along the block cache for an
+ * entry with the matching block & entry IDs.
+ * If one isn't found and allow_recursion is set,
+ * it will try to create the block cache for that
+ * block, and then call itself. */
 static long get_block_pos_from_cache (int block_id, int id, int allow_recursion)
 {
 	struct ency_titles *curr=NULL;
@@ -1482,6 +1570,9 @@ static long get_block_pos_from_cache (int block_id, int id, int allow_recursion)
 		return -1;
 }
 
+/* Read in the entry from the current file
+ * given the block & entry IDs from the attribs
+ * table. */
 static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 {
 	static struct ency_titles *ret;
@@ -1539,6 +1630,9 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 	return NULL;
 }
 
+/* Search a file for entrys matching 'search_string'.
+ * This will load the entry lists if they aren't already
+ * loaded */
 static struct ency_titles *st_find_in_file (int file, int section, char *search_string, int options)
 {
 	struct ency_titles *root = NULL, *curr = NULL;
