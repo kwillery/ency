@@ -296,7 +296,7 @@ static char st_cleantext (unsigned char c)
 }
 
 
-char *st_lcase (char *mcase)
+static char *st_lcase (char *mcase)
 {
   char *lcase = NULL;
   int i = 0;
@@ -352,7 +352,7 @@ char *st_autofind (int st_file_version, char *base_dir)
   char *data_dir = NULL, *filename = NULL;
   char *lc_data_dir = NULL, *lc_filename = NULL;
 
-  if (0 <= st_file_version < ST_FILE_TYPES) {
+  if ((st_file_version < ST_FILE_TYPES) && (st_file_version >= 0)) {
 
     data_dir = st_files[st_file_version].data_dir;
     filename = st_files[st_file_version].filename;
@@ -381,7 +381,7 @@ char *st_autofind (int st_file_version, char *base_dir)
       return (test_filename);
     }
 
-    sprintf (test_filename, "%s/%s", lc_filename);
+    sprintf (test_filename, "%s/%s", base_dir, lc_filename);
     if (st_fingerprint () == st_file_version) {
       ency_filename = ency_fn_backup;
       return (test_filename);
@@ -574,7 +574,7 @@ char *st_nice_error (int error_no)
 {
   switch (error_no) {
   case 1:
-    return ("The Data.cxt file was not found");
+    return ("The data file was not found");
     break;
   case 2:
     return ("Memory allocation error");
@@ -858,6 +858,7 @@ struct ency_titles *st_find (char *search_string, int section, int options)
       break;
       return (NULL);
     }
+  return (0);
 }
 
 struct st_table *st_get_table (void)
