@@ -22,6 +22,13 @@
 /*      webpage www.picknowl.com.au/homepages/beemer/robonly.html             */
 /******************************************************************************/
 
+#include <gtk/gtk.h>
+
+GtkWidget *window, *box0, *box1, *entry1, *label1, *button1, *results, *vscroll;
+GtkWidget *table;
+char *label1text;
+char *rtnresults;
+
 char ency_cleantext (unsigned char);
 int ency_open (void);
 int ency_close (void);

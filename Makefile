@@ -1,17 +1,19 @@
 SHELL = /bin/sh
 CFLAGS = -O3 -m486
+GTKCFLAGS = `gtk-config --cflags` -I. -O -Wall
 LDFLAGS=
 CC=gcc
 BINDIR=/usr/local/bin
 MANDIR=/usr/local/man/man1
+LIBS = `gtk-config --libs`
  
 all: htmlenc findenc
 
 findenc : findenc.c encyfuncs.c ency.h
-	$(CC) $(CFLAGS) encyfuncs.c $< -o $@
+	$(CC) $(GTKCFLAGS)  encyfuncs.c $(LIBS) $< -o $@
 
 htmlenc : htmlenc.c encyfuncs.c ency.h
-	$(CC) $(CFLAGS) encyfuncs.c $< -o $@
+	$(CC) $(GTKCFLAGS) encyfuncs.c $(LIBS) $< -o $@
 
 clean :
 	rm -f findenc htmlenc core
