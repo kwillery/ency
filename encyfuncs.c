@@ -1419,7 +1419,7 @@ static struct ency_titles *curr_find_list (int section, char *search_string, int
 				title = new_title;
 			}
 
-			/* Title & number:  printf ("%d:%s\n", no_so_far, title); */
+			/* Title & number:*/  printf ("%d:%s\n", no_so_far, title); /**/
 
 			/* build the cached version of this entry */
 			if (!(options & ST_OPT_NO_CACHE))
