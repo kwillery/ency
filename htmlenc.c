@@ -195,7 +195,7 @@ int main (int argc, char *argv[])
 	fprintf (out, "<html>\n");
 	fprintf (out, "<head><title>Search results for: %s</title></head>", search_string);
 	fprintf (out, "<h1>Star Trek %s</h1>\n", st_fileinfo_get_name (ST_FILE_CURR));
-	fprintf (out, "You searched for <b>%s</b>.\n", search_string);
+	fprintf (out, "You searched for <b>%s</b>.<br>\n", search_string);
 	fprintf (out, "<hr><b>Found:</b><br>\n");
 
 	full_body = thingy;
