@@ -1419,8 +1419,9 @@ static struct ency_titles *curr_find_list (int section, char *search_string, int
 				title = new_title;
 			}
 
-			/* Title & number:*/  printf ("%d:%s\n", no_so_far, title); /**/
-
+#ifdef ENCY_DEBUG_PRINT_TITLES
+			fprintf (stderr, "%d:%s\n", no_so_far, title);
+#endif
 			/* build the cached version of this entry */
 			if (!(options & ST_OPT_NO_CACHE))
 				st_add_to_cache (section, title, this_one_starts_at);
