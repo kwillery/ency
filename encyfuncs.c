@@ -55,10 +55,10 @@ static const long st_video_caption_starts_at[] =
 
 /* the actual encyclopedia entries */
 static const long int ency_starts_at[] =
-{0x7bc28, 0x576574, 0, 0x3A9ED8, 0x56BB62, 0, 0x3FC3BE, 0x58B51E, 0x72E89C, 0, 0x1, 0, 0x1, 0};
+{0x7bc28, 0x576574, 0, 0x3A9ED8, 0x56BB62, 0, 0x3FC3BE, 0x58B51E, 0x72E89C, 0, 0x2D2A6E, 0, 0x324B34, 0x390C40, 0};
 
 static const long int epis_starts_at[] =
-{0x3b8e20, 0x50431A, 0, 0x5D961A, 0x622AA4, 0, 0x606630, 0x659F9E, 0, 0x2D2A6E, 0, 0x324B34, 0x390C40, 0};
+{0x3b8e20, 0x50431A, 0, 0x5D961A, 0x622AA4, 0, 0x606630, 0x659F9E, 0, 0x1, 0, 0x1, 0};
 
 static const long int chro_starts_at[] =
 {0x41e32c, 0, 0x62764A, 0, 0x66B9C4, 0, 0x1, 0, 0x1, 0};
@@ -68,10 +68,10 @@ static long int set_starts_at = 0x0;
 
 /* hm. articles or sections or whatever to get */
 static const long int ency_lastone[] =
-{7068, 68, 0, 4092, 491, 0, 3905, 476, 1353, 0, 0x1, 0, 0x1, 0};
+{7068, 68, 0, 4092, 491, 0, 3905, 476, 1353, 0, 181, 0, 89, 42, 0};
 
 static const long int epis_lastone[] =
-{402, 3, 0, 261, 25, 0, 262, 93, 0, 181, 0, 89, 42, 0};
+{402, 3, 0, 261, 25, 0, 262, 93, 0, 0x1, 0, 0x1, 0};
 
 static const long int chro_lastone[] =
 {582, 0, 465, 0, 582, 0, 0x1, 0, 0x1, 0};
@@ -349,33 +349,38 @@ static int curr_open (void)
 
 static int st_open ()
 {
-  if (curr == 0)                /* Defaults to ency */
-    curr_starts_at = ency_starts_at[upto];
-
-  if (curr == 1)                /* Ency */
-    curr_starts_at = ency_starts_at[upto];
-
-  if (curr == 2)                /* Epis */
-    curr_starts_at = epis_starts_at[upto];
-
-  if (curr == 3)                /* Chro */
-    curr_starts_at = chro_starts_at[upto];
-
-  if (curr == 4)                /* table */
-    curr_starts_at = st_table_starts_at[upto];
-
-  if (curr == 5)                /* Set value */
-    curr_starts_at = set_starts_at;
-
-  if (curr == 6)                /* Captions */
-    curr_starts_at = st_caption_starts_at[upto];
-
-  if (curr == 7)                /* video table */
-    curr_starts_at = st_video_table_starts_at[upto];
-
-  if (curr == 8)                /* video captions */
-    curr_starts_at = st_video_caption_starts_at[upto];
-
+  switch (curr) {
+    case 0:                /* Defaults to ency */
+        curr_starts_at = ency_starts_at[upto];
+        break;
+    case 1:                /* Ency */
+        curr_starts_at = ency_starts_at[upto];
+        break;
+    case 2:                /* Epis */
+        curr_starts_at = epis_starts_at[upto];
+        break;
+    case 3:                /* Chro */
+        curr_starts_at = chro_starts_at[upto];
+        break;
+    case 4:                /* table */
+        curr_starts_at = st_table_starts_at[upto];
+        break;
+    case 5:                /* Set value */
+        curr_starts_at = set_starts_at;
+        break;
+    case 6:                /* Captions */
+        curr_starts_at = st_caption_starts_at[upto];
+        break;
+    case 7:                /* video table */
+        curr_starts_at = st_video_table_starts_at[upto];
+        break;
+    case 8:                /* video captions */
+        curr_starts_at = st_video_caption_starts_at[upto];
+        break;
+    default:
+        return (0);
+        break;
+  }
   return (curr_open ());
 }
 
@@ -1254,7 +1259,6 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
 
     /* some chronology entries need years prepended */
     if (curr == 3) {
-
       /* if it's a year, save it */
       if (strlen (title) == 4) {
         strcpy (last_year, title);
@@ -1268,6 +1272,36 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
       }
     }
     
+    /* and episode entries need (TOS) etc. appended */
+    if (curr == 2) {
+        getc(inp);
+        c = getc(inp);
+        if (c == 0x0D) {
+            c = getc(inp);
+            fseek (inp, -1, SEEK_CUR);
+            }
+        fseek (inp, -2, SEEK_CUR);
+        new_title = (char *) malloc (strlen (title) + 7);
+        switch (c) {
+            case 'O':
+                sprintf (new_title, "%s (TOS)", title);
+                break;
+            case 'N':
+                sprintf (new_title, "%s (TNG)", title);
+                break;
+            case 'D':
+                sprintf (new_title, "%s (DS9)", title);
+                break;
+            case 'V':
+                sprintf (new_title, "%s (VGR)", title);
+                break;
+            default:
+                sprintf (new_title, "%s", title);
+                break;
+        }
+        free (title);
+        title = new_title;            
+    }
     
     /* Title & number:  printf ("%d:%s\n", no_so_far, title); */
 
