@@ -313,9 +313,8 @@ static char *st_lcase (char *mcase)
 
 int st_fingerprint (void)
 {
-  int good = 0;
   int i = 0, z = 0;
-  int input_fp[16];
+  unsigned char input_fp[16];
 
   curr = 5;
 
@@ -323,17 +322,14 @@ int st_fingerprint (void)
 
   i = st_open ();
   if (i) {
-    for (i = 0; i < 16; i++)
-      input_fp[i] = getc (inp);
+    fread (input_fp,1,16,inp);
 
 /* compare fingerprints etc... */
     for (i = 0; i < ST_FILE_TYPES; i++) {
-      good = 0;
-      for (z = 0; z < 16; z++) {
-	if (input_fp[z] == st_files[i].fingerprint[z])
-	  good++;
-      }
-      if (good == 16) {
+      for (z = 0; z < 16; z++)
+	if (input_fp[z] != st_files[i].fingerprint[z]) break;
+
+      if (z == 16) {
 	st_close_file ();
 	return i;
       }
