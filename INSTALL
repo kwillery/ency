@@ -42,15 +42,13 @@ just set the ENCY_FILENAME variable to one of these, eg:
  setenv ENCY_FILENAME /dose/tng_ep/eg_tng.dxr
 (if you are using csh, tcsh, etc.)
 
-If you use the eg_tng.dxr or eg_ds9.dxr (episode guide) files, you will need to look in the ENCYCLOPEDIA section, ie:
-  findenc emissary
+If you use the eg_tng.dxr or eg_ds9.dxr (episode guide) files, you will need to look in the EPISODES section, ie:
+  findenc -e emissary
 or:
-  htmlenc yesterday
+  htmlenc -e yesterday
 
 --XML--
 From ency 0.8.0 on, ency uses an xml file to store magic numbers and some other file-related stuff. By default it goes in /etc, though ency will also look in a few other places, most notably ~/.encyfiles.xml. ency will also look at the file pointed to by the ENCY_XML_FILENAME environment variable.
-
-You can make a non-xml build by downloading the source code and running 'make -f Makefile.noxml', but the binary downloads will need libxml (1.8.x?) unless people start asking for non-xml builds.
 
 Unknown files will be supported by adding entries to encyfiles.xml. Use 'scanenc -x encyfiles.xml datafile.cxt' (NB the encyfiles.xml does not mean the one you already have, it will create this file.) If you would then email me the resulting xml file, I would appreciate it alot. To use it yourself, add this to the start of the file:
 
@@ -64,28 +62,7 @@ And this to the end:
 </files>
 -SNIP-
 
-
---Unknown files--
-::This section is out of date and may be removed soon::
-::email me if you have an unsupported version, thanks::
-:: <mibus@bigpond.com                                ::
-
-With ency 0.7.10 on, unknown files with a file format similar to the ones used here can be opened. The file in question is usually the biggest one on the CD/whatever, often in the root directory of the CD. They usually have extentions like ".cxt" or ".dxr".
-
-To see if your 'unknown file' would work, run 'scanenc' over it:
-  scanenc /dose/trek/Reference/Data.cxt
-You would probably want to look at it through 'less':
-  scanenc /dose/trek/Reference/Data.cxt | less
-
-You should (after a while) see a list of entry titles, along with their position in the file. If this appears to work, do this:
-
-  Set the ENCY_FILENAME environment variable to the name of your file.
-    eg in sh/bash/etc:
-      export ENCY_FILENAME=/dose/ency98/Data.cxt
-    or in csh/tcsh/etc:
-      setenv ENCY_FILENAME /dose/ency98/Data.cxt
-
---NOTE--
+--REMEMBER--
 BUT MOST IMPORTANTLY:
 dont forget - if you can't get it to work, dont hesitate to mail me.
 
