@@ -2337,7 +2337,11 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 			if (!skip && check_match (search_string, tmp->title, exact))
 			{
 				if (tbl)
-					tbl = get_table_entry_by_title (tbl, tmp->title);
+					if (strcmp (tmp->title, tbl->title) >= 0)
+					{
+						tbl = get_table_entry_by_title (tbl, tmp->title);
+					} else
+						tbl = NULL;
 				if (!tbl)
 					tbl = get_table_entry_by_title (entrylist_head, tmp->title);
 				if (curr)
@@ -2617,7 +2621,7 @@ struct entry_scores *sort_scores (struct entry_scores *scores)
 struct ency_titles *st_find_fulltext (char *search_string, int section, int options)
 {
 	struct ency_titles *root=NULL, *curr=NULL;
-	struct st_table *tbl=NULL;
+	struct st_table *tbl=NULL, *ctbl=NULL;
 	struct entry_scores *scores=NULL, *last_score;
 	char *title;
 	char single_word[64];
@@ -2655,10 +2659,25 @@ struct ency_titles *st_find_fulltext (char *search_string, int section, int opti
 
 	while (scores)
 	{
-		title = get_title (st_ptbls, scores->fnbase);
+		if (ctbl)
+			if (strcasecmp (scores->fnbase, ctbl->fnbase) >= 0)
+			{
+				    ctbl = get_table_entry_by_fnbase (ctbl, scores->fnbase);
+			} else
+				ctbl = NULL;
+
+		if (!ctbl)
+			ctbl = get_table_entry_by_fnbase (st_ptbls, scores->fnbase);
+		if (ctbl)
+			title = ctbl->title;
+		else
+			title = NULL;
+
 		if (title)
 		{
-			tbl = get_table_entry_by_title (entrylist_head, title);
+			tbl = get_table_entry_by_title (tbl, title);
+			if (!tbl)
+				tbl = get_table_entry_by_title (entrylist_head, title);
 			bad = 0;
 			if (curr)
 			{
