@@ -294,7 +294,7 @@ int st_set_filename (char *filename)
   ency_filename = strdup (filename);
   if (ency_filename) {
     type = st_fingerprint ();
-    if ((!force_unknown) || (0 <= type < ST_FILE_TYPES)) {
+    if ((force_unknown) || ((type > 0) && ( type < ST_FILE_TYPES))) {
       st_file_type = type;
       st_clear_cache();
       return (1);
@@ -332,6 +332,7 @@ static int curr_open (void)
       st_set_filename ("Data.cxt");
     } else {
       st_set_filename (temp_fn);
+      free (temp_fn);
     }
   }
   inp = fopen (ency_filename, "rb");
@@ -1560,7 +1561,7 @@ struct ency_titles *st_find (char *search_string, int section, int options)
         return (NULL);
       }
     return (0);
-  } else { /* not know file type */
+  } else { /* unknown file type */
         return (st_find_unknown(search_string,exact));
   }
 }
