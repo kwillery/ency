@@ -243,7 +243,13 @@ int main (int argc, char *argv[])
 				if (strlen (media->swf.file))
 				{
 					temp_fn = st_format_filename (media->swf.file, base_path, swf);
-					fprintf (out, "<li><a href=\"%s\">%s</a> (video)</li>\n", temp_fn, media->swf.caption);
+					fprintf (out, "<li><a href=\"%s\">%s</a> (flash)</li>\n", temp_fn, media->swf.caption);
+					free (temp_fn);
+				}
+				if (strlen (media->audio.file))
+				{
+					temp_fn = st_format_filename (media->audio.file, base_path, audio);
+					fprintf (out, "<li><a href=\"%s\">%s</a> (audio)</li>\n", temp_fn, media->audio.caption);
 					free (temp_fn);
 				}
 				free (media);

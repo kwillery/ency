@@ -96,6 +96,7 @@ struct st_table
 {
 	char *title;
 	char *fnbase;
+	char *audio;
 	int section;
 	int block_id;
 	int id;
@@ -111,7 +112,7 @@ struct st_caption
 
 struct st_photo
 {
-	char file[8];
+	char file[13];
 	char caption[50];
 };
 

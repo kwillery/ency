@@ -154,6 +154,12 @@ int main (int argc, char *argv[])
 					printf ("%s: %s\n", temp_fn, media->swf.caption);
 					free (temp_fn);
 				}
+				if (strlen (media->audio.file))
+				{
+					temp_fn = st_format_filename (media->audio.file, base_path, audio);
+					printf ("%s: %s\n", temp_fn, media->audio.caption);
+					free (temp_fn);
+				}
 				free (media);
 				media = NULL;
 			}

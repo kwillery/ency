@@ -842,7 +842,8 @@ static struct st_table *read_attribs_table (FILE *inp, int section, int count)
 								level--;
 							if ((level == 1) && (c == ','))
 								commas++;
-							if ((c == '\"') && (commas == 4))
+							/* commas == 4 is video fnbase, 5 is aif FN */
+							if ((c == '\"') && ((commas == 4) || (commas == 5)))
 							{
 								/* TODO: Make this '70' an autodetected size */
 								temp_text = malloc (sizeof (char) * 70);
@@ -850,7 +851,10 @@ static struct st_table *read_attribs_table (FILE *inp, int section, int count)
 
 								while ((temp_text[text_size++] = tolower (getc (inp))) != '\"');
 								temp_text[text_size - 1] = 0;
-								curr_tbl->fnbase = temp_text;
+								if (commas == 4)
+									curr_tbl->fnbase = temp_text;
+								else
+									curr_tbl->audio = temp_text;
 								c=0;
 							}
 							if (commas == 8) /* Block ID */
@@ -864,24 +868,16 @@ static struct st_table *read_attribs_table (FILE *inp, int section, int count)
 					c = getc (inp);
 				}
 
-				if (1 /*curr_tbl->fnbase*/)
-				{
-					if (curr_tbl->fnbase)
-						st_cleanstring (curr_tbl->fnbase);
-					st_cleanstring (curr_tbl->title);
-					if (!root_tbl)
-						root_tbl = curr_tbl;
-					curr_tbl->next = NULL;
-					if (last_tbl)
-						last_tbl->next = curr_tbl;
-					last_tbl = curr_tbl;
-					curr_tbl = NULL;
-				}
-				else
-				{
-					free (curr_tbl->title);
-					free (curr_tbl);
-				}
+				if (curr_tbl->fnbase)
+					st_cleanstring (curr_tbl->fnbase);
+				st_cleanstring (curr_tbl->title);
+				if (!root_tbl)
+					root_tbl = curr_tbl;
+				curr_tbl->next = NULL;
+				if (last_tbl)
+					last_tbl->next = curr_tbl;
+				last_tbl = curr_tbl;
+				curr_tbl = NULL;
 			}
 		}
 	}
@@ -2105,6 +2101,7 @@ struct st_media *st_get_media (char *search_string)
 	char *ret_fnbase = NULL;
 	struct st_table *temp_ptbls = NULL;
 	struct st_table *temp_vtbls = NULL;
+	struct st_table *ret_tbl = NULL;
 
 	if (st_loaded_media ())
 	{
@@ -2131,10 +2128,17 @@ struct st_media *st_get_media (char *search_string)
 				media_found = 1;
 		}
 
-		if ((ret_fnbase = get_fnbase (st_vtbls, search_string)))
+		if ((ret_tbl = get_table_entry_by_title (st_vtbls, search_string)))
 		{
-			media->video = st_parse_video_captions (ret_fnbase);
-			media_found = 1;
+			if (ret_tbl->fnbase)
+				media->video = st_parse_video_captions (ret_tbl->fnbase);
+			if (ret_tbl->audio)
+			{
+				strcpy (media->audio.file, ret_tbl->audio);
+				strcpy (media->audio.caption, search_string);
+			}
+			if (strlen (media->video.file) || strlen (media->audio.file))
+				media_found = 1;
 		}
 
 		if (!media_found)
@@ -2201,12 +2205,14 @@ char *st_format_filename (char *fnbasen, char *base_path, media_type media)
 			filename[dir_size + 3] = 0;
 			strcat (filename, "/");
 		}
-		strncat (filename, fnbasen, 8);
+		if (media == audio)
+			strncat (filename, fnbasen, 12);
+		else
+			strncat (filename, fnbasen, 8);
 
 		switch (media)
 		{
 		case audio:
-			strcat (filename, "a.aif");
 			break;
 		case swf:
 			strcat (filename, "f.swf");
