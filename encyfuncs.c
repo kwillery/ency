@@ -139,12 +139,16 @@ char st_cleantext (unsigned char c)
 	{
 	case 13:
 		return ('\n');
+	case 0x87: /* 'a' '/' */
+		return 0xE1;
 	case 0x88: /* 'a' '\' */
 		return 0xE0;
 	case 0x8E: /* 'e' '/' */
 		return 0xE9;
 	case 0x8F: /* 'e' '\' */
 		return 0xE8;
+	case 0x91:
+		return ('`'); /* Back-apostrophe */
 	case 0x92: /* apostrophe */
 		return ('\'');
 	case 0x93: /* open double-quote */
@@ -181,9 +185,9 @@ static unsigned char st_ultra_cleanchar (unsigned char c)
 	switch (c)
 	{
 	case 0xE0: /* cleaned 'a' '\' */
+	case 0xE1: /* cleaned 'a' '/' */
 		return ('a');
 	case 0xE8: /* cleaned 'e' '\' */
-		return ('e');
 	case 0xE9: /* cleaned 'e' '/' */
 		return ('e');
 	default:
