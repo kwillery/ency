@@ -9,7 +9,7 @@ BINDIR=$(prefix)/bin
 MANDIR=$(prefix)/man
 LIBDIR=$(prefix)/lib
 INCDIR=$(prefix)/include
-DATDIR=$(prefix)/share/ency
+DATADIR=$(prefix)/share/ency
 
 INSTALL_PROGRAM=install
 
