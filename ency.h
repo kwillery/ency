@@ -25,6 +25,8 @@
 #ifndef ENCY_H
 #define ENCY_H
 
+#include <stdio.h>
+
 #define ST_FILE_TYPES 5
 #define ST_FILE_ENCY98 0
 #define ST_FILE_OMNI1 1
@@ -93,6 +95,12 @@ struct st_photo {
 struct st_media {
   struct st_photo photos[5];
   struct st_photo video;
+};
+
+struct st_part
+{
+        long start;
+        long count;
 };
 
 /* Initialisation & De-init*/

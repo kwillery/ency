@@ -324,6 +324,60 @@ char *st_fileinfo_get_name (int file_type)
     return (st_files[file_type].name);
 }
 
+static struct st_part *get_part (int file, int section, int number)
+{
+	int i,curr=0;
+	struct st_part *ret=NULL;
+	long *starts;
+	long *counts;
+
+	switch (section)
+	{
+		case ST_SECT_ENCY:
+			starts = (long *) ency_starts_at;
+			counts = (long *) ency_lastone;
+			break;
+		case ST_SECT_EPIS:
+			starts = (long *) epis_starts_at;
+			counts = (long *) epis_lastone;
+			break;
+		case ST_SECT_CHRO:
+			starts = (long *) chro_starts_at;
+			counts = (long *) chro_lastone;
+			break;
+		default:
+			return NULL;
+	}
+
+	/* find the right file */
+	for (i = 0; i < file; i++) {
+		while (starts[curr] != 0)
+			curr++;
+		curr++;
+	}
+
+	/* find the part theyre after */
+	for (i=0;i<number;i++)
+	{
+		if (starts[curr]) curr++;
+	}
+
+	/* if there is one there, return the part data */
+	if (starts[curr])
+	{
+		ret = (struct st_part *) malloc (sizeof (struct st_part));
+		if (!ret) return NULL;
+
+		ret->start = starts[curr];
+		ret->count = counts[curr];
+
+		return ret;
+	}
+	
+	return NULL;
+}
+
+
 static int curr_open (void)
 {
   int i = 0;
@@ -352,18 +406,18 @@ static int curr_open (void)
 static int st_open ()
 {
   switch (curr) {
-    case 0:                /* Defaults to ency */
-        curr_starts_at = ency_starts_at[upto];
-        break;
-    case 1:                /* Ency */
-        curr_starts_at = ency_starts_at[upto];
-        break;
-    case 2:                /* Epis */
-        curr_starts_at = epis_starts_at[upto];
-        break;
-    case 3:                /* Chro */
-        curr_starts_at = chro_starts_at[upto];
-        break;
+//    case 0:                /* Defaults to ency */
+//        curr_starts_at = ency_starts_at[upto];
+//        break;
+//    case 1:                /* Ency */
+//        curr_starts_at = ency_starts_at[upto];
+//        break;
+//    case 2:                /* Epis */
+//        curr_starts_at = epis_starts_at[upto];
+//        break;
+//    case 3:                /* Chro */
+//        curr_starts_at = chro_starts_at[upto];
+//        break;
     case 4:                /* table */
         curr_starts_at = st_table_starts_at[upto];
         break;
@@ -380,7 +434,7 @@ static int st_open ()
         curr_starts_at = st_video_caption_starts_at[upto];
         break;
     default:
-        return (0);
+//        return (0);
         break;
   }
   return (curr_open ());
@@ -987,7 +1041,6 @@ static void st_clear_cache()
   }
 }
 
-/* brand new one :) */
 int st_find_start (FILE *input)
 {
   unsigned char c = 0, old_c = 0, old_old_c = 0, old_old_old_c = 0;
@@ -1358,126 +1411,6 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
     return (NULL);
 }
 
-struct ency_titles *ency_find_list (char *title, int exact)
-{
-  struct ency_titles *root = NULL, *current = NULL, *temp = NULL;
-  int i, first_time = 1;
-  if ((cache[0]) && (!st_return_body))
-    return (st_find_in_cache (0, title, exact));
-
-  upto = 0;
-
-  for (i = 0; i < st_file_type; i++) {
-    while (ency_starts_at[upto] != 0)
-      upto++;
-    upto++;
-  }
-  if (ency_starts_at[upto] != 0x1) {	/* if its 0x1, its reserved. */
-
-    curr = 1;
-    while (ency_starts_at[upto] != 0) {
-      if (current)
-	while (current->next) {
-	  current = current->next;
-	}
-      curr_lastone = ency_lastone[upto];
-      if (!first_time) {
-	temp = (curr_find_list (title, exact));
-	if (current)
-	  current->next = temp;
-	else
-	  root = current = temp;
-      } else {
-	root = (curr_find_list (title, exact));
-	current = root;
-	first_time = 0;
-      }
-      upto++;
-    }
-  }
-  return (root);
-}
-
-struct ency_titles *epis_find_list (char *title, int exact)
-{
-  struct ency_titles *root = NULL, *current = NULL, *temp = NULL;
-  int i, first_time = 1;
-  if ((cache[1]) && (!st_return_body))
-    return (st_find_in_cache (1, title, exact));
-
-  upto = 0;
-
-  for (i = 0; i < st_file_type; i++) {
-    while (epis_starts_at[upto] != 0)
-      upto++;
-    upto++;
-  }
-  if (epis_starts_at[upto] != 0x1) {	/* if its 0x1, its reserved. */
-
-    curr = 2;
-    while (epis_starts_at[upto] != 0) {
-      if (current)
-	while (current->next) {
-	  current = current->next;
-	}
-      curr_lastone = epis_lastone[upto];
-      if (!first_time) {
-	temp = (curr_find_list (title, exact));
-	if (current)
-	  current->next = temp;
-	else
-	  root = current = temp;
-      } else {
-	root = (curr_find_list (title, exact));
-	current = root;
-	first_time = 0;
-      }
-      upto++;
-    }
-  }
-  return (root);
-}
-
-struct ency_titles *chro_find_list (char *title, int exact)
-{
-  struct ency_titles *root = NULL, *current = NULL, *temp = NULL;
-  int i, first_time = 1;
-  if ((cache[2]) && (!st_return_body))
-    return (st_find_in_cache (2, title, exact));
-
-  upto = 0;
-
-  for (i = 0; i < st_file_type; i++) {
-    while (chro_starts_at[upto] != 0)
-      upto++;
-    upto++;
-  }
-  if (chro_starts_at[upto] != 0x1) {	/* if its 0x1, its reserved. */
-
-    curr = 3;
-    while (chro_starts_at[upto] != 0) {
-      if (current)
-	while (current->next) {
-	  current = current->next;
-	}
-      curr_lastone = chro_lastone[upto];
-      if (!first_time) {
-	temp = (curr_find_list (title, exact));
-	if (current)
-	  current->next = temp;
-	else
-	  root = current = temp;
-      } else {
-	root = (curr_find_list (title, exact));
-	current = root;
-	first_time = 0;
-      }
-      upto++;
-    }
-  }
-  return (root);
-}
-
 static struct ency_titles *st_find_in_cache (int section, char *search_string, int exact)
 {
   struct ency_titles *mine, *r_r=NULL, *r_c=NULL, *r_l=NULL;
@@ -1554,6 +1487,36 @@ static struct ency_titles *st_find_unknown (char *search_string, int exact)
     return (root_title);
 }
 
+struct ency_titles *st_find_in_file (int file, int section, char *search_string, int exact)
+{
+  struct ency_titles *root = NULL, *current = NULL, *temp = NULL;
+  struct st_part *part=NULL;
+  int first_time = 1;
+
+  curr = section + 1;
+
+  while ((part = get_part (st_file_type, section, upto))) {
+    if (current)
+      while (current->next)
+	    current = current->next;
+    curr_lastone = part->count;
+	curr_starts_at = part->start;
+    if (!first_time) {
+	  temp = (curr_find_list (search_string, exact));
+	  if (current)
+	    current->next = temp;
+	  else
+	    root = current = temp;
+    } else {
+  	root = (curr_find_list (search_string, exact));
+  	current = root;
+  	first_time = 0;
+    }
+    upto++;
+  }
+  return (root);
+}
+
 struct ency_titles *st_find (char *search_string, int section, int options)
 {
   int exact = 0;
@@ -1575,29 +1538,20 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 
   if (st_file_type != ST_FILE_UNKNOWN) {
     switch (section)
-      {
+    {
       case ST_SECT_ENCY:
-       if ((cache[0]) && (!st_return_body))
-  	  return (st_find_in_cache (0, search_string, exact));
-        return (ency_find_list (search_string, exact));
-        break;
       case ST_SECT_EPIS:
-        if ((cache[1]) && (!st_return_body))
- 	  return (st_find_in_cache (1, search_string, exact));
-        return (epis_find_list (search_string, exact));
-        break;
       case ST_SECT_CHRO:
-        if ((cache[2]) && (!st_return_body))
- 	  return (st_find_in_cache (2, search_string, exact));
-        return (chro_find_list (search_string, exact));
-        break;
+        if ((cache[section]) && (!st_return_body))
+  	    return (st_find_in_cache (section, search_string, exact));
+  	  else
+	      return (st_find_in_file (st_file_type, section, search_string, exact));
       default:
-        break;
         return (NULL);
-      }
+    }
     return (0);
   } else { /* unknown file type */
-        return (st_find_unknown(search_string,exact));
+    return (st_find_unknown(search_string,exact));
   }
 }
 
