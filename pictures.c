@@ -357,5 +357,7 @@ int create_ppm_from_image (char *file, FILE *inp, long width, long height, long 
 	}
 
 	write_final_image (out, width, height);
+	fclose (inp);
+
 	return 0;
 }
