@@ -2046,8 +2046,11 @@ static struct st_media *new_media (struct st_media *old_media)
 			strcpy (media->photos[i].caption, "");
 		}
 		strcpy (media->video.file, "");
+		strcpy (media->video.caption, "");
 		strcpy (media->audio.file, "");
+		strcpy (media->audio.caption, "");
 		strcpy (media->swf.file, "");
+		strcpy (media->swf.caption, "");
 	}
 	return media;
 }
