@@ -17,6 +17,7 @@ eg:
 
 If you want a list of what photos are related, use "-m", eg:
   findenc -m kirk
+(it assumes your cd is mounted at '/cdrom' but its not important)
 
 That's about it.
 
@@ -46,12 +47,16 @@ or:
 BUT MOST IMPORTANTLY:
 dont forget - if you can't get it to work, dont hesitate to mail me.
 
+--NOTE--
+If you are planning on using the pictures with the TNG or DS9 episode guides, be warned that you will need to mount the cd's with the option 'unhide'
+
+ie (as root):
+  mount -o unhide /dev/cdrom /cdrom
+
+or in your fstab:
+  /dev/cdrom   /cdrom   defaults,noauto,ro,unhide  0 0
+
 --
 Robert Mibus
 mibus@bigpond.com
 http://users.bigpond.com/mibus/
---
-"How should I know if it works?  That's what beta testers are for.  I only
-coded it."
-(Attributed to Linus Torvalds, somewhere in a posting)
---
