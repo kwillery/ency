@@ -31,23 +31,38 @@
 extern int st_ignore_case;
 extern int optind;
 
+void print_usage (void)
+{
+  printf (" findenc - Searches the Star Trek encyclopedias\n http://users.bigpond.com/mibus/ency.html\n Usage: findenc -[c|e]\n  -c: searches chronology\n  -e: searches episodes\n   (default: search encyclopedia)\n  -m: displays associated media\n");
+  exit(0);
+}
+
+
 int main (int argc, char *argv[])
 {
   int i = 0;
   char search_string[70];
+  char *temp_fn = NULL;
   struct ency_titles *thingy = NULL;
   struct ency_titles *kill_me = NULL;
   struct st_ency_formatting *fmt = NULL, *kill_fmt = NULL;
+  struct st_media *media = NULL;
+  char base_path[] = "/cdrom"; /* where the media dirs etc. are */
+  int use_media = 0;
+
   strcpy (search_string, "");
 
-  i = getopt (argc, argv, "ech");
-
-  if (i == 'h') {
-    printf ("findenc - Searches Star Trek encyclopedia\nhttp://users.bigpond.com/mibus/ency.html\nUsage: findenc -[c|e]\n-c: searches chronology\n-e: searches episodes\ndefault: search encyclopedia\n");
-    exit (0);
+  while ((i = getopt (argc, argv, "echm")) != EOF) {
+    if (i == 'h')
+      print_usage ();
+    if (i == 'm')
+      use_media = 1;
   }
+
 /* get the search string, one way or another */
   if (argc > optind) {
+    if (!strcmp (argv[optind],"--help"))
+      print_usage ();
     strcpy (search_string, argv[optind]);
   } else {
     printf ("Enter search string :");
@@ -56,6 +71,10 @@ int main (int argc, char *argv[])
 
   /* run any ency init stuff */
   st_init ();
+
+  /* tell ency to load the media lookup tables */
+  if (use_media)
+    st_load_media ();
 
   /* make the search *not* case sensitive */
   st_ignore_case = 1;
@@ -76,11 +95,22 @@ int main (int argc, char *argv[])
    * thingy = get_title_at (0x149310);
    */
 
-  i = 0;
   if ((thingy != NULL) && (thingy->title != NULL)) {
     do {
       /* print the returned text */
       printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
+      
+      media = st_get_media(thingy->title);
+      if (media)
+      {
+	printf ("Associated media:\n");
+	for (i = 0; i < 5; i++)
+	  if (strlen (media->photos[i].file)) {   /* if there is photos #i */
+            temp_fn = st_format_filename (media->photos[i].file, base_path, 0);
+            printf ("%s: %s\n", temp_fn, media->photos[i].caption);
+	  }
+      }
+      
 
       /* free the returned stuff */
       kill_me = thingy;
@@ -107,7 +137,8 @@ int main (int argc, char *argv[])
     while (thingy != NULL);
   } else
     printf ("No matches\n");
-
+  st_unload_media ();
   st_finish ();
   return (0);
 }
+

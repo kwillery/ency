@@ -68,24 +68,7 @@ int loopies (char *txt, struct st_ency_formatting *fmt)
 	  fmtstring[0] = 0;
 	  fmtstring[1] = 0;
 	  fmtstring[2] = 0;
-/*
-   if (fmt->bi == 0) // None
-   fmtstring[0]=0;
-   if (fmt->bi == 1) // Bold
-   strcpy(fmtstring,"b");
-   if (fmt->bi == 2) // Italic
-   strcpy(fmtstring,"i");
-   if (fmt->bi == 3) // Bold & Italic
-   strcpy(fmtstring,"bi");
-   if (fmt->bi == 4) // Underline
-   strcpy(fmtstring,"u");
-   if (fmt->bi == 5) // Bold & Underline
-   strcpy(fmtstring,"bu");
-   if (fmt->bi == 6) // Bold & Italic
-   strcpy(fmtstring,"bi");
-   if (fmt->bi == 7) // Bold & Underline & Italic
-   strcpy(fmtstring,"bui");
- */
+
 	  switch (fmt->bi) {
 	  case 0:		// None
 
@@ -201,31 +184,47 @@ int printoff (struct ency_titles *stuff)
   return (0);
 }
 
+void print_usage (void)
+{
+  printf (" htmlenc - Searches the Star Trek encyclopedias\n http://users.bigpond.com/mibus/ency.html\n Usage: htmlenc -[c|e] [-m]\n   -c: searches chronology\n   -e: searches episodes\n    (default: search encyclopedia)\n   -m: displays associated media (photos etc.)\n");
+  exit (0);
+}
+
 int main (int argc, char *argv[])
 {
   char search_string[50];
+  char *temp_fn = NULL;
   struct ency_titles *thingy = NULL, *full_body = NULL;
   struct ency_titles *kill_me = NULL;
+  struct st_media *media = NULL;
+  char base_path[] = "/cdrom"; /* where the media dirs etc. are */
   int i = 0;
+  int use_media = 0;
   int search_what = 0;
+
   st_ignore_case = 1;
   st_return_body = 0;
-
-  while ((i = getopt (argc, argv, "ech")) != EOF) {
-    if (i == 'h') {
-      printf ("htmlenc - Searches Star Trek encyclopedia\nhttp://users.bigpond.com/mibus/ency.html\nUsage: htmlenc -[c|e]\n-c: searches chronology\n-e: searches episodes\ndefault: search encyclopedia\n");
-      exit (0);
-    }
-    search_what = i;
+  
+  while ((i = getopt (argc, argv, "ecmh")) != EOF) {
+    if (i == 'h')
+      print_usage ();
+    if (i == 'm')
+      use_media = 1;
+    else
+      search_what = i;
   }
-
+  
   if (argc > optind) {
+    if (!strcmp(argv[optind],"--help")) print_usage();
     strcpy (search_string, argv[optind]);
   } else {
     printf ("Enter search string :");
     scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
   }
+
   st_init ();
+  if (use_media)
+    st_load_media ();
 
   if (search_what == 'c')
     thingy = chro_find_list (search_string, 0);
@@ -242,7 +241,22 @@ int main (int argc, char *argv[])
   if ((thingy != NULL) && (thingy->title != NULL)) {
     do {
       full_body = get_title_at (thingy->filepos);
+
       printoff (full_body);
+
+      media = st_get_media(thingy->title);
+
+      if (media)
+      {
+	printf("<b>Associated media</b>\n<ul>");
+	for (i = 0; i < 5; i++)
+	  if (strlen (media->photos[i].file)) {   /* if there is photos #i */
+            temp_fn = st_format_filename (media->photos[i].file, base_path, 0);
+            printf ("<li>%s: %s\n</li>", temp_fn, media->photos[i].caption);
+	  }
+	printf ("</ul>");
+      }
+
       kill_me = thingy;
       thingy = thingy->next;
       free (kill_me->title);
@@ -261,6 +275,7 @@ int main (int argc, char *argv[])
 
   printf ("</html>\n");
 
+  st_unload_media ();
   st_finish ();
 
   return (0);
