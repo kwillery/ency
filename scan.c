@@ -32,6 +32,8 @@
 struct st_block *blocks=NULL;
 struct st_block *blast=NULL;
 
+int mmap_start=0x4C;
+
 static void get_4b_string (FILE *inp, char *string, int reverse)
 {
 	int i;
@@ -404,22 +406,22 @@ static void add_block (FILE *inp, int reverse, char *bname, long block_ind, long
 	long cast_pos=-1;
 	char name[5]="1234";
 
-	fseek (inp, 0x4C+20*block_ind, SEEK_SET); /* Go to the block info */
+	fseek (inp, mmap_start+20*block_ind, SEEK_SET); /* Go to the block info */
 	get_4b_string (inp, name, reverse);
 	if (strcmp (bname, name)) /* Is it what it is supposed to be? */
 	{
-		printf ("Block type mismatch (%s != %s)! Block is #%ld (@ %ld), CASt #%ld. Was reading from %ld.\n", name, bname, block_ind, 0x4C+20*block_ind, cast_ind, orig_pos-8);
+		printf ("Block type mismatch (%s != %s)! Block is #%ld (@ %ld), CASt #%ld. Was reading from %ld.\n", name, bname, block_ind, mmap_start+20*block_ind, cast_ind, orig_pos-8);
 		fseek (inp, orig_pos, SEEK_SET);
 		return;
 	}
 	block_size = get_4b_int (inp, reverse);
 	block_pos = get_4b_int (inp, reverse);
-	fseek (inp, 0x4C+20*cast_ind, SEEK_SET); /* Go to the cast block info */
+	fseek (inp, mmap_start+20*cast_ind, SEEK_SET); /* Go to the cast block info */
 	get_4b_string (inp, name, reverse); /* get 'CASt' */
 	if (strcmp (name, "CASt")) /* It is 'CASt', right? */
 	{
 #ifdef PRINT_ALL
-		printf ("Not CASt at %ld! (%ld). Refer block %ld (%ld)\n", cast_ind, 0x4C+20*cast_ind, block_ind, block_pos);
+		printf ("Not CASt at %ld! (%ld). Refer block %ld (%ld)\n", cast_ind, mmap_start+20*cast_ind, block_ind, block_pos);
 #endif
 		fseek (inp, orig_pos, SEEK_SET);
 		return;
@@ -495,7 +497,7 @@ static void search_file (FILE *inp, int reverse)
 {
         char name[5]="1234";
 
-	fseek (inp, 0x4C, SEEK_SET); /* Go to the mmap */
+	fseek (inp, mmap_start, SEEK_SET); /* Go to the mmap */
 	while (!feof (inp))
 	{
 		get_4b_string (inp, name, reverse);
