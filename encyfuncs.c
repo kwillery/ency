@@ -1001,7 +1001,7 @@ int st_find_start (FILE *input)
           switch (old_c)
             {
             case '~':
-              if (old_old_c == 0xd)
+              if ((old_old_c == 0xd) || (!old_old_c))
               {
                 keep_going = 0;
                 fseek (input, -2, SEEK_CUR);
@@ -1215,7 +1215,7 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
   int found_any_yet = 0;
   int first_time = 1;
   char c;
-  int i = 0;
+  int i = 0, z = 1;
   struct ency_titles *root_title = NULL, *curr_title = NULL, *last_title = NULL;
   struct ency_titles *root_cache=NULL, *curr_cache=NULL, *temp_cache=NULL, *old_cache=NULL;
   int no_so_far = 0;
@@ -1229,14 +1229,16 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
   };
 
   do {
+    no_so_far++;
     if (!first_time)
-      st_find_start (inp);
+      z = st_find_start (inp);
+      if (z)
+      {
     this_one_starts_at = ftell (inp);
 
     first_time = 0;
     text_fmt = st_return_fmt ();
     i = 0;
-    no_so_far++;
 
     title = st_return_title ();
 
@@ -1343,7 +1345,7 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
 	  free (kill_fmt);
 	}
       }
-
+  }
   }
   while (no_so_far != curr_lastone);
   st_close_file ();
