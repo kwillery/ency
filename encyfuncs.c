@@ -114,10 +114,10 @@ curr_open (void)
       i = fseek (inp, curr_starts_at, SEEK_SET);
       file_pos_is = curr_starts_at;
     }
-if (i == 0)
-  return ((int) inp);
-else
- return (0);
+  if (i == 0)
+    return ((int) inp);
+  else
+    return (0);
 }
 
 int
@@ -464,20 +464,22 @@ chro_return_title (void)
   return (curr_return_title ());
 }
 
-char *st_nice_error (int error_no)
+char *
+st_nice_error (int error_no)
 {
-char *error_text;
-switch (error_no) {
-case 1:
-return("The Data.cxt file was not found");
-break;
-case 2:
-return("Memory allocation error");
-break;
-default:
-return("An error has occurred");
-break;
-}
+  char *error_text;
+  switch (error_no)
+    {
+    case 1:
+      return ("The Data.cxt file was not found");
+      break;
+    case 2:
+      return ("Memory allocation error");
+      break;
+    default:
+      return ("An error has occurred");
+      break;
+    }
 }
 struct ency_titles *
 st_title_error (int error_no)
@@ -591,6 +593,7 @@ curr_find_list (char title[], int exact)
 	    }
 // copy pointer stuff over
 	  // printf("dbg3\n");
+	  curr_title->err = 0;
 	  curr_title->filepos = this_one_starts_at;
 	  curr_title->title = ttl;
 	  curr_title->next = NULL;
@@ -807,6 +810,7 @@ curr_find_titles (char title[])
 	    }
 // copy pointer stuff over
 	  // printf("dbg3\n");
+	  curr_title->err = 0;
 	  curr_title->filepos = this_one_starts_at;
 	  curr_title->title = ttl;
 	  curr_title->text = temp_text;
@@ -1049,63 +1053,63 @@ st_get_captions (void)
     {
 
       for (i = 0; i < 5; i++)
-        {
-          while ((c = egetc ()) != ']')
-            {                   // main loop
+	{
+	  while ((c = egetc ()) != ']')
+	    {			// main loop
 
-              temp_text = malloc (1);
-              text_size = 0;
+	      temp_text = malloc (1);
+	      text_size = 0;
 
-              curr_cpt = (struct st_caption *) malloc (sizeof (struct
-	      st_caption));
-              if (curr_cpt == NULL)
-                {
-                  return (NULL);
-                }
-              if (first_time)
-                root_cpt = curr_cpt;
-              first_time = 0;
-              do
-                {
-                  while ((c = egetc ()) != '\"');
-                  c = egetc ();
-                }
-              while (!c);
-              eungetc (c);
-              while ((c = egetc ()) != '\"')
-                {
-                  temp_text = realloc (temp_text, text_size + 2);
-                  if (temp_text == NULL)
-                    {
-                      return (NULL);
-                    }
-                  temp_text[text_size++] = tolower (ency_cleantext (c));
-                }
-              temp_text[text_size] = 0;
-              curr_cpt->fnbasen = temp_text;
-              temp_text = malloc (1);
-              text_size = 0;
+	      curr_cpt = (struct st_caption *) malloc (sizeof (struct
+							       st_caption));
+	      if (curr_cpt == NULL)
+		{
+		  return (NULL);
+		}
+	      if (first_time)
+		root_cpt = curr_cpt;
+	      first_time = 0;
+	      do
+		{
+		  while ((c = egetc ()) != '\"');
+		  c = egetc ();
+		}
+	      while (!c);
+	      eungetc (c);
+	      while ((c = egetc ()) != '\"')
+		{
+		  temp_text = realloc (temp_text, text_size + 2);
+		  if (temp_text == NULL)
+		    {
+		      return (NULL);
+		    }
+		  temp_text[text_size++] = tolower (ency_cleantext (c));
+		}
+	      temp_text[text_size] = 0;
+	      curr_cpt->fnbasen = temp_text;
+	      temp_text = malloc (1);
+	      text_size = 0;
 
-              while ((c = egetc ()) != '\"');
-              while ((c = egetc ()) != '\"')
-                {
-                  temp_text = realloc (temp_text, text_size + 2);
-                  if (temp_text == NULL)
-                    {
-                      return (NULL);
-                    }
-                  temp_text[text_size++] = ency_cleantext (c);
-                }
-              temp_text[text_size] = 0;
-              curr_cpt->caption = temp_text;
-              if (last_cpt)
-                last_cpt->next = curr_cpt;
-              last_cpt = curr_cpt;
-              curr_cpt = NULL;
+	      while ((c = egetc ()) != '\"');
+	      while ((c = egetc ()) != '\"')
+		{
+		  temp_text = realloc (temp_text, text_size + 2);
+		  if (temp_text == NULL)
+		    {
+		      return (NULL);
+		    }
+		  temp_text[text_size++] = ency_cleantext (c);
+		}
+	      temp_text[text_size] = 0;
+	      curr_cpt->caption = temp_text;
+	      if (last_cpt)
+		last_cpt->next = curr_cpt;
+	      last_cpt = curr_cpt;
+	      curr_cpt = NULL;
 
-            }                   // main loop
+	    }			// main loop
 
-        }
+	}
     }
   curr_close ();
   return (root_cpt);
