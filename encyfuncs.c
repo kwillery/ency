@@ -1418,6 +1418,9 @@ static void load_block_cache (int block_id)
 
 	part = get_part_by_id (st_file_type, block_id);
 
+	if (!part) /* just in case... */
+		return;
+
 	inp = curr_open (part->start);
 
 	if (inp)
@@ -1567,7 +1570,8 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 				if (curr)
 				{
 					curr->next = get_entry_by_id (tbl->block_id, tbl->id, options);
-					curr = curr->next;
+					if (curr->next) /* if it was there*/
+						curr = curr->next;
 				}
 				else
 					root = curr = get_entry_by_id (tbl->block_id, tbl->id, options);
