@@ -25,6 +25,7 @@
 #ifndef ENCY_H
 #define ENCY_H
 
+#define ST_FILE_TYPES 5
 #define ST_FILE_ENCY98 0
 #define ST_FILE_OMNI1 1
 #define ST_FILE_OMNI2 2
@@ -78,6 +79,17 @@ struct st_caption
     char *fnbasen;
     char *caption;
     struct st_caption *next;
+  };
+
+struct st_file_info
+  {
+    char *name;
+    char *filename;
+    char *vid_dir;
+    char *pic_dir;
+    int append_char;
+    int fingerprint[16];
+    long int filesize;
   };
 
 #endif

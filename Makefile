@@ -1,5 +1,5 @@
 SHELL = /bin/sh
-CFLAGS = -O3
+CFLAGS = -O3 -g
 LDFLAGS=
 CC=gcc
 AR=ar
@@ -9,20 +9,15 @@ MANDIR=/usr/man
 LIBDIR=/usr/lib
 INCDIR=/usr/include
 
-all: libency htmlenc findenc
+.PHONY: all clean install uninstall
+all: libency.a(encyfuncs.o) htmlenc findenc
 
-libency : encyfuncs.c ency.h
-	$(CC) -o libency.o -c encyfuncs.c
-	$(AR) r libency.a libency.o
+libency.a(encyfuncs.o): ency.h
 
-findenc : findenc.c ency.h libency
-	$(CC) $< -o $@ -L. -lency
-
-htmlenc : htmlenc.c ency.h libency
-	$(CC) $< -o $@ -L. -lency
+findenc htmlenc: libency.a
 
 clean :
-	rm -f findenc htmlenc libency.o libency.a core
+	rm -f findenc htmlenc encyfuncs.o libency.a core
 
 install: findenc htmlenc
 	install -c findenc $(BINDIR)
@@ -31,5 +26,5 @@ install: findenc htmlenc
 	install -c ency.h $(INCDIR)
 
 uninstall:
-	rm -f $(BINDIR)/findenc $(BINDIR)/htmlenc
+	rm -f $(BINDIR)/findenc $(BINDIR)/htmlenc $(LIBDIR)/libency.a $(INCDIR)/ency.h
 

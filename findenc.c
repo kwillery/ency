@@ -50,63 +50,62 @@ main (int argc, char *argv[])
       exit (0);
     }
 
-  printf ("Enter search string :");
-  scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
+//  printf ("Enter search string :");
+//  scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
 
   st_ignore_case = 1;
-  st_file_type = ST_FILE_TNG1;
-  ency_filename = (char *) malloc (60);
-//  strcpy(ency_filename,"/dose/trek/Reference/omni_v2.dxr");
-  //  strcpy(ency_filename,"/dose/trek/Reference/ds9/ds9/eg_ds9.dxr");
-  strcpy (ency_filename, "/dose/trek/Reference/tng/source/eg_tng.dxr");
+  st_file_type = st_fingerprint ();
+//  st_file_type = ST_FILE_OMNI2;
+//  if (st_file_type <= ST_FILE_TYPES)
+//    {
+//  ency_filename = (char *) malloc (60);
 
+//  strcpy (ency_filename, "/dose/trek/Reference/Encyclopedia/Ency98/Data.cxt");
+      //  strcpy (ency_filename, "/dose/trek/Reference/omni1.dxr");
+      //  strcpy (ency_filename, "/dose/trek/Reference/omni_v2.dxr");
+      //  strcpy (ency_filename, "/dose/trek/Reference/ds9/ds9/eg_ds9.dxr");
+      //  strcpy (ency_filename, "/dose/trek/Reference/tng/source/eg_tng.dxr");
 /*
-   if (i == 'c')
-   thingy = chro_find_list (search_string, 0);
-   if (i == 'e')
-   thingy = epis_find_list (search_string, 0);
-   if ((i != 'c') && (i != 'e'))
-   thingy = ency_find_list (search_string, 0);
-   // thingy = get_title_at (0x149310);
+      if (i == 'c')
+	thingy = chro_find_list (search_string, 0);
+      if (i == 'e')
+	thingy = epis_find_list (search_string, 0);
+      if ((i != 'c') && (i != 'e'))
+	thingy = ency_find_list (search_string, 0);
+      // thingy = get_title_at (0x149310);
 
-   i = 0;
+      i = 0;
 
-   if ((thingy != NULL) && (thingy->title != NULL))
-   {
-   do
-   { 
-   printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text); */
-/*        thingyz = ency_get_title (thingy->title);
- *        printf ("%s\n\n", thingyz->text);
- *        free (thingyz->fmt);
- *        free (thingyz->text);
- *        free (thingyz->title);
-   *//* kill_me = thingy;
-     thingy = thingy->next;
-     free (kill_me);
-     }
-     while (thingy != NULL);
-     }
-     else
-     printf ("No matches\n");
-
-   */
-
+      if ((thingy != NULL) && (thingy->title != NULL))
+	{
+	  do
+	    {
+	      printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
+	      thingy = thingy->next;
+	      free (kill_me);
+	    }
+	  while (thingy != NULL);
+	}
+      else
+	printf ("No matches\n");
+*/
   tbl = st_get_table ();
-  i = 0;
-  while (tbl)
-    {
-//   strcpy(titlle,tbl->title);
-      //   if(strstr(titlle,search_string))
-      {
-	printf ("%s:%s\n", tbl->title, tbl->fnbase);
-      }
-      oldtbl = tbl;
-      tbl = tbl->next;
-      free (oldtbl->title);
-      free (oldtbl->fnbase);
-      free (oldtbl);
-    }
-
-  return (0);
+   i = 0;
+   while (tbl)
+   {
+   //   strcpy(titlle,tbl->title);
+   //   if(strstr(titlle,search_string))
+   {
+   printf ("%s:%s\n", tbl->title, tbl->fnbase);
+   }
+   oldtbl = tbl;
+   tbl = tbl->next;
+   free (oldtbl->title);
+   free (oldtbl->fnbase);
+   free (oldtbl);
+   } 
+/*    }
+  else
+    printf ("An error has occurred.\n");
+  return (0); */
 }
