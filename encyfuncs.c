@@ -1973,8 +1973,9 @@ static struct ency_titles *st_find_fulltext (char *search_string, int section, i
 	if (!st_ptbls)
 		return NULL;
 
-	if (!load_entry_lists ())
-		return NULL;
+	if (!entry_list_has_section (section))
+		if (!load_entry_list (section))
+			return NULL;
 
 	if (options & ST_OPT_MATCH_SUBSTRING)
 		options -= ST_OPT_MATCH_SUBSTRING;
