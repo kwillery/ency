@@ -36,331 +36,460 @@ extern int optind;		/* for getopt() */
 int tell = 0;
 long old_ftell;
 
+struct block
+{
+	char name[5];
+	long size;
+};
+
 struct part
 {
+	char *name;
 	int section;
 	long start;
 	int count;
+	int start_id;
 	struct part *next;
 };
 
-int is_all_ascii (char *string)
+struct part *parts=NULL;
+struct part *pcurr=NULL;
+struct part *plast=NULL;
+int curr_id = 0;
+
+void fingerprint (FILE *inp, FILE *outp, FILE *data)
 {
-	while (*string)
-		if (isascii (*string++) == 0) return 0;
-	return 1;
-}
+	int i;
 
-int ends_in_number (char *string, int expected_length)
-{
-	return (isdigit(string[expected_length]) || (string[expected_length] == 'F'));
-}
-int ends_in_quote (char *string, int expected_length)
-{
-	return ((string[1] == '\"') || (string[expected_length] == '\"'));
-}
-
-int not_embedding_bracket (char *string)
-{
-	return ((string[0] != '[') && (string[1] != '['));
-}
-
-int doesnt_have_junk (char *string)
-{
-	return (isalpha (string[0]) || isalpha (string[1]) || ispunct (string[0]) || ispunct (string[1]));
-}
-
-void check_for_captions (FILE *inp, FILE *outp, FILE *data)
-{
-	char c=0;
-	char fnbase[9]="        ";
-	char temp[9] = "        ";
-	long found_at;
-
-	found_at = ftell (inp);
-
-	fread (fnbase, 8, 1, inp);
-	st_cleanstring (fnbase);
-
-	if (is_all_ascii (fnbase) && ends_in_quote (fnbase, 7) && ends_in_number (fnbase, 6))
-	{
-		if (fnbase[1] == '\"')
-			fseek (inp, found_at + 2, SEEK_SET);
-		c = getc (inp);
-
-		if ((c == ':') || ((c == ' ') && (getc(inp) == ':')))
-		{
-			fread (temp, 8, 1, inp);
-			if (not_embedding_bracket(temp))
-			{
-				if (doesnt_have_junk(temp))
-				{
-					*strchr (fnbase, '\"') = 0;
-
-					fseek (inp, found_at, SEEK_SET);
-					while ((c != ']') && (c != '\"'))
-						c = getc (inp);
-					if (c == ']')
-						return;
-					while ((c = getc (inp)) != '\"')
-						;
-					while ((c = getc (inp)) != '\"')
-						;
-					while ((c = getc (inp)) != '\"')
-						;
-
-					fread (temp, 8, 1, inp);
-					if (!is_all_ascii (temp))
-						return;
-					if (!ends_in_quote (temp, 7))
-						return;
-					if (!ends_in_number (temp, 6))
-						return;
-
-					printf ("found cpt @ 0x%lx\t%s\n", found_at, fnbase);
-					if (outp)
-						fprintf (outp, "found cpt @ 0x%lx\t%s\n", found_at, fnbase);
-					if (data)
-						fprintf (data, "  <pcaption start=\"0x%lx\" count=\"1\"/>\n", found_at-2);
-					fseek (inp, found_at, SEEK_SET);
-					return;
-				}
-			}
-		}
-	}
-	fseek (inp, found_at, SEEK_SET);
-}
-
-int check_for_table (FILE *inp, FILE *outp, FILE *data)
-{
-	char c=0;
-	char fnbase[8]="       ";
-	char temp[8] = "       ";
-	long found_at;
-
-	found_at = ftell (inp);
-
-	fread (fnbase, 7, 1, inp);
-	st_cleanstring (fnbase);
-
-	if (is_all_ascii (fnbase) && ends_in_quote (fnbase, 6))
-	{
-		if (fnbase[1] == '\"')
-			fseek (inp, found_at + 2, SEEK_SET);
-
-		if (getc (inp) == ':')
-		{
-			fread (temp, 7, 1, inp);
-			if (not_embedding_bracket(temp))
-			{
-				if (doesnt_have_junk(temp))
-				{
-
-					fseek (inp, found_at, SEEK_SET);
-					while ((c != ']') && (c != '\"'))
-						c = getc (inp);
-					if (c == ']')
-						return 0;
-					while ((c = getc (inp)) != '\"')
-						;
-					while ((c = getc (inp)) != '\"')
-						;
-					while ((c = getc (inp)) != '\"')
-						;
-
-					fread (temp, 7, 1, inp);
-					if (!is_all_ascii (temp))
-						return 0;
-					if (!ends_in_quote (temp, 6))
-						return 0;
-
-					*strchr (fnbase, '\"') = 0;
-					printf ("found tbl @ 0x%lx\t%s\n", found_at-2, fnbase);
-					if (outp)
-						fprintf (outp, "found tbl @ 0x%lx\t%s\n", found_at-2, fnbase);
-					if (data)
-						fprintf (data, "  <ptable start=\"0x%lx\" count=\"1\"/>\n", found_at-2);
-					fseek (inp, found_at, SEEK_SET);
-					return 1;
-				}
-			}
-		}
-	}
-	fseek (inp, found_at, SEEK_SET);
-	return 0;
-}
-
-void check_for_old_captions (FILE *inp, FILE *outp, FILE *data)
-{
-	long found_at;
-	char temp[32];
-	char fnbasen[8];
-
-	found_at = ftell(inp);
-
-#if 0
-	fseek (inp, 16, SEEK_CUR);
+	rewind (inp);
+#ifndef QUIET
+	printf ("Fingerprint: ");
+	for (i = 0; i < 16; i++)
+		printf ("%x;", getc (inp));
+	printf ("\n");
 #endif
-
-	fread (temp, 32, 1, inp);
-
-	if ((temp[0] == '[') && doesnt_have_junk (temp + 1))
+	if (outp)
 	{
-		if (isdigit (temp[7]) && temp[8] == ':')
-			if ((temp[9] == ' ') && (temp[10] == '\"'))
-			{
-				strncpy (fnbasen, temp+1, 7);
-				fnbasen[7] = 0;
-				printf ("found [old] cpt @ 0x%lx\t%s\n", found_at+16, fnbasen);
-				if (outp)
-					fprintf (outp, "found [old] cpt @ 0x%lx\t%s\n", found_at+16, fnbasen);
-				if (data)
-					fprintf (data, "  <pcaption start=\"0x%lx\" count=\"1\" old_type=\"true\"/>\n", found_at+16);
-			}
+		rewind(inp);
+		fprintf (outp, "Fingerprint: ");
+		for (i = 0; i < 16; i++)
+			fprintf (outp, "%x;", getc (inp));
+		fprintf (outp, "\n");
 	}
 
-	fseek (inp, found_at, SEEK_SET);
-}
-#if 0
-void find_media_tables (FILE *inp, FILE *outp, FILE *data)
-{
-	unsigned char c=0, old_c=0, old_old_c=0;
-	unsigned char old_old_old_c=0;
-
-	while (!feof(inp))
+	if (data)
 	{
-		c = getc(inp);
-		if ((old_c == '[') && (old_old_c != 0x20))
+		rewind(inp);
+		fprintf (data, "  <fingerprint>");
+		for (i = 0; i < 16; i++)
+			fprintf (data, "%x;", getc (inp));
+		fprintf (data, "</fingerprint>\n");
+	}
+
+	rewind (inp);
+}
+
+struct block *get_block(FILE *inp, int reverse)
+{
+	struct block *b=NULL;
+	long mult=1;
+	int i;
+
+	if (feof (inp))
+		return NULL;
+
+	b = malloc (sizeof (struct block));
+
+	if (reverse)
+	{
+		for (i=3;i>=0;i--)
+			b->name[i] = getc (inp);
+	} else
+		fread (b->name, 4, 1, inp);
+
+	b->name[4] = 0;
+
+	b->size = 0;
+	if (reverse)
+	{
+		for (i=0;i<4;i++)
 		{
-			if (c == '\"')
-			{
-				if (!check_for_table(inp, outp, data))
-					check_for_captions(inp, outp, data);
-			} else if (c == '3')
-			{
-				if ((getc (inp) == '9') && (getc (inp) == '5') && (getc (inp) == ':'))
-				{
-					fseek (inp, 0x21, SEEK_CUR);
-					if (getc (inp) == '\"')
-						check_for_table(inp, outp, data);
-				}
-			}
-		} else if ((c == 'S') && (old_c == 'T') && (old_old_c == 'X') && (old_old_old_c == 'T'))
-		{
-			check_for_old_captions(inp, outp, data);
+			b->size += mult * getc (inp);
+			mult *= 256;
 		}
-
-		old_old_old_c = old_old_c;
-		old_old_c = old_c;
-		old_c = c;
-	}
-}
-#endif
-static int find_next_stxt_block (FILE *inp, char *stxt)
-{
-	char d[5]="    ";
-
-	while (!feof (inp))
+	} else
 	{
-		d[3] = getc (inp);
+		for (i=0;i<4;i++)
+			b->size = b->size * 256 + getc (inp);
+	}
+	return b;
+}
 
-		if ((!strcmp (d, stxt)))
+char *sections[]=
+{
+	"Unimportant",
+	"Attrib [Ency]",
+	"Attrib [Epis]",
+	"Attrib [Chro]",
+	"Lookup",
+	"Captions",
+	"FTList [Ency]",
+	"FTList [Epis]",
+	"FTList [Chro]",
+	"Text [Ency]",
+	"Text [Epis]",
+	"Text [Chro]",
+	"Captions [Vid]",
+	"List [Epis]",
+};
+
+int identify_section (char *section)
+{
+	char *temp;
+	int i;
+	temp = strdup (section);
+	for (i=0;(temp[i] = tolower (temp[i])); i++);
+
+	/* Attrib */
+	if (!strncmp (temp, "attrib_", 7))
+	{
+		if (strstr (temp, "_ency"))
+		{
+			free (temp);
 			return 1;
-		d[0] = d[1];
-		d[1] = d[2];
-		d[2] = d[3];
+		}
+		if (strstr (temp, "_epissub"))
+		{
+			free (temp);
+			return 13;
+		}
+		if (strstr (temp, "_epis"))
+		{
+			free (temp);
+			return 2;
+		}
+		if (strstr (temp, "_chro"))
+		{
+			free (temp);
+			return 3;
+		}
+			
+		return 0;
 	}
+
+	/* Lookup */
+	if (strstr (temp, "_lu_") || !strncmp (temp, "lu_", 3))
+	{
+		free (temp);
+		return 4;
+	}
+
+	/* Captions */
+	if (!strncmp (temp, "captxt", 6))
+	{
+		if (strstr (temp, "_vid"))
+		{
+			free (temp);
+			return 12;
+		}
+		free (temp);
+		return 5;
+	}
+
+	/* FT Lists */
+	if (!strncmp (temp, "ftency", 6) && !strstr (temp, "breakpoint"))
+	{
+		free (temp);
+		return 6;
+	}
+	if (!strncmp (temp, "ftepis", 6) && !strstr (temp, "breakpoint"))
+	{
+		free (temp);
+		return 7;
+	}
+	if (!strncmp (temp, "ftchro", 6) && !strstr (temp, "breakpoint"))
+	{
+		free (temp);
+		return 8;
+	}
+
+	/* Entries... */
+	if (strstr (temp, "entrytxt_") || strstr (temp, "entrytext_") || strstr (temp, "entry_"))
+	{
+		free (temp);
+		return 9;
+	}
+	if (strstr (temp, "epistxt_") || strstr (temp, "epis_txt") || strstr (temp, "newepis"))
+	{
+		free (temp);
+		return 10;
+	}
+	if (strstr (temp, "chrotxt_"))
+	{
+		free (temp);
+		return 11;
+	}
+	if (strstr (temp, "newentries_"))
+	{
+		if (strstr (temp, "chro"))
+			return 11;
+		if (strstr (temp, "epis"))
+			return 10;
+		else
+			return 9;
+	}
+	if (!strncmp (temp, "missed new", 10))
+	{
+		if (strstr (temp, "entries"))
+		{
+			free (temp);
+			return 9;
+		}
+	}
+	if (strstr (temp, " text - insert "))
+	{
+		free (temp);
+		return 9;
+	}
+
+	free (temp);
 	return 0;
 }
 
-void find_media_tables (FILE *inp, FILE *outp, FILE *data)
+void process_cast_block (FILE *inp, long size)
 {
-	char temp[5]="1234";
-	char c;
-	int reverse;
+	struct part *tmp;
+	char *block;
+	char *t;
+	int skip;
 
-	fread (temp, 4, 1, inp);
-	if (!strcmp (temp, "XFIR"))
-		reverse = 1;
+	printf ("\tFound CASt block");
+
+	block = malloc (size * sizeof (char));
+	fread (block, size, 1, inp);
+
+	switch (block[3])
+	{
+		case 0:
+		case 1:
+		case 3:
+		case 7:
+			break;
+		default:
+		printf (", Ignoring...");
+		free (block);
+		return;
+	}
+
+	tmp = (struct part *) malloc (sizeof (struct part));
+	if (!parts)
+		parts = tmp;
 	else
-		reverse = 0;
-	while (find_next_stxt_block (inp, reverse ? "TXTS" : "STXT"))
 	{
-		fseek (inp, 16, SEEK_CUR);
-		c = getc (inp);
-		if (c == '[')
-			c = getc (inp);
-		if (c == '\"')
-		{
-			if (!check_for_table(inp, outp, data))
-				check_for_captions(inp, outp, data);
-		} else
-		{
-			ungetc (c, inp);
-			ungetc ('[', inp);
-			check_for_old_captions(inp, outp, data);
-		}
+		if (plast)
+			plast->next = tmp;
 	}
-}
-void save_match (FILE *inp, FILE *outp)
-{
-	int i;
-	fseek (inp,-8, SEEK_CUR);
-	for (i=0;i<16;i++)
-		fprintf (outp, "%2x ", getc(inp));
-	fseek (inp, -8, SEEK_CUR);
-	fprintf (outp, "\n");
+
+	if (!pcurr)
+		pcurr = tmp;
+
+	plast = tmp;
+
+	t = block + block[7] + 12;
+	*t = 0;
+	while (!*--t)
+		;
+	while (*--t)
+		;
+	t += 2;
+
+	tmp->name = (char *) malloc (sizeof (char) * *t + 1);
+	strncpy (tmp->name, t+1, *t);
+	tmp->name[*t] = 0;
+
+	printf (" (%s)", tmp->name, t - block);
+
+	tmp->section = identify_section (tmp->name);
+	tmp->count = 1;
+	tmp->start_id = 0;
+	tmp->next = NULL;
+
+	free (block);
 }
 
-void print_parts (struct part *this_part, int sect, char *name, FILE *data)
+void process_noncast_block (FILE *inp, long size)
 {
-	fprintf (data, "  <section name=\"%s\">\n", name);
-	while (this_part)
+	if (pcurr)
 	{
-		if (this_part->section == sect)
-			fprintf (data, "    <part start=\"0x%lx\" count=\"%d\"/>\n", this_part->start, this_part->count);
-		this_part = this_part->next;
+		printf ("\tCASt says \"%s\"", pcurr->name);
+		if (!strcmp (pcurr->name, "CastTable500"))
+			curr_id = 500;
+		else
+			if (curr_id)
+				curr_id++;
+
+		pcurr->start = ftell (inp) + 12;
+		pcurr->start_id = curr_id;
+		pcurr = pcurr->next;
+	} else
+	{
+		printf ("\tNo prior matching CASt block");
 	}
-	fprintf (data, "  </section>\n");
+	fseek (inp, size, SEEK_CUR);
 }
 
-int guess_section (char *title, char *text, int last_section)
+int ignore_block (char *name, long size)
 {
-	char *episode_starts[7] =
-	{
-		"Original Series",
-		"Next Generation",
-		"Deep Space Nine",
-		"Voyager episode",
-		"No episodes",
-		"There are no episodes",
-		"There were no episodes"
-	};
-	int i;
-
-	/* Episodes */
-	if ((*title == '\"') || (strlen (title) == 1))
-		for (i = 0; i < 7; i++)
-		{
-			if (!strncmp (text, episode_starts[i], strlen (episode_starts[i])))
-				return 1;
-			if (!strncmp (text + 1, episode_starts[i], strlen (episode_starts[i])))
-				return 1;
-		}
-	if ((!strncmp (title, "Star Trek", 9)) && (last_section == 1))
+	if (strcmp (name, "STXT") && strcmp (name, "BITD"))
 		return 1;
 
-	/* Chronology */
-	if (*title == '\"')
-		return 2;
-	if (!strncmp (text, "\n\n", 2))
-		return 2;
-	if ((!strncmp (title, "Star Trek", 9)) && (last_section == 2))
-		return 2;
-
-	/* Encyclopedia */
 	return 0;
 }
+
+void search_file (FILE *inp, int reverse, FILE *outp, FILE *data)
+{
+	struct block *b=NULL;
+	char cast_header[16];
+	char d[5]="";
+	int i;
+	long found_at=-1;
+	char temp[64];
+	char text[512];
+	char *t;
+	char c;
+	int count=0, dudsinarow=0;
+	int section;
+	struct part *curr=NULL, *last=NULL;
+
+	/* Jump to the first useful block    */
+	/* this seems to always be 'imap'    */
+	/* ('pami' in some, due to reversal) */
+	fseek (inp, 12, SEEK_SET);
+	while ((b = get_block (inp, reverse)))
+	{
+		printf ("%ld: %s\t%ld", ftell (inp), b->name, b->size);
+		if (!strcmp (b->name, "CASt"))
+			process_cast_block(inp, b->size);
+		else
+			if (!ignore_block (b->name, b->size))
+				process_noncast_block(inp, b->size);
+			else
+				fseek (inp, b->size, SEEK_CUR);
+
+		printf ("\n");
+		/* if the next byte is a NULL, get rid of it */
+		if ((c = getc (inp)))
+			ungetc (c, inp);
+		free (b);
+	}
+}
+
+void write_useful_information (FILE *inp, FILE *outp, FILE *data)
+{
+	struct part *part=NULL;
+	int i;
+	int count, z;
+	char *sect[] = 
+	{
+		"Encyclopedia",
+		"Episodes",
+		"Chronology"
+	};
+
+	fingerprint (inp, outp, data);
+
+	part = parts;
+	while (part)
+	{
+		printf ("Block of \'%s\' start=%lx count=%d\n", sections[part->section], part->start, part->count);
+		if (outp)
+			fprintf (outp, "Block of \'%s\' start=%lx count=%d\n", sections[part->section], part->start, part->count);
+		part = part->next;
+	}
+
+	if (data)
+	{
+		for (i=0;i<3;i++)
+		{
+			count=0;
+			part = parts;
+			fprintf (data, "    <section name=\"%s\">\n", sect[i]);
+			while (part)
+			{
+				if ((part->section == i + 1) || (part->section == i + 6) || (part->section == i + 9))
+				{
+					switch (part->section - i)
+					{
+						case 1: // Attrib
+							fprintf (data, "      <list start=\"0x%lx\" count=\"%d\"/>\n", part->start, part->count);
+							break;
+						case 6: // FT
+							fprintf (data, "      <ftlist start=\"0x%lx\" count=\"%d\"/>\n", part->start, part->count);
+							break;
+						case 9: // Text
+							fprintf (data, "      <part start=\"0x%lx\" count=\"%d\" bcount=\"%d\" start_id=\"%d\"/>\n", part->start, 1, part->count, part->start_id);
+							count += z;
+							break;
+					}
+				}
+				/* Episode numbering/ordering */
+				if ((i == 1) && (part->section == 13))
+				{
+					fprintf (data, "      <list start=\"0x%lx\" count=\"%d\"/>\n", part->start, part->count);
+				}
+				part = part->next;
+			}
+			fprintf (data, "    </section>\n");
+			printf ("Found %d entries in the %s section\n", count, sect[i]);
+		}
+
+		part = parts;
+		while (part)
+		{
+			switch (part->section)
+			{
+				case 1:
+				case 2:
+				case 3:
+					fprintf (data, "    <vtable start=\"0x%lx\" count=\"%d\" section=\"%d\"/>\n", part->start, part->count, part->section);
+					break;
+				case 4: // LU
+					fprintf (data, "    <ptable start=\"0x%lx\" count=\"%d\"/>\n", part->start, part->count);
+					break;
+				case 5: // CPT
+					fprintf (data, "    <pcaption start=\"0x%lx\" count=\"%d\"/>\n", part->start, part->count);
+					break;
+				case 12: // VCPT
+					fprintf (data, "    <vcaption start=\"0x%lx\" count=\"%d\"/>\n", part->start, part->count);
+					break;
+			}
+			part = part->next;
+		}
+	}
+	
+}
+
+void do_search (FILE *inp, FILE *outp, FILE *data)
+{
+	char start[5];
+	int reverse=0;
+
+	fread (start, 4, 1, inp);
+	start[4] = 0;
+
+	if (!strcmp (start, "XFIR"))
+		reverse = 1;
+	else if (strcmp (start, "RIFX"))
+	{
+		printf ("Sorry, not a valid encyclopedia.\n");
+	}
+
+	fseek (inp, 0, SEEK_SET);
+	search_file (inp, reverse, outp, data);
+
+	write_useful_information (inp, outp, data);
+}
+
 
 void usage()
 {
@@ -372,22 +501,10 @@ void usage()
 int main (int argc, char *argv[])
 {
 	FILE *inp=NULL, *outp=NULL, *data=NULL;
-	char *sections[3] =
-	{"Encyclopedia", "Episodes", "Chronology"};
-	int counts[3] =
-	{0, 0, 0};
-	long returned = 0;
 	int i = 0;
-	char last_start = 0;
-	int new_section;
-	int last_section = -1;
-	long this_start=0;
-	int this_count=0;
-	struct part *root_part=NULL, *this_part=NULL, *last_part=NULL;
 	char *filename;
 	char *save_file=NULL;
 	char *save_data=NULL;
-	struct ency_titles *entry;
 	static struct option long_opts[] =
 	{
 		{"save", 0, 0, 's'},
@@ -441,143 +558,14 @@ int main (int argc, char *argv[])
 		fprintf (data, "  <photodir>Please_fill_this_field_in</photodir>\n");
 		fprintf (data, "  <videodir>Please_fill_this_field_in</videodir>\n");
 		fprintf (data, "  <append_char/>\n");
-		fprintf (data, "  <prepend_year/>\n  <append_series/>\n");
 	}
 	if (inp == 0)
 	{
-		printf ("You must supply the main data file as the first parameter\n");
+		printf ("You must supply the main data file as the last parameter\n");
 		exit (1);
 	}
-#ifndef QUIET
-	printf ("Fingerprint: ");
-	for (i = 0; i < 16; i++)
-		printf ("%x;", getc (inp));
-	printf ("\n");
-#endif
-	if (save_file)
-	{
-		rewind(inp);
-		fprintf (outp, "Fingerprint: ");
-		for (i = 0; i < 16; i++)
-			fprintf (outp, "%x;", getc (inp));
-		fprintf (outp, "\n");
-	}
 
-	if (save_data)
-	{
-		rewind(inp);
-		fprintf (data, "  <fingerprint>");
-		for (i = 0; i < 16; i++)
-			fprintf (data, "%x;", getc (inp));
-		fprintf (data, "</fingerprint>\n");
-	}
-	
-	st_init();
-	st_force_unknown_file (1);
-	st_set_filename (filename);
-	printf ("Scanning for entries...\n");
-	if (save_file)
-		fprintf (outp, "Scanning for entries...\n");
-	do
-	{
-		returned = st_find_start (inp);
-		if (returned)
-		{
-			entry = st_get_title_at (ftell (inp));
-			if ((!last_start) || (last_start > tolower (*entry->title)) || ((last_start == '\"') && (*entry->title != '\"')))
-			{
-				new_section = guess_section (entry->title, entry->text, last_section);
-				if (new_section != last_section)
-				{
-					if (this_count)
-					{
-						if (save_file)
-							fprintf (outp, "Total for this part: %d\n", this_count);
-
-						this_part = (struct part *) malloc (sizeof (struct part));
-						this_part->section = last_section;
-						this_part->start = this_start;
-						this_part->count = this_count;
-						this_part->next = NULL;
-						if (!root_part)
-							root_part = this_part;
-						if (last_part)
-							last_part->next = this_part;
-						last_part = this_part;
-					}
-					this_start = ftell(inp);
-
-					if (save_file)
-						fprintf (outp, "\nNew section (%s)\n", sections[new_section]);
-#ifndef QUIET
-					if (this_count)
-						printf ("Total for this part: %d\n", this_count);
-					printf ("\nNew section (%s)\n", sections[last_section = new_section]);
-#else
-					last_section = new_section;
-#endif
-					this_count = 0;
-				}
-			}
-			last_start = tolower (*entry->title);
-#ifndef QUIET
-			printf ("found @ 0x%lx:  \t%s\n", ftell (inp), entry->title);
-#endif
-			if (save_file)
-			{
-				fprintf (outp ,"found @ 0x%lx:  \t%s\n", ftell (inp), entry->title);
-				save_match (inp, outp);
-			}
-			counts[last_section]++;
-			this_count++;
-			st_free_entry (entry);
-			getc (inp);	/* make sure it doesnt pick the same one up again */
-		}
-	}
-	while (returned);
-	if ((save_file) && (this_count))
-		fprintf (outp, "Total for this part: %d\n", this_count);
-	if (this_count)
-		printf ("Total for this part: %d\n", this_count);
-
-	printf ("Found entries:\n");
-	if (save_file)
-		fprintf (outp, "Found entries:\n");
-	for (i = 0; i < 3; i++)
-	{
-		printf ("\t%s\t%d\n", sections[i], counts[i]);
-		if (save_file)
-			fprintf (outp, "\t%s\t%d\n", sections[i], counts[i]);
-	}
-
-
-	if (this_part)
-	{
-		this_part = (struct part *) malloc (sizeof (struct part));
-		this_part->section = last_section;
-		this_part->start = this_start;
-		this_part->count = this_count;
-		this_part->next = NULL;
-		if (!root_part)
-			root_part = this_part;
-		if (last_part)
-			last_part->next = this_part;
-		last_part = this_part;
-	}
-
-	if (data)
-	{
-		for (i=0;i<3;i++)
-			print_parts (root_part, i, sections[i], data);
-	}
-
-	rewind (inp);
-
-	printf ("Scanning for media lists...\n");
-	if (save_file)
-		fprintf (outp, "Scanning for media lists...\n");
-
-	find_media_tables (inp, outp, data);
+	do_search (inp, outp, data);
 
 	if (outp)
 		fclose (outp);
