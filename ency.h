@@ -32,38 +32,42 @@
 #define ST_FILE_TNG1 3
 #define ST_FILE_DS91 4
 
+/* Initialisation & De-init*/
 int st_init (void);
 int st_finish (void);
 
+/* For controlling what file is opened */
 int st_set_filename (char *);
 char *st_get_filename (void);
 
+/* For checking a directory to see if a data file is there */
+char *st_autofind (int, char *);
+
+/* For getting a description of a file type */
+char *st_fileinfo_get_name (int);
+
+/* For media handling */
 int st_load_media (void);
 int st_loaded_media (void);
 int st_unload_media (void);
 
-struct ency_titles *ency_find_titles (char[]);
+struct st_media *st_get_media (char *);
+char *st_format_filename (char *, char *, int);
+
+/* For the actual searches */
 struct ency_titles *ency_find_list (char[], int);
-struct ency_titles *ency_get_title (char[]);
-
-struct ency_titles *epis_find_titles (char[]);
 struct ency_titles *epis_find_list (char[], int);
-struct ency_titles *epis_get_title (char[]);
-
-struct ency_titles *chro_find_titles (char[]);
 struct ency_titles *chro_find_list (char[], int);
-struct ency_titles *chro_get_title (char[]);
-
-struct st_table *st_get_table (void);
-struct st_caption *st_get_captions (void);
 struct ency_titles *get_title_at (long);
 
+/* For manual captioning / filename retrieval */
+struct st_table *st_get_table (void);
+struct st_caption *st_get_captions (void);
+
+/* Takes an error # & returns a string */
 char *st_nice_error (int);
 int st_fingerprint (void);
 char *st_autofind (int, char *);
-
-struct st_media *st_get_media (char *);
-char *st_format_filename (char *, char *, int);
 
 struct st_ency_formatting {
   int bi;

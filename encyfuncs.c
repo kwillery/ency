@@ -100,6 +100,7 @@ int st_finish (void)
 {
   if (ency_filename)
     free (ency_filename);
+  return (1);
 }
 
 int st_set_filename (char *filename)
@@ -124,6 +125,11 @@ int st_set_filename (char *filename)
 char *st_get_filename (void)
 {
   return (ency_filename);
+}
+
+char *st_fileinfo_get_name (int file_type)
+{
+return (st_files[file_type].name);
 }
 
 int st_load_media (void)
@@ -557,8 +563,7 @@ static char *st_return_text (void)
   return (temp_text);
 }
 
-char *
- st_return_title (void)
+static char *st_return_title (void)
 {
   char c;
   char *title = NULL;
