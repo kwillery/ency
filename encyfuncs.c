@@ -112,7 +112,7 @@ static struct st_caption *st_vcpts = NULL, *st_oldvcpts = NULL;
 int st_init (void)
 {
   st_fingerprint ();
-  return (1);
+  return (st_file_type >= 254 ? 0 : 1);
 }
 
 int st_finish (void)
