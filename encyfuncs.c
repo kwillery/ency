@@ -1165,8 +1165,6 @@ static char *st_return_text (int options)
 			old_c = c;
 			text_size++;
 		}
-		if ((options & ST_OPT_TEXTLEN_MAX32) && (text_size >= 32))
-			bye = 1;
 	}
 
 	temp_text = malloc (text_size + 1);
@@ -1897,8 +1895,6 @@ static struct ency_titles *st_find_fulltext (char *search_string, int section, i
 	if (!load_entry_lists ())
 		return NULL;
 
-	if (options & ST_OPT_NO_CACHE)
-		options -= ST_OPT_NO_CACHE;
 	if (options & ST_OPT_MATCH_SUBSTRING)
 		options -= ST_OPT_MATCH_SUBSTRING;
 	options -= ST_OPT_FT;

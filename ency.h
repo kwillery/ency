@@ -43,13 +43,11 @@
 #define ST_OPT_CASE_SENSITIVE 1
 #define ST_OPT_RETURN_BODY 2
 #define ST_OPT_MATCH_SUBSTRING 4
-#define ST_OPT_NO_CACHE 8
-#define ST_OPT_NO_FMT 16
-#define ST_OPT_TEXTLEN_MAX32 32
-#define ST_OPT_SORTEPIS 64
-#define ST_OPT_SORTALPHA 128
-#define ST_OPT_FT 256
-#define ST_OPT_NO_FILEPOS 512
+#define ST_OPT_NO_FMT 8
+#define ST_OPT_SORTEPIS 16
+#define ST_OPT_SORTALPHA 32
+#define ST_OPT_FT 64
+#define ST_OPT_NO_FILEPOS 128
 
 /* enums/structs */
 typedef enum

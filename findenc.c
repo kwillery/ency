@@ -48,7 +48,7 @@ int main (int argc, char *argv[])
 	char base_path[] = "/cdrom";	/* where the media dirs etc. are */
 	int use_media = 0;
 	int section = ST_SECT_ENCY;
-	int options = ST_OPT_MATCH_SUBSTRING | ST_OPT_RETURN_BODY | ST_OPT_NO_CACHE | ST_OPT_NO_FMT;
+	int options = ST_OPT_MATCH_SUBSTRING | ST_OPT_RETURN_BODY | ST_OPT_NO_FMT;
 	static struct option long_opts[] =
 	{
 		{"help", 0, 0, 'h'},

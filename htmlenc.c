@@ -126,7 +126,7 @@ int main (int argc, char *argv[])
 	int use_media = 0;
 	int count = 0;
 	int section = ST_SECT_ENCY;
-	int options = ST_OPT_MATCH_SUBSTRING | ST_OPT_NO_CACHE | ST_OPT_NO_FMT;
+	int options = ST_OPT_MATCH_SUBSTRING | ST_OPT_NO_FMT;
 	FILE *out = stdout;
 	char *filename = NULL;
 
