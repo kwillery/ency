@@ -184,6 +184,9 @@ static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock
 	int i,j;
 	int size;
 	char name[5]="1234";
+	long starts_at=-1;
+
+	starts_at = ftell (inp);
 
 	get_4b_string (inp, name, reverse);
 	size = get_4b_int (inp, reverse);
@@ -231,15 +234,13 @@ static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock
 			t++;
 	}
 
-	j = *t;
-	for (i=0;i<j;i++)
-		while (*t++ == 0)
-			if (t - block >= size)
-			{
-				tmp->name = strdup ("???");
-				free (block);
-				return;
-			}
+	t += (*t+1)*4+1;
+	if (t - block >= size)
+	{
+		tmp->name = strdup ("???");
+		free (block);
+		return;
+	}
 
 	tmp->name = (char *) malloc (sizeof (char) * *t + 1);
 
@@ -255,7 +256,7 @@ static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock
 	tmp->start_id = 0;
 	tmp->next = NULL;
 #ifdef PRINT_ALL
-	printf ("found '%s' block '%s' at %ld\n", btype, tmp->name, tmp->start);
+	printf ("found '%s' block '%s' at %ld from CASt at %ld\n", btype, tmp->name, tmp->start, starts_at);
 #endif
 #ifdef BLOCK_EXPORT
         if (blockname)
