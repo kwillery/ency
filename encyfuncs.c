@@ -117,7 +117,26 @@ const struct st_file_info st_files[] =
 	{"DS9 Episode guide", "eg_ds9.dxr", "ds9", "media", "media", 1, 0, 0,
 	 {0x52, 0x49, 0x46, 0x58, 0x0, 0x4C, 0xAE, 0xC4, 0x4D, 0x56, 0x39, 0x33, 0x69, 0x6D, 0x61, 0x70}, 1}
 };
+
+#define ST_PART_OPT_EPISLIST 1
+#define ST_PART_OPT_FTLIST 2
 #endif
+
+struct st_wl
+{
+	int word;
+	struct st_wl *next;
+};
+
+struct st_ftlist
+{
+	char *word;
+	char *fnbase;
+	struct st_wl *words;
+	struct st_ftlist *next;
+};
+
+struct st_ftlist *ftlist=NULL;
 
 /* for use w/ st_get_title_at() */
 static long int set_starts_at = 0x0;
@@ -596,7 +615,7 @@ static const char *st_fileinfo_get_data (int file, st_filename_type type)
 		}
 }
 
-static struct st_part *get_part (int file, int section, int number)
+static struct st_part *get_part (int file, int section, int number, int options)
 {
 	int i, tmp = 0;
 	struct st_part *ret;
@@ -604,6 +623,8 @@ static struct st_part *get_part (int file, int section, int number)
 	long *counts;
 
 	if (number < 0)
+		return NULL;
+	if (options)
 		return NULL;
 
 	switch (section)
@@ -984,7 +1005,7 @@ static struct st_table *st_get_table ()
 
 	curr = 4;
 
-	while ((part = get_part (st_file_type, ST_SECT_PTBL, count)))
+	while ((part = get_part (st_file_type, ST_SECT_PTBL, count, 0)))
 	{
 		curr_starts_at = part->start;
 		if (!st_open ())
@@ -1109,7 +1130,7 @@ static struct st_caption *st_get_captions (int section)
 
 	curr = 6;
 
-	while ((part = get_part (st_file_type, section, count)))
+	while ((part = get_part (st_file_type, section, count, 0)))
 	{
 		curr_starts_at = part->start;
 		if (!st_open ())
@@ -1143,10 +1164,7 @@ static struct st_table *st_get_video_table (int section, int reverse)
 
 	curr = 7;
 
-	if (reverse)
-		count = -1;
-
-	while ((part = get_part (st_file_type, section, count)))
+	while ((part = get_part (st_file_type, section, count, (reverse) ? ST_PART_OPT_EPISLIST : 0)))
 	{
 		curr_starts_at = part->start;
 		if (!st_open ())
@@ -1245,10 +1263,7 @@ static struct st_table *st_get_video_table (int section, int reverse)
 
 			}
 			st_close_file ();
-			if (reverse)
-				count--;
-			else
-				count++;
+			count++;
 			free (part);
 		}
 	}
@@ -1794,7 +1809,7 @@ char *get_title (struct st_table *tbl, char *fnbase)
 {
 	while (tbl)
 	{
-		if (!strcmp (tbl->fnbase, fnbase))
+		if (!strcasecmp (tbl->fnbase, fnbase))
 			return tbl->title;
 		tbl = tbl->next;
 	}
@@ -2261,7 +2276,7 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 
 	curr = section + 1;
 
-	while ((part = get_part (st_file_type, section, count)))
+	while ((part = get_part (st_file_type, section, count, 0)))
 	{
 		if (current)
 			while (current->next)
@@ -2288,6 +2303,155 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 	return (sort_entries (root, section, options));
 }
 
+int ft_list_has_section (int section)
+{
+	return 0;
+}
+
+void load_ft_list (int section)
+{
+	struct st_part *part;
+	struct st_ftlist *root=NULL, *curr=NULL, *last=NULL;
+	struct st_wl *wl_curr=NULL, *wl_last=NULL;
+	char word[70]="", c=0;
+	int first=0;
+	char fnbase[8], *t;
+	int found_word;
+	FILE *inp=NULL;
+	int count=0, multi, i;
+
+	while ((part = get_part (st_file_type, section, count++, ST_PART_OPT_FTLIST)))
+	{
+		inp = (FILE *) curr_open (part->start);
+
+		for (i=0;i<part->count;i++)
+		{
+			c=0;
+			while (c != ']')
+			{
+				while (getc (inp) != '\"');
+
+				t = word;
+				while ((*t++ = getc (inp)) != '\"')
+					;
+				*--t = 0;
+
+				while ((getc (inp)) != '[');
+
+				first = 1;
+
+				while (c != ']')
+				{
+					curr = (struct st_ftlist *) malloc (sizeof (struct st_ftlist));
+					curr->words = NULL;
+					if (!root)
+						root = curr;
+					if (first)
+					{
+						curr->word = strdup (word);
+						first = 0;
+					} else
+						curr->word = NULL;
+
+					while ((getc (inp)) != '\"');
+					t = fnbase;
+					while ((*t++ = getc (inp)) != '\"')
+						;
+					*--t = 0;
+					curr->fnbase = strdup (fnbase);
+
+					while ((getc (inp) != ':'));
+					getc (inp);
+					if (isdigit (c = getc (inp)))
+					{
+						ungetc (c, inp);
+						multi = 0;
+					} else
+						multi = 1;
+
+					fscanf (inp, "%d", &found_word);
+					wl_curr = (struct st_wl *) malloc (sizeof (struct st_wl));
+					wl_curr->word = found_word;
+					wl_curr->next = NULL;
+					curr->words = wl_curr;
+
+					if (multi)
+					{
+						while (getc (inp) == ',')
+						{
+							wl_last = wl_curr;
+							wl_curr = (struct st_wl *) malloc (sizeof (struct st_wl));
+							wl_curr->next = NULL;
+							wl_last->next = wl_curr;
+							
+							fscanf (inp, "%d", &found_word);
+							wl_curr->word = found_word;
+						}
+					}
+					if (last)
+						last->next = curr;
+					curr->next = NULL;
+					last = curr;
+
+					c = getc (inp);
+				}
+				c = getc (inp);
+			}
+			find_next_stxt_block (inp);
+		}
+		fclose (inp);
+		free (part);
+	}
+	ftlist = root;
+}
+
+struct ency_titles *st_find_fulltext (char *search_string, int section, int options)
+{
+	struct st_ftlist *fl;
+	struct st_wl *wl;
+	struct ency_titles *root=NULL, *curr=NULL;
+	char *last;
+
+	if (!ft_list_has_section (section))
+		load_ft_list (section);
+	if (!ftlist)
+		return NULL;
+
+	if (!st_ptbls)
+		st_ptbls = st_get_table ();
+	if (!st_ptbls)
+		return NULL;
+
+	fl = ftlist;
+
+	if (options & ST_OPT_NO_CACHE)
+		options -= ST_OPT_NO_CACHE;
+	if (options & ST_OPT_MATCH_SUBSTRING)
+		options -= ST_OPT_MATCH_SUBSTRING;
+	options -= ST_OPT_FT;
+
+	while (fl)
+	{
+		if (fl->word)
+			last = fl->word;
+		if (!strcasecmp (last, search_string))
+		{
+			printf ("%s\n", get_title (st_ptbls, fl->fnbase));
+			if (curr)
+			{
+				curr->next = st_find (get_title (st_ptbls, fl->fnbase), section, options | ST_OPT_CASE_SENSITIVE);
+				curr = curr->next;
+			} else
+			{
+				curr = root = st_find (get_title (st_ptbls, fl->fnbase), section, options | ST_OPT_CASE_SENSITIVE);
+			}
+			
+		}
+		fl = fl->next;
+	}
+	return root;
+}
+
 struct ency_titles *st_find (char *search_string, int section, int options)
 {
 	int exact = 0;
@@ -2312,6 +2476,8 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 	case ST_SECT_ENCY:
 	case ST_SECT_EPIS:
 	case ST_SECT_CHRO:
+		if (options & ST_OPT_FT)
+			return (st_find_fulltext (search_string, section, options));
 		if ((cache_has_section(section)) && (!st_return_body))
 			return (st_find_in_cache (section, search_string, exact, 0));
 		else
@@ -2501,7 +2667,7 @@ struct st_media *st_get_media (char *search_string)
 
 		if ((ret_fnbase = get_fnbase (st_vtbls, search_string)))
 		{
-			media->video = st_parse_video_captions (temp_vtbls->fnbase);
+			media->video = st_parse_video_captions (ret_fnbase);
 			media_found = 1;
 		}
 

@@ -314,7 +314,7 @@ const char *st_fileinfo_get_data (int file, st_filename_type type)
 	}
 }
 
-struct st_part *get_part (int file, int section, int number)
+struct st_part *get_part (int file, int section, int number, int options)
 {
 	struct st_part *part=NULL;
 	char *start=NULL,*count=NULL;
@@ -341,8 +341,10 @@ struct st_part *get_part (int file, int section, int number)
 
 		node = node->childs;
 
-		if (number < 0)
-			node = get_nth_xml_node (node, "list", -1-number);
+		if (options & ST_PART_OPT_EPISLIST)
+			node = get_nth_xml_node (node, "list", number);
+		else if (options & ST_PART_OPT_FTLIST)
+			node = get_nth_xml_node (node, "ftlist", number);
 		else
 			node = get_nth_xml_node (node, "part", number);
 

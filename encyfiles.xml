@@ -11,6 +11,7 @@
     <append_series/>
     <fingerprint>58;46;49;52;12;a;bc;0;33;39;56;4d;70;61;6d;69;</fingerprint>
     <section name="Encyclopedia">
+      <ftlist start="0x7c31e0" count="169"/>
       <part start="0xbf5b4" count="6827"/>
       <part start="0x3e260a" count="230"/>
       <part start="0x5b42e2" count="1504"/>

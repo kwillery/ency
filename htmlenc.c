@@ -134,9 +134,10 @@ int main (int argc, char *argv[])
 		{"episode", 0, 0, 'e'},
 		{"chronology", 0, 0, 'c'},
 		{"save", 0, 0, 's'},
+		{"fulltext", 0, 0, 'f'},
 		{0, 0, 0, 0}};
 
-	while ((i = getopt_long (argc, argv, "ecmhs:", long_opts, 0)) != EOF)
+	while ((i = getopt_long (argc, argv, "ecmhs:f", long_opts, 0)) != EOF)
 		switch (i)
 		{
 		case 'm':
@@ -153,6 +154,9 @@ int main (int argc, char *argv[])
 			break;
 		case 's':
 			filename = optarg;
+			break;
+		case 'f':
+			options |= ST_OPT_FT;
 			break;
 		case 'h':
 		default:

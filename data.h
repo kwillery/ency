@@ -9,6 +9,8 @@
 #define ST_SECT_PCPT 12
 #define ST_SECT_VCPT 13
 
+#define ST_PART_OPT_EPISLIST 1
+#define ST_PART_OPT_FTLIST 2
 struct st_part
 {
 	long start;
@@ -21,5 +23,5 @@ void free_xml_doc (void);
 int st_fingerprint (void);
 char *get_name_of_file (int file_type);
 const char *st_fileinfo_get_data (int file, st_filename_type type);
-struct st_part *get_part (int file, int section, int number);
+struct st_part *get_part (int file, int section, int number, int options);
 #endif

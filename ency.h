@@ -53,6 +53,7 @@
 #define ST_OPT_TEXTLEN_MAX32 32
 #define ST_OPT_SORTEPIS 64
 #define ST_OPT_SORTALPHA 128
+#define ST_OPT_FT 256
 
 /* enums/structs */
 typedef enum

@@ -55,11 +55,12 @@ int main (int argc, char *argv[])
 		{"media", 0, 0, 'm'},
 		{"episode", 0, 0, 'e'},
 		{"chronology", 0, 0, 'c'},
+		{"fulltext", 0, 0, 'f'},
 		{0, 0, 0, 0}};
 
 	strcpy (search_string, "");
 
-	while ((i = getopt_long (argc, argv, "echm", long_opts, 0)) != EOF)
+	while ((i = getopt_long (argc, argv, "echmf", long_opts, 0)) != EOF)
 	{
 		switch (i)
 		{
@@ -74,6 +75,9 @@ int main (int argc, char *argv[])
 				options = options | ST_OPT_SORTEPIS;
 			else
 				section = ST_SECT_CHRO;
+			break;
+		case 'f':
+			options |= ST_OPT_FT;
 			break;
 		case 'h':
 		default:
