@@ -56,9 +56,11 @@ These are used in the <ref id="st_autofind" name="st_autofind">, <ref id="st_fin
 <verb>
 struct st_ency_formatting
   {
-    int bi;
-    int words;
     int firstword;
+    int words;
+    int bold;
+    int italic;
+    int underline;
     struct st_ency_formatting *next;
   };
 </verb>
@@ -66,14 +68,8 @@ Returned as part of an <ref id="ency_titles" name="ency_titles"> struct.
 <p>
 <tt/firstword/ is the number of words into an entry the formatting starts (including the title)
 <tt/words/ is how long the formatting goes for
-<tt/bi/ holds information on the actual formatting:
-<itemize>
-<item>0 == no formatting
-<item>1 == bold
-<item>2 == italic
-<item>4 == underline
-</itemize>
-Addition of these numbers is possible, eg. 3 == bold & italic.
+<tt/bold/, <tt/italic/, and <tt/underline/ control what formatting is to be applied.
+More than one can be on, eg Bold & Italic.
 <p>
 <tt/next/ is the next piece of formatting information in the list.
 
