@@ -36,8 +36,6 @@
 
 #define free(A) {if (A) free (A); A=NULL;}
 
-static FILE *inp;
-
 static char *ency_filename = NULL;
 
 int st_return_body = 1;
@@ -60,11 +58,6 @@ struct st_ftlist
 };
 
 struct st_ftlist *ftlist=NULL;
-
-/* for use w/ st_get_title_at() */
-static long int set_starts_at = 0x0;
-
-static long int curr_starts_at, curr;
 
 /* internal */
 #define ST_SECT_PTBL 10
@@ -363,8 +356,9 @@ char *st_fileinfo_get_name (int file_type)
 	return get_name_of_file (file_type);
 }
 
-int curr_open (long start)
+FILE *curr_open (long start)
 {
+	FILE *inp;
 	int i = 0;
 	char *temp_fn = NULL;
 
@@ -401,37 +395,7 @@ int curr_open (long start)
 		}
 	}
 
-	return ((int) inp);
-}
-
-static int st_open ()
-{
-	switch (curr)
-	{
-	case 0:		/* Defaults to ency */
-	case 1:		/* Ency */
-	case 2:		/* Epis */
-	case 3:		/* Chro */
-	case 4:		/* table */
-		break;
-	case 5:		/* Set value */
-		curr_starts_at = set_starts_at;
-		break;
-	case 6:		/* Captions */
-	case 7:		/* video table */
-	case 8:		/* video captions */
-		break;
-	default:
-		return (0);
-		break;
-	}
-	return (curr_open (curr_starts_at));
-}
-
-static int st_close_file (void)
-{
-	fclose (inp);
-	return (0);
+	return (inp);
 }
 
 char *st_autofind (int st_file_version, char *base_dir)
@@ -527,13 +491,13 @@ char *st_autofind (int st_file_version, char *base_dir)
 }
 
 /* media stuff */
-static void find_next_stxt_block (FILE *input)
+static void find_next_stxt_block (FILE *inp)
 {
 	char d[5]="    ";
 	
 	while (!feof (inp))
 	{
-		d[3] = getc (input);
+		d[3] = getc (inp);
 
 		if ((!strcmp (d, "STXT")) || (!strcmp (d, "TXTS")))
 			return;
@@ -543,7 +507,7 @@ static void find_next_stxt_block (FILE *input)
 	}
 }
 
-static struct st_table *read_table (FILE *input, struct st_table *root)
+static struct st_table *read_table (FILE *inp, struct st_table *root)
 {
 	struct st_table *root_tbl = NULL;
 	struct st_table *curr_tbl = NULL;
@@ -577,7 +541,7 @@ static struct st_table *read_table (FILE *input, struct st_table *root)
 	if (c == '\"')
 		ungetc ('[', inp);
 
-	while ((c = getc (input)) != ']')
+	while ((c = getc (inp)) != ']')
 	{	/* main loop */
 
 		curr_tbl = (struct st_table *) malloc (sizeof (struct st_table));
@@ -592,26 +556,26 @@ static struct st_table *read_table (FILE *input, struct st_table *root)
 
 		do
 		{
-			while ((c = getc (input)) != '\"');
-			c = getc (input);
+			while ((c = getc (inp)) != '\"');
+			c = getc (inp);
 		}
 		while (!c);
-		ungetc (c, input);
+		ungetc (c, inp);
 
 		temp_text = malloc (8);
 		text_size = 0;
 			
-		fread (temp_text, 1, 6, input);
+		fread (temp_text, 1, 6, inp);
 		temp_text[6] = 0;
 
 		if (strstr (temp_text, "\""))
 		{
-			fseek (input, -6, SEEK_CUR);
-			while ((c = getc (input)) != '\"');
+			fseek (inp, -6, SEEK_CUR);
+			while ((c = getc (inp)) != '\"');
 			str_text = (strstr (temp_text, "\""));
 			str_text[0] = 0;
 		} else
-			while ((getc (input) != '\"'))
+			while ((getc (inp) != '\"'))
 				;
 
 		curr_tbl->fnbase = temp_text;
@@ -623,8 +587,8 @@ static struct st_table *read_table (FILE *input, struct st_table *root)
 		temp_text = malloc (70);
 		text_size = 0;
 
-		while ((c = getc (input)) != '\"');
-		while ((c = getc (input)) != '\"')
+		while ((c = getc (inp)) != '\"');
+		while ((c = getc (inp)) != '\"')
 		{
 			temp_text[text_size++] = st_cleantext (c);
 		}
@@ -644,20 +608,16 @@ static struct st_table *read_table (FILE *input, struct st_table *root)
 
 static struct st_table *st_get_table ()
 {
+	FILE *inp;
 	int i;
 	int count = 0;
 	struct st_table *root_tbl = NULL;
 	struct st_part *part;
 
-	curr = 4;
-
 	while ((part = get_part (st_file_type, ST_SECT_PTBL, 0, count, 0)))
 	{
-		curr_starts_at = part->start;
-		if (!st_open ())
-		{
+		if ((inp = curr_open (part->start)) == 0)
 			return (NULL);
-		}
 		else
 		{
 
@@ -671,13 +631,13 @@ static struct st_table *st_get_table ()
 				root_tbl = read_table (inp, root_tbl);
 			}
 		}
-		st_close_file ();
+		fclose (inp);
 		count++;
 	}
 	return (root_tbl);
 }
 
-static struct st_caption *read_captions (FILE *input, struct st_caption *root, int section)
+static struct st_caption *read_captions (FILE *inp, struct st_caption *root, int section)
 {
 	int z;
 	struct st_caption *root_cpt = NULL, *curr_cpt = NULL, *last_cpt = NULL;
@@ -693,9 +653,9 @@ static struct st_caption *read_captions (FILE *input, struct st_caption *root, i
 			last_cpt = last_cpt->next;
 	}
 
-	c = getc (input);
+	c = getc (inp);
 	if (c == '[')
-		c = ungetc (c, input);
+		c = ungetc (c, inp);
 
 	while (c != ']')
 	{	/* main loop */
@@ -775,20 +735,16 @@ static struct st_caption *read_captions (FILE *input, struct st_caption *root, i
 
 static struct st_caption *st_get_captions (int section)
 {
+	FILE *inp;
 	int i;
 	int count = 0;
 	struct st_caption *root_cpt = NULL;
 	struct st_part *part;
 
-	curr = 6;
-
 	while ((part = get_part (st_file_type, section, 0, count, 0)))
 	{
-		curr_starts_at = part->start;
-		if (!st_open ())
-		{
+		if ((inp = curr_open (part->start)) == 0)
 			return (NULL);
-		}
 		else
 		{
 			for (i = 0; i < part->count; i++)
@@ -798,7 +754,7 @@ static struct st_caption *st_get_captions (int section)
 			}
 		}
 		count++;
-		st_close_file ();
+		fclose (inp);
 	}
 	return (root_cpt);
 }
@@ -927,19 +883,15 @@ static struct st_table *read_attribs_table (FILE *inp, int section, int count)
 
 static struct st_table *st_get_video_table (int section)
 {
+	FILE *inp;
 	struct st_table *root_tbl = NULL, *curr_tbl=NULL;
 	struct st_part *part;
 	int count=0;
 
-	curr = 7;
-
 	while ((part = get_part (st_file_type, ST_BLOCK_ATTRIB, section == ST_SECT_VTBL ? 0 : section, count, 0)))
 	{
-		curr_starts_at = part->start;
-		if (!st_open ())
-		{
+		if ((inp = curr_open (part->start)) == 0)
 			return (NULL);
-		}
 		else
 		{
 			if (curr_tbl)
@@ -952,7 +904,7 @@ static struct st_table *st_get_video_table (int section)
 			else
 				curr_tbl = root_tbl = read_attribs_table (inp, part->section, part->count);
 
-			st_close_file ();
+			fclose (inp);
 			count++;
 		}
 	}
@@ -1084,7 +1036,7 @@ static int check_match (char *search_string, char *title, int exact)
 	return found;
 }
 
-static struct st_ency_formatting *st_return_fmt (void)
+static struct st_ency_formatting *st_return_fmt (FILE *inp)
 {
 	struct st_ency_formatting *root_fmt = NULL, *last_fmt = NULL, *curr_fmt = NULL;
 	char c = 0;
@@ -1143,7 +1095,7 @@ static struct st_ency_formatting *st_return_fmt (void)
 	return (root_fmt);
 }
 
-static char *st_return_text ()
+static char *st_return_text (FILE *inp)
 {
 	long text_starts_at = 0;
 	int text_size = 1;
@@ -1183,7 +1135,7 @@ static char *st_return_text ()
 	return (temp_text);
 }
 
-static char *st_return_title ()
+static char *st_return_title (FILE *inp)
 {
 	char c;
 	char *title = NULL;
@@ -1371,14 +1323,14 @@ static struct ency_titles *read_entry (FILE *inp, int options)
 		while ((getc (inp) != '@'));
 		getc (inp);
 	} else
-		text_fmt = st_return_fmt ();
+		text_fmt = st_return_fmt (inp);
 
-	ttl = st_return_title ();
+	ttl = st_return_title (inp);
 
 	c = getc (inp);
 
 	if (options & ST_OPT_RETURN_BODY)
-		temp_text = st_return_text ();
+		temp_text = st_return_text (inp);
 
 /* copy pointer stuff over */
 	root_title->filepos = filepos;
@@ -1395,16 +1347,16 @@ static struct ency_titles *read_entry (FILE *inp, int options)
 
 struct ency_titles *st_read_title_at (long filepos, int options)
 {
-	FILE *input;
+	FILE *inp;
 	struct ency_titles *ret=NULL;
 
-	input = (FILE *) curr_open (filepos);
-	if (!input)
+	inp = curr_open (filepos);
+	if (!inp)
 	{
 		return (st_title_error (1));
 	}
 
-	ret = read_entry (input, options);
+	ret = read_entry (inp, options);
 
 	fclose (inp);
 
@@ -1452,6 +1404,7 @@ static void add_to_block_cache (int block_id, int id, long filepos)
 
 static void load_block_cache (int block_id)
 {
+	FILE *inp;
 	char c;
 	int i;
 	int id;
@@ -1459,7 +1412,7 @@ static void load_block_cache (int block_id)
 
 	part = get_part_by_id (st_file_type, block_id);
 
-	inp = (FILE *) curr_open (part->start);
+	inp = curr_open (part->start);
 
 	if (inp)
 	{
@@ -1521,7 +1474,7 @@ static long get_block_pos_from_cache (int block_id, int id, int allow_recursion)
 static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 {
 	static struct ency_titles *ret;
-	FILE *input;
+	FILE *inp;
 	long filepos;
 
 	if (!block_id || !id)
@@ -1536,14 +1489,14 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 	{
 		if (st_return_body)
 		{
-			input = (FILE *) curr_open (filepos);
-			if (!input)
+			inp = curr_open (filepos);
+			if (!inp)
 				fprintf (stderr, "Oh damn! curr_open() failed for %ld (entry %d:%d)\n(%s)\n", filepos, block_id, id, strerror (errno));
-			if (!input)
+			if (!inp)
 				return NULL;
 
-			ret = read_entry (input, options);
-			fclose (input);
+			ret = read_entry (inp, options);
+			fclose (inp);
 		} else {
 			ret = st_new_entry ();
 			if (!ret)
@@ -1648,7 +1601,7 @@ static void load_ft_list (int section)
 
 	while ((part = get_part (st_file_type, ST_BLOCK_FTLIST, section, count++, 0)))
 	{
-		inp = (FILE *) curr_open (part->start);
+		inp = curr_open (part->start);
 		if (!inp)
 			return;
 
@@ -2109,7 +2062,7 @@ static int in_simple_list (long filepos, int entrylen, char *match)
 	FILE *inp;
 	char entry[entrylen+1];
 
-	inp = (FILE *) curr_open (filepos);
+	inp = curr_open (filepos);
 	while (getc (inp) != ']')
 	{
 		while (getc (inp) != '\"');

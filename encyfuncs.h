@@ -9,6 +9,6 @@
 #define ST_SECT_PCPT 12
 #define ST_SECT_VCPT 13
 
-int curr_open (long start);
+FILE *curr_open (long start);
 
 #endif
