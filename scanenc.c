@@ -76,8 +76,9 @@ void check_for_captions (FILE *inp, FILE *outp)
 	{
 		if (fnbase[1] == '\"')
 			fseek (inp, found_at + 2, SEEK_SET);
+		c = getc (inp);
 
-		if (getc (inp) == ':')
+		if ((c == ':') || ((c == ' ') && (getc(inp) == ':')))
 		{
 			fread (temp, 8, 1, inp);
 			if (not_embedding_bracket(temp))
@@ -182,11 +183,23 @@ void find_media_tables (FILE *inp, FILE *outp)
 	while (!feof(inp))
 	{
 		c = getc(inp);
-		if ((c == '\"') && (old_c == '[') && (old_old_c != 0x20))
+		if ((old_c == '[') && (old_old_c != 0x20))
 		{
-			if (!check_for_table(inp, outp))
-				check_for_captions(inp, outp);
+			if (c == '\"')
+			{
+				if (!check_for_table(inp, outp))
+					check_for_captions(inp, outp);
+			} else if (c == '3')
+			{
+				if ((getc (inp) == '9') && (getc (inp) == '5') && (getc (inp) == ':'))
+				{
+					fseek (inp, 0x21, SEEK_CUR);
+					if (getc (inp) == '\"')
+						check_for_table(inp, outp);
+				}
+			}
 		}
+
 		old_old_c = old_c;
 		old_c = c;
 	}

@@ -166,7 +166,7 @@ static int is_all_ascii (char *string)
 
 static int ends_in_number (char *string, int expected_length)
 {
-	return (isdigit(string[expected_length]));
+	return (isdigit(string[expected_length]) || (string[expected_length] == 'F'));
 }
 
 static int ends_in_quote (char *string, int expected_length)
@@ -512,9 +512,9 @@ static const char *st_fileinfo_get_data (int file, st_filename_type type)
 			return "";
 		case video:
 			return "";
-/*		case append_char:
-			return st_files[file].append_char ? "yes" : NULL;
-		case prepend_year:
+		case append_char:
+			return "yes";
+/*		case prepend_year:
 			return st_files[file].prepend_year ? "yes" : NULL;
 		case append_series:
 			return st_files[file].append_series ? "yes" : NULL; */
@@ -968,13 +968,19 @@ static struct st_caption *read_captions (FILE *input, struct st_caption *root, i
 
 		do
 		{
-			while ((c != '\"') && (c != '[') && (c = getc (inp)) != (' '));
+			while ((c != '\"') && (c != '[') && ((c = getc (inp)) != ' '));
 			c = getc (inp);
 		}
 		while (!c);
 		ungetc (c, inp);
+
 		if ((c = getc (inp)) != ' ')
 			c = ungetc (c, inp);
+		if ((c = getc (inp)) != ' ')
+			c = ungetc (c, inp);
+		if ((c = getc (inp)) != ' ')
+			c = ungetc (c, inp);
+
 		if ((c = getc (inp)) != '\"')
 			c = ungetc (c, inp);
 		if ((c = getc (inp)) != ':')
@@ -984,10 +990,13 @@ static struct st_caption *read_captions (FILE *input, struct st_caption *root, i
 
 			temp_text = malloc (8);
 
-			text_size = (section == ST_SECT_PCPT) ? 7 : 6;
+			text_size = (section == ST_SECT_PCPT) ? 8 : 7;
 
 			fread (temp_text, 1, text_size, inp);
-			temp_text[text_size] = 0;
+			if (temp_text[text_size-1] != '\"')
+				while ((getc (inp)) != '\"');
+
+			temp_text[text_size-1] = 0;
 
 			z = 0;
 			while ((temp_text[z] = tolower (temp_text[z])))
@@ -1166,45 +1175,48 @@ static struct st_table *st_get_video_table (void)
 	return (root_tbl);
 }
 
-static void check_for_captions (FILE *inp)
+static void check_for_captions (FILE *input)
 {
 	char c=0;
 	char fnbase[9]="        ";
 	char temp[9] = "        ";
 	long found_at;
 
-	found_at = ftell (inp);
+	found_at = ftell (input);
 
-	fread (fnbase, 8, 1, inp);
+	fread (fnbase, 8, 1, input);
 	st_cleanstring (fnbase);
 
 	if (is_all_ascii (fnbase) && ends_in_quote (fnbase, 7) && ends_in_number (fnbase, 6))
 	{
 		if (fnbase[1] == '\"')
-			fseek (inp, found_at + 2, SEEK_SET);
+			fseek (input, found_at + 2, SEEK_SET);
 
-		if (getc (inp) == ':')
+		c = getc (input);
+
+		if ((c == ':') || ((c == ' ') && (getc(input) == ':')))
 		{
-			fread (temp, 8, 1, inp);
+			fread (temp, 8, 1, input);
 			if (not_embedding_bracket(temp))
 			{
 				if (doesnt_have_junk(temp))
 				{
 					*strchr (fnbase, '\"') = 0;
 
-					fseek (inp, found_at, SEEK_SET);
+					fseek (input, found_at, SEEK_SET);
+					c=0;
 					while ((c != ']') && (c != '\"'))
-						c = getc (inp);
+						c = getc (input);
 					if (c == ']')
 						return;
-					while ((c = getc (inp)) != '\"')
+					while ((c = getc (input)) != '\"')
 						;
-					while ((c = getc (inp)) != '\"')
+					while ((c = getc (input)) != '\"')
 						;
-					while ((c = getc (inp)) != '\"')
+					while ((c = getc (input)) != '\"')
 						;
 
-					fread (temp, 8, 1, inp);
+					fread (temp, 8, 1, input);
 					if (!is_all_ascii (temp))
 						return;
 					if (!ends_in_quote (temp, 7))
@@ -1212,53 +1224,53 @@ static void check_for_captions (FILE *inp)
 					if (!ends_in_number (temp, 6))
 						return;
 
-					fseek (inp, (found_at > 2) ? (found_at - 2) : found_at, SEEK_SET);
-					add_to_captions (read_captions (inp, NULL, ST_SECT_PCPT), ST_SECT_PCPT);
+					fseek (input, (found_at > 2) ? (found_at - 2) : found_at, SEEK_SET);
+					add_to_captions (read_captions (input, NULL, ST_SECT_PCPT), ST_SECT_PCPT);
 					return;
 				}
 			}
 		}
 	}
-	fseek (inp, found_at, SEEK_SET);
+	fseek (input, found_at, SEEK_SET);
 }
 
-static int check_for_table (FILE *inp)
+static int check_for_table (FILE *input)
 {
 	char c=0;
 	char fnbase[8]="       ";
 	char temp[8] = "       ";
 	long found_at;
 
-	found_at = ftell (inp);
+	found_at = ftell (input);
 
-	fread (fnbase, 7, 1, inp);
+	fread (fnbase, 7, 1, input);
 	st_cleanstring (fnbase);
 
 	if (is_all_ascii (fnbase) && ends_in_quote (fnbase, 6))
 	{
 		if (fnbase[1] == '\"')
-			fseek (inp, found_at + 2, SEEK_SET);
+			fseek (input, found_at + 2, SEEK_SET);
 
-		if (getc (inp) == ':')
+		if (getc (input) == ':')
 		{
-			fread (temp, 7, 1, inp);
+			fread (temp, 7, 1, input);
 			if (not_embedding_bracket(temp))
 			{
 				if (doesnt_have_junk(temp))
 				{
-					fseek (inp, found_at, SEEK_SET);
+					fseek (input, found_at, SEEK_SET);
 					while ((c != ']') && (c != '\"'))
-						c = getc (inp);
+						c = getc (input);
 					if (c == ']')
 						return 0;
-					while ((c = getc (inp)) != '\"')
+					while ((c = getc (input)) != '\"')
 						;
-					while ((c = getc (inp)) != '\"')
+					while ((c = getc (input)) != '\"')
 						;
-					while ((c = getc (inp)) != '\"')
+					while ((c = getc (input)) != '\"')
 						;
 
-					fread (temp, 7, 1, inp);
+					fread (temp, 7, 1, input);
 					if (!is_all_ascii (temp))
 						return 0;
 					if (!ends_in_quote (temp, 6))
@@ -1266,29 +1278,40 @@ static int check_for_table (FILE *inp)
 
 					*strchr (fnbase, '\"') = 0;
 
-					fseek (inp, (found_at > 2) ? (found_at - 2) : found_at, SEEK_SET);
-					add_to_table (read_table (inp, NULL), ST_SECT_PTBL);
+					fseek (input, (found_at > 2) ? (found_at - 2) : found_at, SEEK_SET);
+					add_to_table (read_table (input, NULL), ST_SECT_PTBL);
 
 					return 1;
 				}
 			}
 		}
 	}
-	fseek (inp, found_at, SEEK_SET);
+	fseek (input, found_at, SEEK_SET);
 	return 0;
 }
 
-static void get_unknown_tables (FILE *inp)
+static void get_unknown_tables (FILE *input)
 {
 	unsigned char c=0, old_c=0, old_old_c=0;
 
-	while (!feof(inp))
+	while (!feof(input))
 	{
-		c = getc(inp);
-		if ((c == '\"') && (old_c == '[') && (old_old_c != 0x20))
+		c = getc(input);
+		if ((old_c == '[') && (old_old_c != 0x20))
 		{
-			if (!check_for_table(inp))
-				check_for_captions(inp);
+			if (c == '\"')
+			{
+				if (!check_for_table(input))
+					check_for_captions(input);
+			} else if (c == '3')
+			{
+				if ((getc (input) == '9') && (getc (input) == '5') && (getc (input) == ':'))
+				{
+					fseek (input, 0x21, SEEK_CUR);
+					if (getc (input) == '\"')
+						check_for_table(input);
+				}
+			}
 		}
 		old_old_c = old_c;
 		old_c = c;
@@ -1317,6 +1340,7 @@ int st_load_media (void)
 		if (!st_open())
 			return 0;
 		get_unknown_tables (inp);
+		st_close_file ();
 	}
 
 	return (1);
