@@ -382,5 +382,8 @@ struct st_part *get_part (int file, int section, int number, int options)
 		sscanf (start, "%ld", &(part->start));
 	sscanf (count, "%ld", &(part->count));
 
+	free (start);
+	free (count);
+
 	return part;
 }

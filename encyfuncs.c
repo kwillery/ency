@@ -130,6 +130,7 @@ struct st_wl
 
 struct st_ftlist
 {
+	int section;
 	char *word;
 	char *fnbase;
 	struct st_wl *words;
@@ -2305,6 +2306,15 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 
 int ft_list_has_section (int section)
 {
+	struct st_ftlist *fl=NULL;
+
+	fl = ftlist;
+	while (fl)
+		if (fl->section == section)
+			return 1;
+		else
+			fl = fl->next;
+
 	return 0;
 }
 
@@ -2324,7 +2334,7 @@ void load_ft_list (int section)
 	{
 		inp = (FILE *) curr_open (part->start);
 		if (!inp)
-			return NULL;
+			return;
 
 		for (i=0;i<part->count;i++)
 		{
@@ -2346,6 +2356,8 @@ void load_ft_list (int section)
 				{
 					curr = (struct st_ftlist *) malloc (sizeof (struct st_ftlist));
 					curr->words = NULL;
+					curr->section = section;
+
 					if (!root)
 						root = curr;
 					if (first)
@@ -2436,6 +2448,7 @@ struct ency_titles *st_find_fulltext (char *search_string, int section, int opti
 	{
 		if (fl->word)
 			last = fl->word;
+
 		if (!strcasecmp (last, search_string))
 		{
 			title = get_title (st_ptbls, fl->fnbase);
@@ -2444,7 +2457,8 @@ struct ency_titles *st_find_fulltext (char *search_string, int section, int opti
 				if (curr)
 				{
 					curr->next = st_find (get_title (st_ptbls, fl->fnbase), section, options | ST_OPT_CASE_SENSITIVE);
-					curr = curr->next;
+					while (curr->next)
+						curr = curr->next;
 				} else
 				{
 					curr = root = st_find (get_title (st_ptbls, fl->fnbase), section, options | ST_OPT_CASE_SENSITIVE);
