@@ -1138,7 +1138,7 @@ static struct st_ency_formatting *st_return_fmt (void)
 	return (root_fmt);
 }
 
-static char *st_return_text (int options)
+static char *st_return_text ()
 {
 	long text_starts_at = 0;
 	int text_size = 1;
@@ -1373,7 +1373,7 @@ static struct ency_titles *read_entry (FILE *inp, int options)
 	c = getc (inp);
 
 	if (options & ST_OPT_RETURN_BODY)
-		temp_text = st_return_text (options);
+		temp_text = st_return_text ();
 
 /* copy pointer stuff over */
 	root_title->filepos = filepos;
