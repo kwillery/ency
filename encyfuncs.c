@@ -1911,9 +1911,15 @@ static struct ency_titles *st_find_unknown (int section, char *search_string, in
 	long this_one_starts_at = 0;
 	struct ency_titles *curr_title = NULL;
 	char last_start=0;
+	char *new_title=NULL;
+	char last_year[5];
 	int last_section=-1;
-	
+	int prepend_year=0, append_series=0, c=0;
+
 	FILE *input_temp;
+
+	prepend_year = (st_fileinfo_get_data (st_file_type, prepend_year) ? 1 : 0);
+	append_series = (st_fileinfo_get_data (st_file_type, append_series) ? 1 : 0);
 
 	if ((cache[section] == NULL) && st_open ())
 	{
@@ -1929,6 +1935,58 @@ static struct ency_titles *st_find_unknown (int section, char *search_string, in
 			if ((!last_start) || (last_start > tolower (*curr_title->title)) || ((last_start == '\"') && (*curr_title->title != '\"')))
 				last_section = st_guess_section (curr_title->title, curr_title->text, last_section);
 			last_start = *curr_title->title;
+
+			/* some chronology entries need years prepended */
+			if ((last_section == 2) && prepend_year)
+			{
+				/* if it's a year, save it */
+				if (strlen (curr_title->title) == 4)
+				{
+					strcpy (last_year, curr_title->title);
+				}
+				/* if it's an episode or a movie, add the year */
+				if ((*curr_title->title == '\"') || (!strncmp (curr_title->title, "Star Trek", 9)))
+				{
+					new_title = (char *) malloc (strlen (curr_title->title) + 6);
+					sprintf (new_title, "%s %s", last_year, curr_title->title);
+					free (curr_title->title);
+					curr_title->title = new_title;
+				}
+			}
+
+			/* and episode entries need (TOS) etc. appended */
+			if ((curr == 1) && append_series)
+			{
+				getc (inp);
+				c = getc (inp);
+				if (c == 0x0D)
+				{
+					c = getc (inp);
+					fseek (inp, -1, SEEK_CUR);
+				}
+				fseek (inp, -2, SEEK_CUR);
+				new_title = (char *) malloc (strlen (curr_title->title) + 7);
+				switch (c)
+				{
+				case 'O':
+					sprintf (new_title, "%s (TOS)", curr_title->title);
+					break;
+				case 'N':
+					sprintf (new_title, "%s (TNG)", curr_title->title);
+					break;
+				case 'D':
+					sprintf (new_title, "%s (DS9)", curr_title->title);
+					break;
+				case 'V':
+					sprintf (new_title, "%s (VGR)", curr_title->title);
+					break;
+				default:
+					sprintf (new_title, "%s", curr_title->title);
+					break;
+				}
+				free (curr_title->title);
+				curr_title->title = new_title;
+			}
 
 			/* build the cached version of this entry */
 			st_add_to_cache (last_section,curr_title->title,this_one_starts_at);
