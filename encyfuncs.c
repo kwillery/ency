@@ -88,6 +88,8 @@ int st_init (void)
 {
 	if (count_files() == 0) /* If there isnt an RC file already loaded... */
 		load_rc_file_info(NULL);
+	if (!count_files())
+		fprintf (stderr, "ency: Warning - could not load RC file\n");
 	st_file_type = st_fingerprint ();
 	return (st_file_type >= 254 ? 0 : 1);
 }
