@@ -25,6 +25,10 @@
 #ifndef ENCY_H
 #define ENCY_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 
 #define ST_FILE_TYPES st_count_filetypes()
@@ -187,4 +191,7 @@ unsigned char *st_cleanstring (unsigned char *string);
 void st_ultraclean_string (unsigned char *string);
 char *st_lcase (char *mcase);
 
+#ifdef __cplusplus
+}
+#endif
 #endif
