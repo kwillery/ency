@@ -164,7 +164,7 @@ struct st_photo {
 };
 </verb>
 This struct is returned in <ref id="st_media" name="st_media"> structs (see <ref id="st_get_media" name="st_get_media">)
-<tt/file/ is the first 8 characters of the filename of the photo the caption is referring to.
+<tt/file/ is the first 7 characters of the filename of the photo the caption is referring to.
 <tt/file/ should be processed by <ref id="st_format_filename" name="st_format_filename"> to get a usable filename.
 
 
@@ -175,9 +175,10 @@ Returned by <ref id="st_get_media" name="st_get_media">.
 <verb>
 struct st_media {
   struct st_photo photos[5];
+  char *video;
 };
 </verb>
-There are five <ref id="st_photo" name="st_photo"> structs in <tt/photos/. There will probably be a <tt/video/ entry of some sort eventually.
+There are five <ref id="st_photo" name="st_photo"> structs in <tt/photos/. The <tt/video/ string is the first 7 letters of the filename, and should be processed by <ref id="st_format_filename" name="st_format_filename"> to get a usable filename.
 
 
 
@@ -431,13 +432,23 @@ int main (int argc, char *argv[])
       /* print the returned text */
       printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
       media = st_get_media(thingy->title);
+
       if (media)
+      {
+        printf ("Associated media:\n");
         for (i = 0; i < 5; i++)
-         if (strlen (media->photos[i].file)) {   /* if there is a response */
+          if (strlen (media->photos[i].file)) {   /* if there is photos #i */
             temp_fn = st_format_filename (media->photos[i].file, base_path, 0);
             printf ("%s: %s\n", temp_fn, media->photos[i].caption);
-         }
-
+            free (temp_fn);
+          }
+        if (media->video) {   /* if there is a video */
+          temp_fn = st_format_filename (media->video, base_path, 1);
+          printf ("%s: %s\n", temp_fn, thingy->title);
+          free (temp_fn);
+        }
+        free (media); media = NULL; /* free the returned media struct */
+      }
 
       /* free the returned stuff */
       kill_me = thingy;
