@@ -583,26 +583,6 @@ char *st_autofind (int st_file_version, char *base_dir)
 	return (NULL);
 }
 
-/* Try to find the beginning of the next STXT block.
- * This is very simple and could be easily
- * fooled as it doesn't actually use the file's block
- * format. (It just looks for "STXT" or "TXTS").*/
-static void find_next_stxt_block (FILE *inp)
-{
-	char d[5]="    ";
-	
-	while (!feof (inp))
-	{
-		d[3] = getc (inp);
-
-		if ((!strcmp (d, "STXT")) || (!strcmp (d, "TXTS")))
-			return;
-		d[0] = d[1];
-		d[1] = d[2];
-		d[2] = d[3];
-	}
-}
-
 /* Read in a small block of text.
  * It handles quoted text properly and
  * everything! :-D */
@@ -867,37 +847,28 @@ static struct st_caption *st_get_captions (int section)
 /* Loads 'count' attribs tables in 'inp'. The
  * section is given so it can be put into the
  * entry's data. */
-static struct st_table *read_attribs_table (FILE *inp, int section, int count)
+static struct st_table *read_attribs_table (FILE *inp, int section)
 {
 	struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
 	char c;
-	int i;
 	int in_quote;
 	int level, commas;
 
-	for (i = 0; i < count; i++)
-	{
-		if (i)
-		{
-			find_next_stxt_block (inp);
-			fseek (inp, 16, SEEK_CUR);
-		}
+	c = getc (inp);
 
-		c = getc (inp);
+	if (c == 0)
+		return NULL;
 
-		if (c == 0)
-			return NULL;
+	if (ungetc (getc (inp), inp) == ']')
+		return NULL;
 
-		if (ungetc (getc (inp), inp) == ']')
-			return NULL;
+	if (ungetc (getc (inp), inp) == ':')
+		return NULL;
 
-		if (ungetc (getc (inp), inp) == ':')
-			return NULL;
+	if (c != '[')
+		ungetc (c, inp);
 
-		if (c != '[')
-			ungetc (c, inp);
-
-		while (!feof (inp))
+	while (!feof (inp))
 		{	/* main loop */
 
 			curr_tbl = st_new_table ();
@@ -911,42 +882,42 @@ static struct st_table *read_attribs_table (FILE *inp, int section, int count)
 
 			c = getc (inp);
 			if (c == ':')
-			{
-				c = getc (inp);
-				c = getc (inp);
-				level = 1;
-				commas = 0;
-				in_quote = 0;
-				while (level)
 				{
 					c = getc (inp);
-					if (!in_quote)
-					{
-						if (c == '[')
-							level++;
-						if (c == ']')
-							level--;
-						if ((level == 1) && (c == ','))
-							commas++;
-						/* commas == 4 is video fnbase, 5 is aif FN */
-						if ((c == '\"') && ((commas == 4) || (commas == 5)))
+					c = getc (inp);
+					level = 1;
+					commas = 0;
+					in_quote = 0;
+					while (level)
 						{
-							ungetc (c, inp);
-							if (commas == 4)
-								curr_tbl->fnbase = get_text_from_file_max_length (inp, 20);
-							else
-								curr_tbl->audio = get_text_from_file_max_length (inp, 20);
-							c=0;
+							c = getc (inp);
+							if (!in_quote)
+								{
+									if (c == '[')
+										level++;
+									if (c == ']')
+										level--;
+									if ((level == 1) && (c == ','))
+										commas++;
+									/* commas == 4 is video fnbase, 5 is aif FN */
+									if ((c == '\"') && ((commas == 4) || (commas == 5)))
+										{
+											ungetc (c, inp);
+											if (commas == 4)
+												curr_tbl->fnbase = get_text_from_file_max_length (inp, 20);
+											else
+												curr_tbl->audio = get_text_from_file_max_length (inp, 20);
+											c=0;
+										}
+									if (commas == 8) /* Block ID */
+										fscanf (inp, "%d", &(curr_tbl->block_id));
+									if (commas == 9) /* Entry ID in block*/
+										fscanf (inp, "%d", &(curr_tbl->id));
+								}
+							if (c == '\"')
+								in_quote = !in_quote;
 						}
-						if (commas == 8) /* Block ID */
-							fscanf (inp, "%d", &(curr_tbl->block_id));
-						if (commas == 9) /* Entry ID in block*/
-							fscanf (inp, "%d", &(curr_tbl->id));
-					}
-					if (c == '\"')
-						in_quote = !in_quote;
 				}
-			}
 
 			if (curr_tbl->fnbase)
 				st_cleanstring (curr_tbl->fnbase);
@@ -968,7 +939,6 @@ static struct st_table *read_attribs_table (FILE *inp, int section, int count)
 				break;
 
 		}
-	}
 	return root_tbl;
 }
 
@@ -990,10 +960,10 @@ static struct st_table *st_get_video_table (int section)
 		{
 			while (curr_tbl->next)
 				curr_tbl = curr_tbl->next;
-			curr_tbl->next = read_attribs_table (inp, block->section, block->count);
+			curr_tbl->next = read_attribs_table (inp, block->section);
 		}
 		else
-			curr_tbl = root_tbl = read_attribs_table (inp, block->section, block->count);
+			curr_tbl = root_tbl = read_attribs_table (inp, block->section);
 
 		fclose (inp);
 

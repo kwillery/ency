@@ -32,9 +32,7 @@ struct st_block
 	int type;
 	int section;
 	long start;
-	long count;
 	int start_id;
-	int bcount;
 	long size;
 	char *dir;
 	struct st_block *next;

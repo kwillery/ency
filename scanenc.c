@@ -268,7 +268,6 @@ static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock
 
 	strcpy (tmp->btype, btype);
 	identify_section (tmp);
-	tmp->count = 1;
 	tmp->start_id = 0;
 	tmp->next = NULL;
 

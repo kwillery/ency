@@ -305,12 +305,8 @@ static struct st_block *append_block_from_rc_file (struct st_block *block_root, 
 		sscanf (section, "%d", &(block->section));
 	if (start)
 		sscanf (start, "%ld", &(block->start));
-	if (count)
-		sscanf (count, "%ld", &(block->count));
 	if (start_id)
 		sscanf (start_id, "%d", &(block->start_id));
-	if (bcount)
-		sscanf (bcount, "%d", &(block->bcount));
 
 	if (block_last)
 		block_last->next = block;

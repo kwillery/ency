@@ -136,9 +136,7 @@ struct st_block *new_block()
 		block->type = 0;
 		block->section = 0;
 		block->start = 0;
-		block->count = 0;
 		block->start_id = 0;
-		block->bcount = 1;
 		block->dir = NULL;
 		block->next = NULL;
 		strcpy (block->btype, "");
