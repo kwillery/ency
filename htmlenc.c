@@ -179,9 +179,16 @@ int main (int argc, char *argv[])
 	for (i = 0; i < 5; i++)
 	  if (strlen (media->photos[i].file)) {   /* if there is photos #i */
             temp_fn = st_format_filename (media->photos[i].file, base_path, 0);
-            printf ("<li>%s: %s\n</li>", temp_fn, media->photos[i].caption);
+            printf ("<li><a href=\"%s\">%s</a> (picture)\n</li>", temp_fn, media->photos[i].caption);
 	    free (temp_fn);
 	  }
+	if (media->video) {
+          temp_fn = st_format_filename (media->video, base_path, 1);
+          printf ("<li><a href=\"%s\">%s</a> (video)\n</li>\n", temp_fn, thingy->title);
+          free (temp_fn);
+        }
+        free (media); media = NULL;
+
 	printf ("</ul>");
       }
 

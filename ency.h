@@ -70,10 +70,6 @@ struct ency_titles *epis_find_list (char[], int);
 struct ency_titles *chro_find_list (char[], int);
 struct ency_titles *get_title_at (long);
 
-/* For manual captioning / filename retrieval */
-struct st_table *st_get_table (void);
-struct st_caption *st_get_captions (void);
-
 /* Takes an error # & returns a string */
 char *st_nice_error (int);
 int st_fingerprint (void);
@@ -127,6 +123,7 @@ struct st_photo {
 
 struct st_media {
   struct st_photo photos[5];
+  char *video;
 };
 
 #endif

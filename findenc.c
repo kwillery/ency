@@ -103,6 +103,7 @@ int main (int argc, char *argv[])
       printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
       
       media = st_get_media(thingy->title);
+
       if (media)
       {
 	printf ("Associated media:\n");
@@ -112,6 +113,12 @@ int main (int argc, char *argv[])
             printf ("%s: %s\n", temp_fn, media->photos[i].caption);
 	    free (temp_fn);
 	  }
+	if (media->video) {
+	  temp_fn = st_format_filename (media->video, base_path, 1);
+          printf ("%s: %s\n", temp_fn, thingy->title);
+          free (temp_fn);
+	}
+	free (media); media = NULL;
       }
       
 
