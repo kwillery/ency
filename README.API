@@ -7,7 +7,7 @@ ency API
 global variables
 ----------------
 extern char *ency_filename;
- sets the Data.cxt filename explicitely (eg "/dose/ency98/Data.cxt")
+ sets the Data.cxt filename explicitly (eg "/dose/ency98/Data.cxt")
 extern int st_ignore_case;
  sets for most functions to ignore case when searching
 extern int st_return_body;

@@ -111,16 +111,20 @@ curr_open (void)
 
   if (inp)
     {
-      fseek (inp, curr_starts_at, SEEK_CUR);
-      file_pos_is += curr_starts_at;
+      i = fseek (inp, curr_starts_at, SEEK_SET);
+      file_pos_is = curr_starts_at;
     }
+if (i == 0)
   return ((int) inp);
+else
+ return (0);
 }
 
 int
 curr_close (void)
 {
   fclose (inp);
+  file_pos_is = 0;
   return (0);
 }
 
@@ -392,7 +396,7 @@ curr_return_text (void)
 	}
     }
   temp_text[text_size - 1] = 0;
-  printf ("\n");
+//  printf ("\n");
   return (temp_text);
 }
 char *
@@ -460,6 +464,21 @@ chro_return_title (void)
   return (curr_return_title ());
 }
 
+char *st_nice_error (int error_no)
+{
+char *error_text;
+switch (error_no) {
+case 1:
+return("The Data.cxt file was not found");
+break;
+case 2:
+return("Memory allocation error");
+break;
+default:
+return("An error has occurred");
+break;
+}
+}
 struct ency_titles *
 st_title_error (int error_no)
 {
