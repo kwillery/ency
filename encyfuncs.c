@@ -457,10 +457,10 @@ static int curr_open (void)
 				if ((temp_fn = st_autofind (i,".")))
 				{
 					st_set_filename (temp_fn);
+					free (temp_fn);
 					break;
 				}
 			}
-			if (ency_filename == NULL) return (0);
 		}
 		else
 		{
@@ -468,8 +468,10 @@ static int curr_open (void)
 			{
 				st_force_unknown_file (1);
 				st_set_filename (temp_fn);
+				free (temp_fn);
 			}
 		}
+	if (ency_filename == NULL) return (0);
 	}
 	inp = fopen (ency_filename, "rb");
 
@@ -570,6 +572,8 @@ char *st_autofind (int st_file_version, char *base_dir)
 		sprintf (test_filename, "%s", base_dir);
 		if (st_fingerprint () == st_file_version)
 		{
+			free (lc_data_dir);
+			free (lc_filename);
 			ency_filename = ency_fn_backup;
 			return (test_filename);
 		}
@@ -577,6 +581,8 @@ char *st_autofind (int st_file_version, char *base_dir)
 		sprintf (test_filename, "%s/%s", base_dir, filename);
 		if (st_fingerprint () == st_file_version)
 		{
+			free (lc_data_dir);
+			free (lc_filename);
 			ency_filename = ency_fn_backup;
 			return (test_filename);
 		}
@@ -584,6 +590,8 @@ char *st_autofind (int st_file_version, char *base_dir)
 		sprintf (test_filename, "%s/%s/%s", base_dir, data_dir, filename);
 		if (st_fingerprint () == st_file_version)
 		{
+			free (lc_data_dir);
+			free (lc_filename);
 			ency_filename = ency_fn_backup;
 			return (test_filename);
 		}
@@ -591,6 +599,8 @@ char *st_autofind (int st_file_version, char *base_dir)
 		sprintf (test_filename, "%s/%s", base_dir, lc_filename);
 		if (st_fingerprint () == st_file_version)
 		{
+			free (lc_data_dir);
+			free (lc_filename);
 			ency_filename = ency_fn_backup;
 			return (test_filename);
 		}
@@ -598,6 +608,8 @@ char *st_autofind (int st_file_version, char *base_dir)
 		sprintf (test_filename, "%s/%s/%s", base_dir, lc_data_dir, lc_filename);
 		if (st_fingerprint () == st_file_version)
 		{
+			free (lc_data_dir);
+			free (lc_filename);
 			ency_filename = ency_fn_backup;
 			return (test_filename);
 		}
@@ -605,6 +617,8 @@ char *st_autofind (int st_file_version, char *base_dir)
 		sprintf (test_filename, "%s/%s/%s", base_dir, data_dir, lc_filename);
 		if (st_fingerprint () == st_file_version)
 		{
+			free (lc_data_dir);
+			free (lc_filename);
 			ency_filename = ency_fn_backup;
 			return (test_filename);
 		}
@@ -612,6 +626,8 @@ char *st_autofind (int st_file_version, char *base_dir)
 		sprintf (test_filename, "%s/%s/%s", base_dir, lc_data_dir, lc_filename);
 		if (st_fingerprint () == st_file_version)
 		{
+			free (lc_data_dir);
+			free (lc_filename);
 			ency_filename = ency_fn_backup;
 			return (test_filename);
 		}
