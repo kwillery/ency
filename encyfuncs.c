@@ -1572,7 +1572,11 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 				if (curr)
 				{
 					curr->next = get_entry_by_id (tbl->block_id, tbl->id, options);
-					if (curr->next) /* if it was there*/
+					if (!curr->next)
+					{
+						tmp = tmp->next;
+						continue;
+					} else
 						curr = curr->next;
 				}
 				else
