@@ -118,7 +118,7 @@ static void st_clear_cache(void);
 int st_init (void)
 {
   st_fingerprint ();
-  return (st_file_type >= 254 ? 0 : 1);
+  return (st_file_type >= 254 ? force_unknown : 1);
 }
 
 int st_finish (void)
@@ -942,6 +942,30 @@ int st_unload_media (void)
 
 
 /* unsorted, mostly file/data stuff */
+static int check_match (char *search_string, char *title, int exact)
+{
+    int found = 0;
+    char *lc_title=NULL;
+    char *lc_search_string=NULL;
+
+    /* Is this the one we want?? */
+    if ((!exact) && strstr (title, search_string))
+      found = 1;
+    if ((exact == 1) && (!strcmp (title, search_string)))
+      found = 1;
+    if (exact == 2)
+      found = 1;
+    if (st_ignore_case) {
+        lc_title = st_lcase (title);
+        lc_search_string = st_lcase (search_string);
+	    if ((!exact) && (strstr (lc_title, lc_search_string)))
+	found = 1;
+      if ((exact == 1) && (!strcasecmp (title, search_string)))
+	found = 1;
+    }
+return found;
+}
+
 static void st_clear_cache()
 {
   int i;
@@ -951,6 +975,7 @@ static void st_clear_cache()
   }
 }
 
+/* old one
 static void st_find_start (void)
 {
   unsigned char c=0,old_c=0;
@@ -970,6 +995,48 @@ static void st_find_start (void)
       old_c = c;
     }
 }
+*/
+/* brand new one :) */
+static int
+st_find_start (void)
+{
+  unsigned char c = 0, old_c = 0, old_old_c = 0, old_old_old_c = 0;
+  int keep_going = 1;
+  while (keep_going)
+    {
+      if (feof (inp)) return 0;
+      c = getc (inp);
+      if (c == '1')
+        {
+          switch (old_c)
+            {
+            case '~':
+              keep_going = 0;
+              fseek (inp, -2, SEEK_CUR);
+              break;
+            case 0x16:
+              if (old_old_c == 0)
+                {
+                  keep_going = 0;
+                  fseek (inp, -1, SEEK_CUR);
+                }
+              break;
+            case '@':
+              if ((old_old_c == 0x16) && (old_old_old_c == 0))
+                {
+                  keep_going = 0;
+                  fseek (inp, -1, SEEK_CUR);
+                }
+              break;
+            }
+        }
+      old_old_old_c = old_old_c;
+      old_old_c = old_c;
+      old_c = c;
+    }
+  return (feof(inp) ? 0 : 1);
+}
+
 
 static struct st_ency_formatting *st_return_fmt (void)
 {
@@ -1431,46 +1498,82 @@ static struct ency_titles *st_find_in_cache (int section, char *search_string, i
 return (r_r);
 }
 
+struct ency_titles *st_find_unknown (char *search_string, int exact)
+{
+    struct ency_titles *root_title = NULL, *curr_title=NULL, *last_title=NULL;
+    FILE *input_temp;
+    
+    if (cache[0])
+        return (st_find_in_cache (0, search_string, exact));
+    if (st_open())
+    {
+        while (st_find_start())
+        {
+            /* get_title_at opens the file again, so... */
+            input_temp = inp;
+            curr_title = get_title_at (ftell(input_temp));
+            inp = input_temp;
+            getc(inp); /* make sure we dont get the same entry again */
+            
+            if (check_match (search_string, curr_title->title, exact))
+            {
+                if (!root_title) root_title = curr_title;
+                if (last_title)
+                    last_title->next = curr_title;
+                last_title = curr_title;
+            } else {
+                st_free_entry (curr_title);
+            }
+        }
+    }
+    return (root_title);
+}
+
 struct ency_titles *st_find (char *search_string, int section, int options)
 {
   int exact = 0;
-  if (options & ST_OPT_CASE_SENSITIVE)
-    st_ignore_case = 0;
-  else
-    st_ignore_case = 1;
 
-  if (options & ST_OPT_RETURN_BODY)
-    st_return_body = 1;
-  else
-    st_return_body = 0;
+    if (options & ST_OPT_CASE_SENSITIVE)
+      st_ignore_case = 0;
+    else
+      st_ignore_case = 1;
+  
+    if (options & ST_OPT_RETURN_BODY)
+      st_return_body = 1;
+    else
+      st_return_body = 0;
 
-  if (options & ST_OPT_MATCH_SUBSTRING)
-    exact = 0;
-  else
-    exact = 1;
+    if (options & ST_OPT_MATCH_SUBSTRING)
+      exact = 0;
+    else
+      exact = 1;
 
-  switch (section)
-    {
-    case ST_SECT_ENCY:
-     if ((cache[0]) && (!st_return_body))
-	return (st_find_in_cache (0, search_string, exact));
-      return (ency_find_list (search_string, exact));
-      break;
-    case ST_SECT_EPIS:
-      if ((cache[1]) && (!st_return_body))
-	return (st_find_in_cache (1, search_string, exact));
-      return (epis_find_list (search_string, exact));
-      break;
-    case ST_SECT_CHRO:
-      if ((cache[2]) && (!st_return_body))
-	return (st_find_in_cache (2, search_string, exact));
-      return (chro_find_list (search_string, exact));
-      break;
-    default:
-      break;
-      return (NULL);
-    }
-  return (0);
+  if (st_file_type != ST_FILE_UNKNOWN) {
+    switch (section)
+      {
+      case ST_SECT_ENCY:
+       if ((cache[0]) && (!st_return_body))
+  	  return (st_find_in_cache (0, search_string, exact));
+        return (ency_find_list (search_string, exact));
+        break;
+      case ST_SECT_EPIS:
+        if ((cache[1]) && (!st_return_body))
+ 	  return (st_find_in_cache (1, search_string, exact));
+        return (epis_find_list (search_string, exact));
+        break;
+      case ST_SECT_CHRO:
+        if ((cache[2]) && (!st_return_body))
+ 	  return (st_find_in_cache (2, search_string, exact));
+        return (chro_find_list (search_string, exact));
+        break;
+      default:
+        break;
+        return (NULL);
+      }
+    return (0);
+  } else { /* not know file type */
+        return (st_find_unknown(search_string,exact));
+  }
 }
 
 struct ency_titles *get_title_at (long filepos)
