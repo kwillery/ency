@@ -354,7 +354,7 @@ static struct st_data_exception *append_exception_from_rc_file (struct st_data_e
 /* Adds a videolist lookup */
 void add_videolist (struct st_data_filenode *node, struct rcfile_args *args)
 {
-	struct st_vidlist *vl=NULL, *v=NULL;
+	struct st_vidlist *vl=NULL;
 	char *name=NULL, *dir=NULL;
 
 	name = get_rc_arg (args, "name");
@@ -371,7 +371,7 @@ void add_videolist (struct st_data_filenode *node, struct rcfile_args *args)
 	vl->name = strdup(name);
 	vl->dir = strdup(dir);
 
-	/* prepend the list - easier than
+	/* prepend the vid list - easier than
 	 * appending */
 	vl->next = node->videolist;
 	node->videolist = vl;

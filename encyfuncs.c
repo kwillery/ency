@@ -2542,8 +2542,6 @@ int st_get_picture(char *name, char *file, int dfile_type, long width, long heig
 
 int st_get_thumbnail(char *name, char *file)
 {
-	int ret;
-
 	if (!name || !file)
 		return 1;
 

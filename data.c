@@ -358,7 +358,6 @@ struct st_vidlist *get_vidlist (int file, int number)
 {
 	struct st_data_filenode *file_node=NULL;
 	struct st_vidlist *vl=NULL;
-	char *name = NULL;
 	int i;
 
 	file_node = get_filenode (file);
@@ -493,6 +492,7 @@ struct st_block *get_block_by_name (int file, int dfiletype, char *name, int opt
         while (block)
         {
                 if (block->name)
+		{
 			if (options & ST_DATA_OPT_PREFIX)
 			{
 				if (!strncasecmp (block->name, name, strlen (name)))
@@ -500,6 +500,7 @@ struct st_block *get_block_by_name (int file, int dfiletype, char *name, int opt
 			} else
 				if (!strcasecmp (block->name, name))
 					return block;
+		}
 
 		if (block->type == ST_BLOCK_SCAN)
 			data_scan (df->filename, block);
