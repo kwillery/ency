@@ -41,7 +41,8 @@ main (int argc, char *argv[])
   struct ency_titles *thingy = NULL;
   struct ency_titles *kill_me = NULL;
   struct st_ency_formatting *fmt = NULL, *kill_fmt = NULL;
-
+  strcpy(search_string, "");
+    
   i = getopt (argc, argv, "ech");
 
   if (i == 'h')
@@ -108,18 +109,22 @@ main (int argc, char *argv[])
 	      kill_me = thingy;
 	      thingy = thingy->next;
 	      fmt = kill_me->fmt;
+
 	      while (fmt)
 		{
 		  kill_fmt = fmt;
 		  fmt = fmt->next;
-		  free (kill_fmt);
+		  if (kill_fmt) free (kill_fmt);
 		}
-	      if (kill_me->title)
-		free (kill_me->title);
-	      if (kill_me->text)
-		free (kill_me->text);
-	      if (kill_me)
-		free (kill_me);
+
+	    if (kill_me->title)
+		  free (kill_me->title);
+
+	    if (kill_me->text)
+		  free (kill_me->text);
+
+	    if (kill_me)
+		   free (kill_me);
 
 	    }
 	  while (thingy != NULL);
@@ -130,9 +135,6 @@ main (int argc, char *argv[])
     }
   else
     printf ("An error has occurred.\n");
-
-  if (ency_filename)
-    free (ency_filename);
 
   return (0);
 }

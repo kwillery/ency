@@ -291,8 +291,5 @@ main (int argc, char *argv[])
   else
     printf ("An error has occurred.\n");
 
-  if (ency_filename)
-    free (ency_filename);
-
   return (0);
 }

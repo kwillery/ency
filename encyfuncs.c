@@ -57,10 +57,10 @@ const long int chro_starts_at[] =
 long int set_starts_at = 0x0;
 
 const long int ency_lastone[] =
-{7068, 68, 0, 4092, 491, 0, 3905, 476, 1353, 0, 181, 0, 89, 42, 0};
+{7068, 68, 0, 4092, 491, 0, 3905, 476, 1353, 0, 0x1, 0, 0x1, 0};
 
 const long int epis_lastone[] =
-{402, 3, 0, 261, 25, 0, 262, 93, 0, 0x1, 0, 0x1, 0};
+{402, 3, 0, 261, 25, 0, 262, 93, 0, 181, 0, 89, 42, 0};
 
 const long int chro_lastone[] =
 {582, 0, 465, 0, 582, 0, 0x1, 0, 0x1, 0};
@@ -144,7 +144,6 @@ ency_finish (void)
 	}
     }
 
-//    if (ency_filename) free (ency_filename);
 }
 
 int
@@ -465,7 +464,7 @@ start_find_start:
   while (c != '~')
     {
       c = getc (inp);
-      if ((oldc == 0x16) && (c != 0x7E) && (c != 0x2E) && (c != 0x0D) && (c != 0x20))
+      if ((oldc == 0x16) && (c != 0x7E) && (c != 0x2E) && (c != 0x0D) && (c != 0x20) && (c != 0x5B) && (c))
 	{
 	  ungetc (c, inp);
 	  return (0);
@@ -690,8 +689,9 @@ curr_find_list (char title[], int exact)
   do
     {
       if (!first_time)
-	ency_find_start ();
+		ency_find_start ();
       this_one_starts_at = ftell (inp);
+
       first_time = 0;
       text_fmt = ency_return_fmt ();
       i = 0;
