@@ -138,10 +138,9 @@ static struct st_table *st_vtbls = NULL, *st_vtbls_tail = NULL;
 static struct st_caption *st_vcpts = NULL, *st_vcpts_tail = NULL;
 
 /* cache */
-static struct ency_titles *cache[3] =
-{0, 0, 0};
-static struct ency_titles *cache_last[3] =
-{0, 0, 0};
+static struct ency_titles *cache = NULL;
+static struct ency_titles *cache_last = NULL;
+
 static struct ency_titles *st_find_in_cache (int, char *, int, int);
 static void st_clear_cache (void);
 
@@ -352,20 +351,27 @@ void st_copy_part_entry (struct ency_titles **to, struct ency_titles *from)
 /* cache stuff */
 static void st_clear_cache ()
 {
-	int i;
-	for (i = 0; i < 3; i++)
+	st_free_entry_tree (cache);
+	cache = NULL;
+	cache_last = NULL;
+}
+
+static int cache_has_section (int section)
+{
+	struct ency_titles *curr = cache;
+
+	while (curr)
 	{
-		st_free_entry_tree (cache[i]);
-		cache[i] = NULL;
-		cache_last[i] = NULL;
+		if (curr->section == section)
+			return 1;
+		curr = curr->next;
 	}
+	return 0;
 }
 
 static void st_add_to_cache (int section, char *title, long filepos)
 {
 	struct ency_titles *temp_cache=NULL, *curr=NULL;
-
-	if ((section < 0) || (section > 2)) return;
 
 	temp_cache = malloc (sizeof (struct ency_titles));
 	if (!temp_cache) return;
@@ -374,17 +380,18 @@ static void st_add_to_cache (int section, char *title, long filepos)
 	temp_cache->text = NULL;
 	temp_cache->fmt = NULL;
 	temp_cache->next = NULL;
+	temp_cache->section = section;
 	temp_cache->filepos = filepos;
 
-	curr = cache_last[section];
+	curr = cache_last;
 
 	if (!curr)
 	{
-		cache_last[section] = cache[section] = temp_cache;
+		cache_last = cache = temp_cache;
 		return;
 	}
 
-	cache_last[section] = curr->next = temp_cache;
+	cache_last = curr->next = temp_cache;
 
 	return;
 }
@@ -1889,22 +1896,23 @@ static struct ency_titles *st_find_in_cache (int section, char *search_string, i
 {
 	struct ency_titles *mine, *r_r = NULL, *r_c = NULL, *r_l = NULL;
 
-	mine = cache[section];
+	mine = cache;
 
 	while (mine)
 	{
-		if (check_match (search_string, mine->title, exact))
-		{
-			r_l = r_c;
-			if (get_body)
-				r_c = st_get_title_at (mine->filepos);
-			else
-				st_copy_part_entry (&r_c, mine);
-			if (r_l)
-				r_l->next = r_c;
-			if (!r_r)
-				r_r = r_c;
-		}
+		if (mine->section == section)
+			if (check_match (search_string, mine->title, exact))
+			{
+				r_l = r_c;
+				if (get_body)
+					r_c = st_get_title_at (mine->filepos);
+				else
+					st_copy_part_entry (&r_c, mine);
+				if (r_l)
+					r_l->next = r_c;
+				if (!r_r)
+					r_r = r_c;
+			}
 		mine = mine->next;
 	}
 	return (r_r);
@@ -1964,7 +1972,7 @@ static struct ency_titles *st_find_unknown (int section, char *search_string, in
 	prepend_year = (st_fileinfo_get_data (st_file_type, prepend_year) ? 1 : 0);
 	append_series = (st_fileinfo_get_data (st_file_type, append_series) ? 1 : 0);
 
-	if ((cache[section] == NULL) && st_open ())
+	if ((cache == NULL) && st_open ())
 	{
 		while (st_find_start (inp))
 		{
@@ -2098,7 +2106,7 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 	case ST_SECT_ENCY:
 	case ST_SECT_EPIS:
 	case ST_SECT_CHRO:
-		if ((cache[section]) && (!st_return_body))
+		if ((cache_has_section(section)) && (!st_return_body))
 			return (st_find_in_cache (section, search_string, exact, 0));
 		else
 			if (st_file_type == ST_FILE_UNKNOWN)
@@ -2164,22 +2172,19 @@ struct ency_titles *st_read_title_at (long filepos, int options)
 	/* but of course, the title is often mangled :( */
 	/* thus, we check the cache for an entry w/ the same */
 	/* filepos, and use its title */
-	for (i = 0; i < 3; i++)
+	curr_title = cache;
+	while (curr_title)
 	{
-		curr_title = cache[i];
-		while (curr_title)
+		if (curr_title->filepos == filepos)
 		{
-			if (curr_title->filepos == filepos)
-			{
-				free (root_title->title);
-				root_title->title = strdup (curr_title->title);
-				/* make sure we break out of the loop */
-				curr_title = NULL;
-				i = 3;
-			}
-			if (curr_title)
-				curr_title = curr_title->next;
+			free (root_title->title);
+			root_title->title = strdup (curr_title->title);
+			/* make sure we break out of the loop */
+			curr_title = NULL;
+			i = 3;
 		}
+		if (curr_title)
+			curr_title = curr_title->next;
 	}
 
 	return (root_title);

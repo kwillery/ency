@@ -89,6 +89,7 @@ struct ency_titles
 	struct st_ency_formatting *fmt;
 	struct ency_titles *next;
 	int err;
+	int section;
 	long filepos;
 };
 
