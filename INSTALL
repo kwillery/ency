@@ -57,6 +57,8 @@ ie (as root):
 or in your fstab:
   /dev/cdrom   /cdrom   defaults,noauto,ro,unhide  0 0
 
+Also, the videos for these aren't supported by xanim (AFAIK).
+
 --
 Robert Mibus
 mibus@bigpond.com
