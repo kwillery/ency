@@ -109,6 +109,14 @@ int st_finish (void)
 }
 
 /* useful bits */
+static int safe_strlen (const char *t)
+{
+	if (t)
+		return strlen (t);
+	else 
+		return 0;
+}
+
 char st_cleantext (unsigned char c)
 {
 	switch (c)
@@ -425,7 +433,7 @@ char *st_autofind (int st_file_version, char *base_dir)
 		lc_filename = st_lcase ((char *)filename);
 
 		ency_fn_backup = ency_filename;
-		test_filename = malloc (strlen (base_dir) + strlen (datadir) + strlen (filename) + 3);
+		test_filename = malloc (safe_strlen (base_dir) + safe_strlen (datadir) + safe_strlen (filename) + 3);
 		ency_filename = test_filename;
 
 		if (strcmp (base_dir, "."))
