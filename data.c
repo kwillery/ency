@@ -476,6 +476,31 @@ struct st_block *get_block_by_id (int file, int dfiletype, int block_id)
 	return NULL;
 }
 
+struct st_block *get_block_by_type (int file, int dfiletype, char *btype)
+{
+	struct st_dfile *df=NULL;
+	struct st_block *block=NULL;
+
+	df = get_dfile (file, dfiletype);
+
+	if (!df)
+		return NULL;
+
+	block = df->blocks;
+
+	while (block)
+	{
+		if (!strcmp(block->btype,btype))
+			return block;
+		else if (block->type == ST_BLOCK_SCAN)
+			data_scan (df->filename, block);
+
+		block = block->next;
+	}
+
+	return NULL;
+}
+
 /* Similar to get_block(), but does it by block name.
  * (eg. "LU_A_ENCY"). This is mainly for getting the
  * block a thumbnail is in. */

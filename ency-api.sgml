@@ -131,7 +131,6 @@ struct ency_titles
 	char *text;
 	struct st_ency_formatting *fmt;
 	struct ency_titles *next;
-	int err;
 	long filepos;
 	float score;
 };
@@ -142,7 +141,6 @@ struct ency_titles
 <tt/text/ is the entry's text (body).
 <tt/fmt/ is the entry's formatting information. (see <tt/<ref id="st_ency_formatting" name="st_ency_formatting">/)
 <tt/next/ leads to the next returned entry (<tt/NULL/ if this is the last one).
-<tt/err/ is a returned error code (see <tt/<ref id="st_nice_error" name="st_nice_error">/). (N.B. that this is rarely used).
 <tt/filepos/ is the # of bytes into the data file the information starts. (see <tt/<ref id="st_get_title_at" name="st_get_title_at">/). It should be free'd with one of the <tt/<ref id="st_free_entry*" name="st_free_entry">/ functions.
 <tt/score/ is used when doing fulltext searches. (See <tt/<ref id="st_find" name="st_find()">/ and <tt/<ref id="ST_OPT_*" name="ST_OPT_FT">/. It is a number out of 100, but is *not* a percentage. (Well...).
 <p>
@@ -300,14 +298,6 @@ struct ency_titles *st_get_title_at (long filepos);
 </p>
 <p>
 This function returns an <tt/<ref id="ency_titles" name="ency_titles">/ struct of an entry at a certain byte position in the file. The position is returned with most <tt/<ref id="st_find" name="st_find()">/ searches.</p><p><em/Note:/ This currently calls <tt/<ref id="st_read_title_at" name="st_read_title_at()">/ with ST_OPT_RETURN_BODY for an option.</p>
-
-<sect1>st_nice_error<label id="st_nice_error">
-<p>
-<verb>
-char *st_nice_error (int err);
-</verb>
-This returns an informative error message when given an error number as an argument.
-<em/This function is used as often as the <tt/-&gt;err/ part of the <tt/<ref id="ency_titles" name="ency_titles">/ struct, i.e. rarely/
 
 <sect1>st_load_media<label id="st_load_media">
 <p>

@@ -94,14 +94,17 @@ struct ency_titles
 	char *title;
 	char *text;
 	struct st_ency_formatting *fmt;
-	struct ency_titles *next;
-	int err;
+
 	int section;
 	int block_id;
 	int id;
+
 	long filepos;
+
 	int length; /* N.B. Not the real length! */
 	float score;
+
+	struct ency_titles *next;
 };
 
 struct st_table

@@ -118,6 +118,7 @@ int st_finish (void)
 		free (ency_directory);
 	st_clear_cache ();
 	st_data_clear();
+	free_cmap ();
 
 	return (1);
 }
@@ -344,7 +345,6 @@ static struct ency_titles *st_new_entry (void)
 	entry->text = NULL;
 	entry->fmt = NULL;
 	entry->next = NULL;
-	entry->err = 0;
 	entry->section = 0;
 	entry->block_id = entry->id = 0;
 	entry->filepos = 0;
@@ -405,7 +405,6 @@ void st_copy_part_entry (struct ency_titles **to, struct ency_titles *from)
 	(*to)->fmt = NULL;
 	(*to)->text = NULL;
 	(*to)->next = NULL;
-	(*to)->err = 0;
 }
 
 static struct st_table *st_new_table ()
@@ -1217,44 +1216,6 @@ static char *st_return_title (FILE *inp)
 	return (st_cleanstring(title));
 }
 
-/* This formats ency_titles' ->err to be a
- * string. (->err sucks, BTW, and will
- * probably disappear as soon as I have
- * something better . :-) */
-char *st_nice_error (int error_no)
-{
-	switch (error_no)
-	{
-	case 1:
-		return ("The data file was not found");
-		break;
-	case 2:
-		return ("Memory allocation error");
-		break;
-	default:
-		return ("An error has occurred");
-		break;
-	}
-}
-
-/* This creates an empty (bogus) entry, and
- * puts an error number into it.
- * (This also sucks, and should also disappear) */
-static struct ency_titles *st_title_error (int error_no)
-{
-
-	struct ency_titles *return_error = NULL;
-	return_error = st_new_entry ();
-
-	if (return_error == NULL)
-	{
-		return (NULL);
-	}
-	return_error->err = error_no;
-
-	return (return_error);
-}
-
 /* Check to see if we have loaded a given
  * section into the entry list.
  * NB. if the section isn't present
@@ -1380,9 +1341,7 @@ static struct ency_titles *read_entry (FILE *inp, int options)
 	root_title = st_new_entry ();
 
 	if (root_title == NULL)
-	{
-		return (st_title_error (2));
-	}
+		return (NULL);
 
 	if (options & ST_OPT_NO_FMT)
 	{
@@ -1405,7 +1364,6 @@ static struct ency_titles *read_entry (FILE *inp, int options)
 	root_title->next = NULL;
 	root_title->name = NULL;
 	root_title->fmt = text_fmt;
-	root_title->err = 0;
 
 	return (root_title);
 }
@@ -1424,9 +1382,7 @@ struct ency_titles *st_read_title_at (long filepos, int options)
 	inp = open_file (filename, filepos);
 
 	if (!inp)
-	{
-		return (st_title_error (1));
-	}
+		return NULL;
 
 	ret = read_entry (inp, options);
 
@@ -2409,6 +2365,30 @@ char *st_format_filename (char *fnbasen, char *base_path, media_type media)
 	return (filename);
 }
 
+void load_cmap ()
+{
+	FILE *inp;
+	struct st_block *b;
+
+	b = get_block_by_type (st_file_type, ST_DFILE_ENCY, "CLUT");
+	if (!b)
+	{
+		fprintf (stderr, "libency: ERROR - cannot find colourmap\n");
+		exit(1);
+	}
+
+	inp = open_block(ST_DFILE_ENCY, b);
+	if (!inp)
+	{
+		fprintf (stderr, "libency: ERROR - cannot open file for colourmap\n");
+		exit (1);
+	}
+
+	load_CLUT (inp);
+
+	fclose (inp);
+}
+
 int st_get_picture(char *name, char *file, int dfile_type, long width, long height)
 {
 	struct st_block *block=NULL;
@@ -2417,6 +2397,9 @@ int st_get_picture(char *name, char *file, int dfile_type, long width, long heig
 
 	if (!name)
 		return 1;
+
+	if (!is_cmap_loaded())
+		load_cmap ();
 
 	block = get_block_by_name (st_file_type, dfile_type, name, ST_DATA_OPT_PREFIX);
 

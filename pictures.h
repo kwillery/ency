@@ -29,5 +29,8 @@ int create_ppm_from_image (char *file, FILE *inp, long width, long height, long 
 int write_ppm (char *file, char *img, int width, int height);
 long get_decompressed_size (FILE *inp, int csize);
 char *decompress (FILE *inp, int csize, int size);
+int load_CLUT (FILE *inp);
+void free_cmap ();
+int is_cmap_loaded ();
 
 #endif

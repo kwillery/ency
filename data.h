@@ -94,6 +94,7 @@ struct st_dfile *get_dfile (int file_type, int dfile);
 struct st_block *get_block (int file, int dfiletype, int type, int section, int number, int options);
 struct st_block *get_block_by_id (int file, int dfiletype, int block_id);
 struct st_block *get_block_by_name (int file, int dfiletype, char *name, int options);
+struct st_block *get_block_by_type (int file, int dfiletype, char *btype);
 char *get_exception (int file, char *type, char *from);
 void free_exception (struct st_data_exception *ex);
 char *get_videolistblock_dir(int file, int number);
