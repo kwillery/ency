@@ -182,9 +182,9 @@ int main (int argc, char *argv[])
             printf ("<li><a href=\"%s\">%s</a> (picture)\n</li>", temp_fn, media->photos[i].caption);
 	    free (temp_fn);
 	  }
-	if (media->video) {
-          temp_fn = st_format_filename (media->video, base_path, 1);
-          printf ("<li><a href=\"%s\">%s</a> (video)\n</li>\n", temp_fn, thingy->title);
+	if (strlen(media->video.file)) {
+          temp_fn = st_format_filename (media->video.file, base_path, 1);
+          printf ("<li><a href=\"%s\">%s</a> (video)\n</li>\n", temp_fn, media->video.caption);
           free (temp_fn);
         }
         free (media); media = NULL;

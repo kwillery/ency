@@ -99,6 +99,7 @@ int main (int argc, char *argv[])
 
   if ((thingy != NULL) && (thingy->title != NULL)) {
     do {
+
       /* print the returned text */
       printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
       
@@ -113,9 +114,9 @@ int main (int argc, char *argv[])
             printf ("%s: %s\n", temp_fn, media->photos[i].caption);
 	    free (temp_fn);
 	  }
-	if (media->video) {
-	  temp_fn = st_format_filename (media->video, base_path, 1);
-          printf ("%s: %s\n", temp_fn, thingy->title);
+	if (strlen(media->video.file)) {
+	  temp_fn = st_format_filename (media->video.file, base_path, 1);
+          printf ("%s: %s\n", temp_fn, media->video.caption);
           free (temp_fn);
 	}
 	free (media); media = NULL;
