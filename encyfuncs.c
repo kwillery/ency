@@ -963,7 +963,9 @@ static struct st_caption *read_captions (FILE *input, struct st_caption *root, i
 			last_cpt = last_cpt->next;
 	}
 
-	c = getc (inp);
+	c = getc (input);
+	if (c == '[')
+		c = ungetc (c, input);
 
 	while (c != ']')
 	{	/* main loop */
@@ -1003,7 +1005,7 @@ static struct st_caption *read_captions (FILE *input, struct st_caption *root, i
 			text_size = (section == ST_SECT_PCPT) ? 8 : 7;
 
 			fread (temp_text, 1, text_size, inp);
-			if (temp_text[text_size-1] != '\"')
+			if ((temp_text[text_size-1] != '\"') && (temp_text[text_size-1] != ':'))
 				while ((getc (inp)) != '\"');
 
 			temp_text[text_size-1] = 0;
@@ -1014,6 +1016,7 @@ static struct st_caption *read_captions (FILE *input, struct st_caption *root, i
 
 			c = getc (inp);
 			if (c == ' ') c = getc (inp);
+			if (c == '\"') c = ungetc (c, inp);
 
 			curr_cpt->fnbasen = temp_text;
 
