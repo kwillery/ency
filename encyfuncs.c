@@ -2071,13 +2071,15 @@ long get_block_pos_from_cache (int block_id, int id)
 	int ok_to_go_again=0;
 
 
-	while (cache_quick)
-	{
-		if ((cache_quick->block_id == block_id) && (cache_quick->id == id))
-			return (cache_quick->filepos);
-		cache_quick = cache_quick->next;
-	}
-
+	if (cache_quick)
+		if (cache_quick->block_id <= block_id && cache_quick->id <= id)
+			while (cache_quick)
+			{
+				if ((cache_quick->block_id == block_id) && (cache_quick->id == id))
+					return (cache_quick->filepos);
+				cache_quick = cache_quick->next;
+			}
+	
 	curr = cache;
 	
 	while (curr)
