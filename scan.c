@@ -36,52 +36,67 @@ struct block
 	long size;
 };
 
-struct casttable
-{
-	char *name;
-	int id;
-	struct casttable *next;
-} *casts=NULL;
-
 struct st_part *parts=NULL;
-struct st_part *pcurr=NULL;
 struct st_part *plast=NULL;
 
 int curr_id = 0;
 
+static void get_4b_string (FILE *inp, char *string, int reverse)
+{
+	int i;
+
+	if (!inp)
+		return;
+	if (!string)
+		return;
+
+	if (reverse)
+	{
+		for (i=3;i>=0;i--)
+			string[i] = getc (inp);
+	} else
+		fread (string, 4, 1, inp);
+}
+
+static long get_4b_int (FILE *inp, int reverse)
+{
+	int i;
+	long num=0;
+	long mult=1;
+
+	if (!inp)
+		return -1;
+
+	if (reverse)
+	{
+		for (i=0;i<4;i++)
+		{
+			num += mult * getc (inp);
+			mult *= 256;
+		}
+	} else
+	{
+		for (i=0;i<4;i++)
+			num = num * 256 + getc (inp);
+	}
+	return num;
+}
+
 static struct block *get_block(FILE *inp, int reverse)
 {
 	struct block *b=NULL;
-	long mult=1;
-	int i;
 
 	if (feof (inp))
 		return NULL;
 
 	b = malloc (sizeof (struct block));
 
-	if (reverse)
-	{
-		for (i=3;i>=0;i--)
-			b->name[i] = getc (inp);
-	} else
-		fread (b->name, 4, 1, inp);
+	get_4b_string (inp, b->name, reverse);
 
 	b->name[4] = 0;
 
-	b->size = 0;
-	if (reverse)
-	{
-		for (i=0;i<4;i++)
-		{
-			b->size += mult * getc (inp);
-			mult *= 256;
-		}
-	} else
-	{
-		for (i=0;i<4;i++)
-			b->size = b->size * 256 + getc (inp);
-	}
+	b->size = get_4b_int (inp, reverse);
+
 	return b;
 }
 
@@ -163,39 +178,23 @@ static void identify_section (struct st_part *part)
 	return;
 }
 
-static void process_cast_block (FILE *inp, long size)
+static void process_cast_block (FILE *inp, int reverse, long pblock_pos)
 {
 	struct st_part *tmp, *curr;
 	unsigned char *block;
 	unsigned char *t=NULL;
 	int i;
+	int size;
+	char name[5]="1234";
 
-//	printf ("\tFound CASt block");
+	get_4b_string (inp, name, reverse);
+	size = get_4b_int (inp, reverse);
 
 	if (size < 45)
-	{
-//		printf (" - not long enough");
-		fseek (inp, size, SEEK_CUR);
 		return;
-	}
 
 	block = malloc (size * sizeof (char));
 	fread (block, size, 1, inp);
-
-	switch (block[3] + block[6])
-	{
-//	case 0: // STXTs in omni1?
-//	case 6: // 'snd ' in omni1? // DONT WANT
-//	case 9: // ?? in omni1?
-//	case 1: // BITD
-	case 3: // STXT
-	case 7: // an odd STXT in ency99
-		break;
-		default:
-//		printf (", Ignoring [%d/%d]...", block[3], block[6]);
-		free (block);
-		return;
-	}
 
 	tmp = new_part();
 
@@ -207,10 +206,9 @@ static void process_cast_block (FILE *inp, long size)
 			plast->next = tmp;
 	}
 
-	if (!pcurr)
-		pcurr = tmp;
-
 	plast = tmp;
+
+	tmp->start = pblock_pos;
 
 	if (size > 33 && block[33])
 	{
@@ -219,8 +217,7 @@ static void process_cast_block (FILE *inp, long size)
 			while (*t++ == 0)
 				if (t - block >= size)
 				{
-//					printf (" - ends early!!");
-					tmp->name = strdup ("it ended early!");
+					tmp->name = strdup ("???");
 					free (block);
 					return;
 				}
@@ -232,8 +229,7 @@ static void process_cast_block (FILE *inp, long size)
 			while (*t++ == 0)
 				if (t - block >= size)
 				{
-//					printf (" - ends early!!");
-					tmp->name = strdup ("it ended early!");
+					tmp->name = strdup ("???");
 					free (block);
 					return;
 				}
@@ -245,8 +241,7 @@ static void process_cast_block (FILE *inp, long size)
 			while (*t++ == 0)
 				if (t - block >= size)
 				{
-//					printf (" - ends early!!");
-					tmp->name = strdup ("it ended early!");
+					tmp->name = strdup ("???");
 					free (block);
 					return;
 				}
@@ -258,8 +253,7 @@ static void process_cast_block (FILE *inp, long size)
 			while (*t++ == 0)
 				if (t - block >= size)
 				{
-//					printf (" - ends early!!");
-					tmp->name = strdup ("it ended early!");
+					tmp->name = strdup ("???");
 					free (block);
 					return;
 				}
@@ -271,8 +265,7 @@ static void process_cast_block (FILE *inp, long size)
 			while (*t++ == 0)
 				if (t - block >= size)
 				{
-//					printf (" - ends early!!");
-					tmp->name = strdup ("it ended early!");
+					tmp->name = strdup ("???");
 					free (block);
 					return;
 				}
@@ -286,19 +279,11 @@ static void process_cast_block (FILE *inp, long size)
 	} else
 		tmp->name = strdup ("???"); // Damn - can't get the name, Maybe it doesn't have one.
 
-//	printf (" (%s)", tmp->name);
-
-//	printf (" [");
-//	for (i=0;i<size;i++)
-//		if (isprint (block[i]))
-//			printf ("%c", block[i]);
-//	printf ("]");
-
 	identify_section (tmp);
 	tmp->count = 1;
 	tmp->start_id = 0;
 	tmp->next = NULL;
-
+	//printf ("found '%s' at %ld\n", tmp->name, tmp->start);
 	/* We don't want duplicate names being used */
 	/* so we set later ones to Unimportant      */
 	curr = parts;
@@ -309,7 +294,6 @@ static void process_cast_block (FILE *inp, long size)
 		{
 			tmp->section = 0;
 			tmp->type = 0;
-//			printf (" [Dupe - ignored]");
 			break;
 		}
 		curr = curr->next;
@@ -318,84 +302,173 @@ static void process_cast_block (FILE *inp, long size)
 	free (block);
 }
 
-static void load_cast_table (FILE *inp, int size)
+static void load_cast_table (FILE *inp)
 {
-	long start;
-	struct casttable *curr=NULL, *last=NULL;
-	char temp[256]="";
+	struct st_part *p=NULL;
+	char name[256]="";
 	char *t;
-
-	start = ftell (inp);
-
-	fseek (inp, 12, SEEK_CUR);
+	int id=0;
 
 	while (getc (inp) != ']')
 	{
-		curr = (struct casttable *) malloc (sizeof (struct casttable));
-		if (!casts)
-			casts = curr;
-		if (last)
-			last->next = curr;
-
-		fscanf (inp, "%d: ", &(curr->id));
+		/* Read the block name & ID */
+		fscanf (inp, "%d: ", &id);
 		if (getc (inp) == '\"')
 		{
-			t = temp;
+			t = name;
 			while ((*t++ = getc (inp)) != '\"')
 				;
 			*--t = 0;
-			curr->name = strdup (temp);
 		} else
-			curr->name = strdup ("NULL");
+			continue;
 
-		curr->next = NULL;
-		last = curr;
-	}
-
-	fseek (inp, start, SEEK_SET);
-}
-
-static void process_noncast_block (FILE *inp, long size)
-{
-	struct casttable *tmp_casts=NULL;
-	if (pcurr)
-	{
-//		printf ("\tCASt says \"%s\"", pcurr->name);
-		if (!strcmp (pcurr->name, "CastTable500"))
+		/* Find the block w/ that name, set its ID */
+		/* (continue from where we were...) */
+		while (p)
 		{
-			load_cast_table (inp, size);
-			curr_id = 500;
+			if (!strcmp (p->name, name))
+			{
+//				printf ("Given id %d to '%s' (%ld).\n", id,p->name,p->start);
+				p->start_id = id;
+				p=p->next;
+				break;
+			}
+			p = p->next;
 		}
 
-		tmp_casts = casts;
-		curr_id++;
-		if (strcmp (pcurr->name, "blank"))
-			while (tmp_casts)
+		/* Start again if we didn't find it. */
+		if (p)
+			continue;
+		p = parts;
+		while (p)
+		{
+			if (!strcmp (p->name, name))
 			{
-				if (!strcasecmp (tmp_casts->name, pcurr->name))
-				{
-					curr_id = tmp_casts->id;
-					break;
-				}
-				tmp_casts = tmp_casts->next;
+				//printf ("Given id %d to '%s' (%ld) on a restarted search.\n", id,p->name,p->start);
+				p->start_id = id;
+				p=p->next;
+				break;
 			}
-
-		pcurr->start = ftell (inp) + 12;
-		pcurr->start_id = curr_id;
-		pcurr = pcurr->next;
-	} else
-	{
-//		printf ("\tNo prior matching CASt block");
+			p = p->next;
+		}
 	}
-	fseek (inp, size, SEEK_CUR);
 }
 
-static int ignore_block (char *name, long size)
+static void sort_blocks ()
 {
-	if (strcmp (name, "STXT"))
-		return 1;
-	else
-		return 0;
+	struct st_part *p=NULL, *l=NULL, *t=NULL;
+	int need_sort=1;
+
+	while (need_sort)
+	{
+		need_sort = 0;
+		p = parts;
+		l = NULL;
+		while (p)
+		{
+			t=p->next;
+			if (t)
+			{
+				if (p->start > t->start)
+				{
+					if (l)
+						l->next = t;
+					else
+						parts = t;
+					p->next = t->next;
+					t->next = p;
+					need_sort = 1;
+				}
+			}
+			l=p;
+			p=p->next;
+		}
+	}
+	
+}
+
+static void add_block (FILE *inp, int reverse, long block_ind, long cast_ind)
+{
+	long orig_pos = ftell(inp);
+	long block_pos=-1;
+	long cast_pos=-1;
+	char name[5]="1234";
+
+	fseek (inp, 0x4C+20*block_ind, SEEK_SET); /* Go to the block info */
+	fseek (inp, 8, SEEK_CUR); /* drop STXT/BITD/(etc.) and size */
+	block_pos = get_4b_int (inp, reverse);
+	fseek (inp, 0x4C+20*cast_ind, SEEK_SET); /* Go to the cast block info */
+	get_4b_string (inp, name, reverse); /* get 'CASt' */
+	if (strcmp (name, "CASt")) /* It is 'CASt', right? */
+	{
+		//printf ("Not CASt at %d! (%ld). Refer block %d (%d)\n", cast_ind, 0x4C+20*cast_ind, block_ind, block_pos);
+		fseek (inp, orig_pos, SEEK_SET);
+		return;
+	}
+	fseek (inp, 4, SEEK_CUR); /* drop the size */
+	cast_pos = get_4b_int (inp, reverse);
+	fseek (inp, cast_pos, SEEK_SET); /* Go to the CASt */
+	process_cast_block (inp, reverse, block_pos+20); /* load the CASt */
+	fseek (inp, orig_pos, SEEK_SET); /* Set it all back nicely */
+}
+
+static void read_key(FILE *inp, int reverse)
+{
+	char name[5]="1234";
+	long block_ind=-1;
+	long cast_ind=-1;
+
+	get_4b_string (inp, name, reverse);
+	block_ind = get_4b_int (inp, reverse);
+	cast_ind = get_4b_int (inp, reverse);
+	add_block (inp, reverse, block_ind, cast_ind);
+}
+
+static void process_key(FILE *inp, int reverse)
+{
+	long count=-1;
+	int i;
+
+	fseek (inp, 8, SEEK_CUR);
+	count = get_4b_int (inp, reverse);
+	fseek(inp,8,SEEK_CUR);
+	for (i=0;i<count;i++)
+		read_key (inp, reverse);
+}
+
+static void load_cast_tables (FILE *inp, int reverse)
+{
+	struct st_part *p = NULL;
+
+	p = parts;
+	while (p)
+	{
+		if (!strncmp (p->name, "CastTable", 9))
+		{
+			fseek (inp, p->start + 16, SEEK_SET);
+			load_cast_table (inp);
+		}
+		p = p->next;
+	}
+}
+
+static void fill_block_ids()
+{
+	struct st_part *p=NULL;
+	int curr_id=0;
+
+	p = parts;
+	while (p)
+	{
+		if (p->start_id)
+			curr_id = p->start_id;
+		else if (curr_id)
+		{
+//			printf ("Filled id %d to '%s' (%ld)\n",curr_id+1,p->name,p->start);
+			p->start_id = ++curr_id;
+		}
+		p=p->next;
+	}
 }
 
 static void search_file (FILE *inp, int reverse)
@@ -409,43 +482,39 @@ static void search_file (FILE *inp, int reverse)
 	fseek (inp, 12, SEEK_SET);
 	while ((b = get_block (inp, reverse)))
 	{
-//		printf ("%ld: %s\t%ld", ftell (inp), b->name, b->size);
-		if (!strcmp (b->name, "CASt"))
-			process_cast_block(inp, b->size);
+		if (!strcmp (b->name, "KEY*"))
+		{
+			process_key (inp, reverse);
+			break;
+		}
 		else
-			if (!ignore_block (b->name, b->size))
-				process_noncast_block(inp, b->size);
-			else
-				fseek (inp, b->size, SEEK_CUR);
+			fseek (inp, b->size, SEEK_CUR);
 
-//		printf ("\n");
 		/* if the next byte is a NULL, get rid of it */
 		if ((c = getc (inp)))
 			ungetc (c, inp);
 		free (b);
 	}
+
+	sort_blocks ();
+	load_cast_tables(inp, reverse);
+	fill_block_ids();
 }
 
 static void clean_up ()
 {
-	struct casttable *t;
-
-	while (casts)
-	{
-		t = casts;
-
-		casts = casts->next;
-
-		if (t->name)
-			free (t->name);
-		free (t);
-	}
-
 	parts = NULL;
-	pcurr = NULL;
 	plast = NULL;
 
 	curr_id = 0;
+}
+
+int integrity_ok (FILE *inp, int reverse)
+{
+	// fixme:
+	// check mmap @ 44 etc.
+
+	return 1;
 }
 
 struct st_part *scan_file (FILE *inp)
@@ -463,11 +532,13 @@ struct st_part *scan_file (FILE *inp)
 		return NULL; /* not a valid ency (AFAWCT) */
 
 	fseek (inp, 0, SEEK_SET);
+	if (!integrity_ok (inp, reverse))
+		return NULL;
+
 	search_file (inp, reverse);
 
 	ret = parts;
 	clean_up ();
-//	return make_useful_information (inp);
 	return ret;
 }
 
