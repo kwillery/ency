@@ -330,10 +330,22 @@ const char *st_fileinfo_get_data (int file, st_filename_type type)
  * kept in the rcfile. */
 static void data_scan (char *filename, struct st_block *block)
 {
-	FILE *inp;
+	FILE *inp=NULL;
 	struct st_block *tmp=NULL;
+	char *path=NULL, *fn=NULL;
 
-	inp = (FILE *) curr_open (filename, 0);
+	if (filename)
+	{
+		/* Hackish, similar to open_block() in encyfuncs.c */
+		path = get_ency_dir();
+		fn = malloc (strlen (path) + strlen (filename) + 1);
+		strcpy (fn, path);
+		strcat (fn, filename);
+		inp = (FILE *) curr_open (fn, 0);
+		free (fn);
+		free (path);
+	} else
+		inp = (FILE *) curr_open (filename, 0);
 
 	if (!inp)
 		return;

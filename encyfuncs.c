@@ -510,17 +510,54 @@ char *get_filename (int file, int dfile)
 	return df->filename;
 }
 
+char *get_ency_dir ()
+{
+	char *dir=NULL, *t=NULL;;
+
+	/* Try to figure out what directory it's in */
+	/* (Hackish, I know :) */
+	if (ency_filename && (t = strrchr (ency_filename, '/')))
+	{
+		dir = malloc (t - ency_filename + 2);
+		strncpy (dir, ency_filename, t - ency_filename + 1);
+		dir[t - ency_filename + 1] = 0;
+	} else
+	    dir = strdup ("");
+
+	return dir;
+}
+
 /* Open the file referenced by the block */
 FILE *open_block(int dfile, struct st_block *block)
 {
-	char *filename=NULL;
+	char *filename=NULL, *path=NULL;
+	char *new_fn=NULL;
+	FILE *ret=NULL;
 
 	if (!block)
 		return NULL;
 
+	/* Get 'Picon.cxt' or 'Data99.cxt' etc. */
 	filename = get_filename (st_file_type, dfile);
 
-	return curr_open (filename, block->start);
+	/* curr_open() defaults to the main data file so this is OK */
+	if (!filename)
+		return (curr_open (NULL, block->start));
+
+	path = get_ency_dir ();
+
+	new_fn = malloc (strlen (path) + strlen (filename) + 1);
+	strcpy (new_fn, path);
+	strcat (new_fn, filename);
+
+	ret = curr_open (new_fn, block->start);
+
+	/* Clean up - don't remove 'filename' as it is directly 
+	 * out of a data struct */
+	free (path);
+	free (new_fn);
+
+	return ret;
 }
 
 /* Look for a given encyclopedia version in a directory.
