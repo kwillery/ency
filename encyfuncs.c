@@ -205,7 +205,7 @@ char st_cleantext (unsigned char c)
 	case 0x95:
 		return ('*');
 	case 0x97:
-		return (':');
+		return ('-');
 	case 0xA5:
 		return ('*');
 	case 0xD0:
@@ -1480,7 +1480,7 @@ inline int st_find_start (FILE * input)
 				if ((old_old_c == 0xd) || ((!old_old_c) && (old_old_old_c != 0x3a)))
 				{
 					keep_going = 0;
-					fseek (input, -2, SEEK_CUR);
+					fseek (input, -1, SEEK_CUR);
 				}
 				break;
 			case 0x16:
@@ -1538,6 +1538,9 @@ static struct st_ency_formatting *st_return_fmt (void)
 	{
 		curr_fmt = (struct st_ency_formatting *) malloc (sizeof (struct st_ency_formatting));
 		curr_fmt->next = NULL;
+		curr_fmt->bold = 0;
+		curr_fmt->italic = 0;
+		curr_fmt->underline = 0;
 
 		if (curr_fmt == NULL)
 		{
@@ -1551,7 +1554,7 @@ static struct st_ency_formatting *st_return_fmt (void)
 
 		for (i=0;fmt[i];i++)
 		{
-			switch (c)
+			switch (fmt[i])
 			{
 			case 'b':
 			case 'B':
