@@ -25,17 +25,6 @@
 #ifndef ENCY_H
 #define ENCY_H
 
-#include <gtk/gtk.h>
-
-char ency_cleantext (unsigned char);
-GtkWidget *window, *box0, *box1, *entry1, *label1, *button1, *results,
-        *results_vscroll, *results_table, *menu_bar, *file_menu, *open_item,
-        *file_item, *menu_item, *submenu, *hdr_list, *hdr_list_scrolled_window;
-char *label1text;
-static char *rtntitle[] = {"int"};
-char *rtnresults[100][1000];
-char *teststring;
-
 char ency_cleantext (unsigned char);
 int ency_open (void);
 int ency_close (void);
@@ -65,7 +54,13 @@ struct ency_titles
     struct st_ency_formatting *fmt;
     struct ency_titles *next;
   };
-int crap;
-int counter;
+
+struct st_table
+{
+char *title;
+char *fnbase;
+struct st_table *next;
+};
+
 #endif
 

@@ -7,27 +7,28 @@ CC=gcc
 BINDIR=/usr/local/bin
 MANDIR=/usr/local/man/man1
 LIBS = `gtk-config --libs`
- 
-all: findenc htmlenc gtkency
 
+all: htmlenc findenc gtkenc
 
 findenc : findenc.c encyfuncs.c ency.h
 	$(CC) encyfuncs.c $< -o $@
-gtkency : findenc.c encyfuncs.c ency.h
-	$(CC) $(GTKCFLAGS)  encyfuncs.c $(LIBS) $< -o $@
 
 htmlenc : htmlenc.c encyfuncs.c ency.h
 	$(CC) encyfuncs.c $< -o $@
 
+gtkenc : gtkenc.c encyfuncs.c ency.h
+	$(CC) $(GTKCFLAGS)  encyfuncs.c $(LIBS) $< -o $@
+
 clean :
-	rm -f findenc htmlenc gtkency core
+	rm -f findenc htmlenc gtkenc core
 
 install: findenc
 	install -c findenc $(BINDIR)
 	install -c findenc.1 $(MANDIR)
 	install -c htmlenc $(BINDIR)
 	install -c htmlenc.1 $(MANDIR)
- 
+	install -c gtkenc $(BINDIR)
 
 uninstall:
-	rm -f $(BINDIR)/findenc $(MANDIR)/findenc.1 $(BINDIR)/htmlenc $(MANDIR)/htmlenc.1
+	rm -f $(BINDIR)/findenc $(MANDIR)/findenc.1 $(BINDIR)/htmlenc $(MANDIR)/htmlenc.1 $(BINDIR)/gtkenc
+

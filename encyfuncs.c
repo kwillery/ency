@@ -24,12 +24,17 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <unistd.h>
+#include <malloc.h>
+#include <ctype.h>
+// #include <string.h>
 #include "ency.h"
 
 FILE *inp;
-char ency_filename[] = "Data.cxt";
+char *ency_filename;
+int st_ignore_case = 0;
 
+long int st_table_starts_at = 0x410c4;
 long int ency_starts_at = 0x7bc28; // Bytes into file info starts at - 1
 long int epis_starts_at = 0x3b8e20;
 long int chro_starts_at = 0x41e32c;
@@ -51,6 +56,8 @@ if (curr == 2) // Epis
  curr_starts_at=epis_starts_at;
 if (curr == 3) // Chro
  curr_starts_at=chro_starts_at;
+if (curr == 4) // table
+ curr_starts_at = st_table_starts_at;
 return(curr_open());
 }
 
@@ -58,7 +65,12 @@ int curr_open (void)
 {
   char c;
   int i;
-
+// printf("%s\n",ency_filename);
+if (ency_filename == NULL)
+{
+ ency_filename = (char *) malloc (10);
+ strcpy(ency_filename,"Data.cxt");
+}
   if ((inp = fopen (ency_filename, "r")) == NULL)
     {
 //      printf ("I can't find/open Data.cxt. Read the INSTALL file.\n");
@@ -99,17 +111,17 @@ return(0);
 
 int ency_close (void)
 {
-curr_close();
+return(curr_close());
 }
 
 int epis_close (void)
 {
-curr_close();
+return(curr_close());
 }
 
 int chro_close (void)
 {
-curr_close();
+return(curr_close());
 }
 
 char ency_cleantext (unsigned char c)
@@ -162,7 +174,7 @@ root_fmt = last_fmt = curr_fmt = NULL;
       printf ("Memory allocation failed\n");
 exit(1);  
   }
-
+memset (root_fmt, 0, sizeof(struct st_ency_formatting));
 curr_fmt=root_fmt;
 c=getc(inp);
 while (c != '@')
@@ -175,7 +187,7 @@ if (!first_time)
       printf ("Memory allocation failed\n");
       exit(1); 
     }
-
+ memset (curr_fmt, 0, sizeof (struct st_ency_formatting));
 }
 first_time=0;
 i=0;
@@ -218,8 +230,8 @@ switch(c)
 }
 c=getc(inp);
 
-if (last_fmt != NULL) last_fmt->next = curr_fmt;
 curr_fmt->next=NULL;
+if (last_fmt != NULL) last_fmt->next = curr_fmt;
 last_fmt=curr_fmt;
 curr_fmt=NULL;
 }
@@ -253,8 +265,6 @@ int oldc = 0;
 while (c != '~') {
  c=getc(inp);
  if ((oldc == 0x16) && (c != 0x2E)) {
-// screwy=1;
-// printf("screwy one found: ");
   ungetc(c,inp); return (0); }
  oldc=c;
  }
@@ -285,11 +295,12 @@ char old_c = 0;
 char done_once = 0;
 char *temp_text;
 temp_text = malloc(1);
-          while (!bye)
-            {
+while (!bye)
+  {
 c=ency_cleantext(getc(inp));
 if (c == 0) bye = 1;
 if ((old_c == 13) && (c == 13)) bye = 1;
+if (bye)
 if (curr == 3)
  if (getc(inp) != 0x7E)
   { bye = 0; ungetc(c,inp); }
@@ -377,9 +388,12 @@ return(curr_return_title());
 
 struct ency_titles *curr_find_list (char title[],int exact)
 {
+int found_any_yet = 0;
   int first_time = 1;
   char c;
   int i = 0;
+  int found = 0;
+  char ttl2[70],title2[70];
   struct ency_titles *root_title, *curr_title, *last_title;
   int no_so_far = 0;
   char *ttl;
@@ -414,13 +428,32 @@ no_so_far++;
  ttl = ency_return_title();
 
       c = getc (inp);
+
 // printf ("%d: %s\n", no_so_far, ttl);
 // if (screwy){screwy=0;printf("%s\n",ttl);}
 // printf("%s=%s:%d",ttl,title,strstr(ttl,title));
-     if (((!exact) && (strstr (ttl, title))) || (exact == 1) && (!strcmp(ttl,title)) || (exact == 2))
-// if (!strcmp(ttl,title))
-        {
 
+// lowerise ttl > ttl2, title > title2
+while(ttl2[i++]=tolower(ttl[i]));
+ttl2[i]=0;
+i=0;
+while(title2[i++]=tolower(title[i]));
+title2[i]=0;
+i=0;
+
+found=0;
+
+if ((!exact) && strstr (ttl, title)) found=1;
+if ((exact == 1) && (!strcmp(ttl,title))) found=1;
+if (exact == 2) found=1;
+if (st_ignore_case) {
+ if ((!exact) && (strstr (ttl2, title2))) found=1;
+ if ((exact == 1) && (!strcasecmp(ttl,title))) found=1;
+ }
+
+if (found)
+        {
+found_any_yet=1;
 // printf("dbg2\n");
 // define the pointer
           if (curr_title != root_title)
@@ -448,7 +481,10 @@ no_so_far++;
     }
   while (no_so_far != curr_lastone);
 // printf("dbg6\n");
-return(root_title);
+if (found_any_yet)
+ return(root_title);
+else
+ return(NULL);
 }
 
 struct ency_titles *ency_find_list (char title[], int exact)
@@ -472,15 +508,16 @@ return(curr_find_list(title,exact));
 
 struct ency_titles *curr_find_titles (char title[])
 {
+int found_any_yet = 0;
   int first_time = 1;
   char c;
   char *temp_text;
   int text_size = 0;
 //  int title_size = 0;
-  int i = 0;
+  int i, found, z;
   struct ency_titles *root_title, *curr_title, *last_title;
   int no_so_far = 0;
-  char *ttl;
+  char *ttl,title2[70],ttl2[70];
   struct st_ency_formatting *text_fmt;
 
   root_title = curr_title = last_title = NULL;
@@ -518,9 +555,26 @@ no_so_far++;
 // printf ("%d: %s\n", no_so_far, ttl);
 // if (screwy){screwy=0;printf("%s\n",ttl);}
 // printf("%s=%s:%d",ttl,title,strstr(ttl,title));
-      if (strstr (ttl, title))
-// if (!strcmp(ttl,title))
+
+for(z=0;z<strlen(ttl);z++)
+ttl2[z]=tolower(ttl[z]);
+ttl2[z]=0;
+
+for(z=0;z<strlen(title);z++)
+title2[z]=tolower(title[z]);
+title2[z]=0;
+
+found=0;
+
+// printf("%d,%d,%s=%s\n",strlen(ttl),strlen(ttl2),ttl,ttl2);
+if (strstr (ttl, title)) found=1;
+if (st_ignore_case)
+ if (strstr (ttl2, title2)) found=1;
+// found=0;
+
+if (found)
 	{
+found_any_yet=1;
 // if (screwy){screwy=0;printf("%s\n",ttl);}
 //          printf ("%d: %s\n", no_so_far, ttl);
 
@@ -555,7 +609,10 @@ temp_text = ency_return_text();
     }
   while (no_so_far != curr_lastone);
 // printf("dbg6\n");
+if (found_any_yet)
 return(root_title);
+else
+return(NULL);
 }
 
 struct ency_titles *ency_find_titles (char title[])
@@ -654,3 +711,92 @@ curr_lastone = chro_lastone;
 return(curr_get_title(title));
 }
 
+struct st_table *st_get_table(void)
+{
+int i=0, first_time;
+struct st_table *root_tbl,*curr_tbl,*last_tbl;
+int c=0, text_size = 0;
+char *temp_text;
+
+last_tbl=NULL;
+first_time=1;
+curr=4;
+if (st_open())
+{
+printf("Error: problem opening Data.cxt\n");
+return(NULL);
+}
+else
+{
+////  root_tbl = (struct ency_titles *) malloc (sizeof (struct st_table));
+////  if (root_tbl == NULL)
+////    {
+////      printf ("Memory allocation failed\n");
+////return(NULL);
+////    }
+////curr_tbl=root_tbl;
+
+for(i=0;i<26;i++)
+{
+while((c=getc(inp)) != ']')
+{ // main loop
+temp_text = malloc(1);
+text_size=0;
+
+// if(!first_time)
+  curr_tbl = (struct st_table *) malloc (sizeof (struct st_table));
+  if (curr_tbl == NULL)
+    {
+      printf ("Memory allocation failed\n");
+      return(NULL);
+    }
+ if (first_time) root_tbl=curr_tbl;
+first_time=0;
+do {
+while ((c=getc(inp)) != '\"');
+c=getc(inp);
+} while(!c);
+ungetc(c,inp);
+while ((c=getc(inp)) != '\"')
+{
+ temp_text = realloc(temp_text,text_size+2);
+ if (temp_text == NULL)
+  {
+printf("uh-oh!\n");
+   return (NULL);
+  }
+  temp_text[text_size++] = ency_cleantext(c);
+ // printf("%c",c);
+}
+temp_text[text_size]=0;
+curr_tbl->fnbase=temp_text;
+temp_text = malloc(1);
+text_size=0;
+
+while ((c=getc(inp)) != '\"');
+// printf(":");
+while ((c=getc(inp)) != '\"')
+{
+ temp_text = realloc(temp_text,text_size+2);
+ if (temp_text == NULL)
+  {
+   printf("uh-oh!\n");
+   return (NULL);
+  }
+  temp_text[text_size++] = ency_cleantext(c);
+// printf("%c",c);
+}
+temp_text[text_size]=0;
+// printf("\n");
+curr_tbl->title=temp_text;
+if(last_tbl)
+ last_tbl->next=curr_tbl;
+last_tbl=curr_tbl;
+curr_tbl=NULL;
+
+} // main loop
+}
+}
+curr_close();
+return(root_tbl);
+}

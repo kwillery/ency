@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ency.h"
+extern int st_ignore_case;
 
 int words = 0;
 char filename[100] = "stdout";
@@ -201,6 +202,8 @@ int main(int argc, char *argv[])
   struct ency_titles *thingy;
   struct ency_titles *kill_me;
   int i, fin_arg;
+
+st_ignore_case=1;
 // if (argc > 1)
 {
 for (i = 0; i < argc; i++)
