@@ -1086,16 +1086,13 @@ static void st_add_to_cache (int section, char *title, long filepos)
 	return;
 }
 
-int st_find_start (FILE * input)
+inline int st_find_start (FILE * input)
 {
 	unsigned char c = 0, old_c = 0, old_old_c = 0, old_old_old_c = 0;
 	int keep_going = 1;
-	while (keep_going)
+	while (keep_going && !(feof (input)))
 	{
-		if (feof (input))
-			return 0;
-		c = getc (input);
-		if (c == '1')
+		if ((c = getc (input)) == '1')
 		{
 			switch (old_c)
 			{
