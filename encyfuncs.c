@@ -198,6 +198,7 @@ old_c=c;
 }
             }
 temp_text[text_size] = 0;
+// printf("%s",temp_text);
 return(temp_text);
 }
 
@@ -355,7 +356,7 @@ no_so_far++;
       c = getc (inp);
       if (!strcmp (ttl, title))
         {
-printf("%s, %s",ttl,title);
+// printf("%s, %s",ttl,title);
 
 
 temp_text = ency_return_text();

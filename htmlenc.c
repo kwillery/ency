@@ -50,12 +50,12 @@ free(fmt2);
 while (strlen(txt))
 {
 z=sscanf(txt,"%s",smeg);
-if (z == 1)
+// if (z == 1)
 {
 words++;
 if (!first_time) printf(" "); else first_time = 0;
 
-if (*(txt+strlen(smeg)) == 0x0d)
+if ((*(txt+strlen(smeg)) == 0x0d) || (*(txt+strlen(smeg)+1) == 0x0d))
 {
 print_br = 1;
 }
@@ -142,7 +142,10 @@ fmt=fmt->next;
 free(fmt2);
 z=0;
 }
-if (z) printf("%s",smeg);
+if (z)
+{
+ printf("%s",smeg);
+}
 if (print_br)
 {
 printf("<br>\n");
@@ -151,8 +154,10 @@ first_time = 1;
 }
 }
 txt += (strlen(smeg)+1);
-while (txt[0] == 32)
- txt++;
+while ((txt[0] == 32) || (txt[0] == 13))
+ {
+txt++;
+}
 }
 }
 
@@ -166,6 +171,7 @@ printoff(struct ency_titles *stuff)
  char *tmp;
  int print_br = 0;
  struct st_ency_formatting *fmt1, *fmt2;
+printf("<hr>\n");
 tmp=stuff->title;
 size=strlen(stuff->title);
 fmt1=stuff->fmt;
@@ -209,12 +215,13 @@ fin_arg = 0;
 // if (!fin_arg)
 //  if (argv[i][1] ==  "f")
 //   if(strcpy(filename,argv[++i])) fin_arg = 1; else usage;
+// printf("%s, %c",argv[i],argv[i][1]);
 if (!fin_arg)
  if (argv[i][1] ==  'e')
-  if (exact = 1) fin_arg = 1; else usage;
+  { /* printf("exact\n"); */ if (exact = 1) fin_arg = 1; else usage;}
 if (argv[i][1] == '-')
- usage;
-args_read++;
+ {fin_arg = 1; usage;}
+if (fin_arg) args_read++;
 }
 }
 if (argc == 1) // no args
@@ -225,7 +232,6 @@ if (argc-args_read > 0) strcpy(search_string,argv[argc-1]);
 if (argc-args_read == 0) 
 {
   printf ("Enter search string :");
-//  scanf ("%s", search_string);
   scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
 }
 if (exact)
@@ -234,6 +240,9 @@ else
  thingy = ency_find_titles (search_string);
 
 printf("<html>\n");
+printf("<head><title>Search results for: %s</title></head>",search_string);
+printf("<h1>Star Trek Encyclopedia</h1><br>\n");
+printf("You searched for <b>%s</b>.\n",search_string);
   if ((thingy != NULL) && (thingy->title != NULL))
     {
       do
@@ -247,6 +256,8 @@ words=0;
 	  free(kill_me);
 	}
       while (thingy != NULL);
+printf("<hr>\nMibus' ency reader<br>\n");
+printf("queries, comments, flames, to <a href=\"mailto:beemer@picknowl.com.au\">Robert Mibus (beemer@picknowl.com.au)</a>");
     }
   else
     printf ("No matches\n");
