@@ -39,7 +39,7 @@ libency.a(pictures.o): pictures.c pictures.h
 findenc htmlenc scanenc: libency.a
 
 clean:
-	rm -f findenc htmlenc scanenc encyfuncs.o data.o scan.o rcfile.o libency.a core
+	rm -f findenc htmlenc scanenc encyfuncs.o data.o scan.o rcfile.o pictures.o libency.a core
 
 distclean: clean
 
