@@ -87,12 +87,15 @@ struct st_ency_formatting
 
 struct ency_titles
 {
+	char *name;
 	char *title;
 	char *text;
 	struct st_ency_formatting *fmt;
 	struct ency_titles *next;
 	int err;
 	int section;
+	int block_id;
+	int id;
 	long filepos;
 };
 
@@ -100,6 +103,9 @@ struct st_table
 {
 	char *title;
 	char *fnbase;
+	int section;
+	int block_id;
+	int id;
 	struct st_table *next;
 };
 

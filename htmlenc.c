@@ -219,7 +219,7 @@ int main (int argc, char *argv[])
 			printoff (full_body, out);
 
 			if (use_media)
-				media = st_get_media (thingy->title);
+				media = st_get_media (thingy->name);
 
 			if (media)
 			{

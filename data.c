@@ -318,6 +318,7 @@ struct st_part *get_part (int file, int section, int number, int options)
 {
 	struct st_part *part=NULL;
 	char *start=NULL,*count=NULL;
+	char *start_id=NULL, *bcount=NULL;
 	xmlNode *node=NULL;
 
 	node = get_file_info(file);
@@ -371,6 +372,10 @@ struct st_part *get_part (int file, int section, int number, int options)
 
 	start = xmlGetProp (node, "start");
 	count = xmlGetProp (node, "count");
+
+	start_id = xmlGetProp (node, "start_id");
+	bcount = xmlGetProp (node, "bcount");
+
 	if (!(start && count))
 		return NULL;
 
@@ -382,8 +387,17 @@ struct st_part *get_part (int file, int section, int number, int options)
 		sscanf (start, "%ld", &(part->start));
 	sscanf (count, "%ld", &(part->count));
 
+	if (start_id)
+		sscanf (start_id, "%d", &(part->start_id));
+	if (bcount)
+		sscanf (bcount, "%d", &(part->bcount));
+
 	free (start);
 	free (count);
+	if (start_id)
+		free (start_id);
+	if (bcount)
+		free (bcount);
 
 	return part;
 }

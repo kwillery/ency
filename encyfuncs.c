@@ -236,6 +236,8 @@ char st_cleantext (unsigned char c)
 		return ('\"');
 	case 0x95:
 		return ('*');
+	case 0x96:
+		return ('-');
 	case 0x97:
 		return ('-');
 	case 0xA5:
@@ -333,7 +335,8 @@ void st_free_entry (struct ency_titles *entry)
 			free (entry->text);
 		if (entry->fmt)
 			st_free_fmt_tree (entry->fmt);
-
+		if (entry->name)
+			free (entry->name);
 		free (entry);
 	}
 }
@@ -941,11 +944,13 @@ static struct st_table *read_table (FILE *input, struct st_table *root)
 		while (last_tbl->next)
 			last_tbl = last_tbl->next;
 	}
-
-	if (getc (inp) != '[')
+	c = getc (inp);
+	if ((c != '[') && (c != '\"'))
 		if (ungetc (getc (inp), inp) != '\"')
 			return (root);
-	ungetc ('[', inp);
+	ungetc (c, inp);
+	if (c == '\"')
+		ungetc ('[', inp);
 
 	while ((c = getc (input)) != ']')
 	{	/* main loop */
@@ -1179,11 +1184,12 @@ static struct st_caption *st_get_captions (int section)
 	return (root_cpt);
 }
 
-static struct st_table *read_attribs_table (FILE *inp, int count)
+static struct st_table *read_attribs_table (FILE *inp, int section, int count)
 {
 	struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
 	char c = 0;
 	int i;
+	int in_quote;
 	int text_size;
 	int level, commas;
 	char *temp_text = NULL;
@@ -1211,6 +1217,10 @@ static struct st_table *read_attribs_table (FILE *inp, int count)
 					return (NULL);
 				}
 
+				curr_tbl->block_id = 0;
+				curr_tbl->id = 0;
+				curr_tbl->section = section;
+
 				/* TODO: Make this '70' an autodetected size */
 				temp_text = malloc (sizeof (char) * 70);
 				text_size = 0;
@@ -1235,32 +1245,44 @@ static struct st_table *read_attribs_table (FILE *inp, int count)
 					c = getc (inp);
 					level = 1;
 					commas = 0;
+					in_quote = 0;
 					while (level)
 					{
 						c = getc (inp);
-						if (c == '[')
-							level++;
-						if (c == ']')
-							level--;
-						if ((level == 1) && (c == ','))
-							commas++;
-						if ((c == '\"') && (commas == 4))
+						if (!in_quote)
 						{
-							/* TODO: Make this '70' an autodetected size */
-							temp_text = malloc (sizeof (char) * 70);
-							text_size = 0;
+							if (c == '[')
+								level++;
+							if (c == ']')
+								level--;
+							if ((level == 1) && (c == ','))
+								commas++;
+							if ((c == '\"') && (commas == 4))
+							{
+								/* TODO: Make this '70' an autodetected size */
+								temp_text = malloc (sizeof (char) * 70);
+								text_size = 0;
 
-							while ((temp_text[text_size++] = tolower (getc (inp))) != '\"');
-							temp_text[text_size - 1] = 0;
-							curr_tbl->fnbase = temp_text;
+								while ((temp_text[text_size++] = tolower (getc (inp))) != '\"');
+								temp_text[text_size - 1] = 0;
+								curr_tbl->fnbase = temp_text;
+								c=0;
+							}
+							if (commas == 8) /* Block ID */
+								fscanf (inp, "%d", &(curr_tbl->block_id));
+							if (commas == 9) /* Entry ID in block*/
+								fscanf (inp, "%d", &(curr_tbl->id));
 						}
+						if (c == '\"')
+							in_quote = !in_quote;
 					}
 					c = getc (inp);
 				}
 
-				if (curr_tbl->fnbase)
+				if (1 /*curr_tbl->fnbase*/)
 				{
-					st_cleanstring (curr_tbl->fnbase);
+					if (curr_tbl->fnbase)
+						st_cleanstring (curr_tbl->fnbase);
 					st_cleanstring (curr_tbl->title);
 					if (!root_tbl)
 						root_tbl = curr_tbl;
@@ -1303,10 +1325,10 @@ static struct st_table *st_get_video_table (int section, int reverse)
 				while (curr_tbl->next)
 					curr_tbl = curr_tbl->next;
 
-				curr_tbl->next = read_attribs_table (inp, part->count);
+				curr_tbl->next = read_attribs_table (inp, section, part->count);
 			}
 			else
-				curr_tbl = root_tbl = read_attribs_table (inp, part->count);
+				curr_tbl = root_tbl = read_attribs_table (inp, section, part->count);
 
 			st_close_file ();
 			count++;
@@ -1824,23 +1846,74 @@ static struct ency_titles *st_title_error (int error_no)
 	return_error->text = NULL;
 	return_error->fmt = NULL;
 	return_error->next = NULL;
+	return_error->name = NULL;
 	return_error->err = error_no;
 
 	return (return_error);
 }
 
 /* sorted episode list stuff */
-static struct st_table *epislist_head=NULL;
+static struct st_table *entrylist_head=NULL;
+
+int entry_list_has_section (section)
+{
+	struct st_table *lst;
+	lst = entrylist_head;
+
+	while (lst)
+		if (lst->section == section)
+			return 1;
+		else
+			lst = lst->next;
+	return 0;
+}
+
+int load_entry_list (int section)
+{
+	struct st_table *curr;
+
+	curr = entrylist_head;
+	if (!curr)
+	{
+		entrylist_head = st_get_video_table (section, 1);
+		if (entry_list_has_section (section))
+			return 1;
+		else
+			return 0;
+	}
+
+	while (curr->next)
+		curr = curr->next;
+
+	if (!entry_list_has_section (section))
+	{
+		curr->next = st_get_video_table (section, 1);
+		if (entry_list_has_section (section))
+			return 1;
+	} else
+		return 1;
+	return 0;
+}
+
+int load_entry_lists (void)
+{
+	int i;
+
+	for (i=0;i<3;i++)
+	{
+		load_entry_list (i);
+	}
+
+	return (entrylist_head ? 1 : 0);
+}
 
 char *get_fnbase (struct st_table *tbl, char *title)
 {
-	char *title_with_dot;
-
-	title_with_dot = (char *) malloc (strlen (title) + 2);
-	sprintf (title_with_dot, "%s.", title);
+	if (!title)
+		return NULL;
 	while (tbl)
 	{
-		if ((!strcmp (tbl->title, title)) || (!strcmp (tbl->title, title_with_dot)))
+		if ((!strcmp (tbl->title, title)))
 			return tbl->fnbase;
 		tbl = tbl->next;
 	}
@@ -1849,14 +1922,105 @@ char *get_fnbase (struct st_table *tbl, char *title)
 
 char *get_title (struct st_table *tbl, char *fnbase)
 {
+	if (!fnbase)
+		return NULL;
 	while (tbl)
 	{
-		if (!strcasecmp (tbl->fnbase, fnbase))
-			return tbl->title;
+		if (tbl->fnbase)
+			if (!strcasecmp (tbl->fnbase, fnbase))
+				return tbl->title;
 		tbl = tbl->next;
 	}
 
 	return NULL;
+}
+
+struct st_table *get_table_entry_by_fnbase (struct st_table *tbl, char *fnbase)
+{
+	if (!fnbase)
+		return NULL;
+	while (tbl)
+	{
+		if (!strcasecmp (tbl->fnbase, fnbase))
+			return tbl;
+		tbl = tbl->next;
+	}
+	return NULL;
+}
+
+struct st_table *get_table_entry_by_title (struct st_table *tbl, char *title)
+{
+	struct st_table *root=tbl;
+	if (!title)
+		return NULL;
+	while (tbl)
+	{
+		if (!strcasecmp (tbl->title, title))
+			return tbl;
+		tbl = tbl->next;
+	}
+	if (strlen (title) > 14)
+		if (!strncmp (title + 5, "Star Trek", 9))
+			return (get_table_entry_by_title (root, title + 4));
+	return NULL;
+}
+
+int get_block_id_by_fnbase (struct st_table *tbl, char *fnbase)
+{
+	if (!fnbase)
+		return 0;
+	while (tbl)
+		if (!strcasecmp (tbl->fnbase, fnbase))
+			return tbl->block_id;
+		else
+			tbl = tbl->next;		
+	return 0;
+}
+
+int get_block_id_by_title (struct st_table *tbl, char *title)
+{
+	if (!title)
+		return 0;
+	while (tbl)
+	{
+		if (!strcasecmp (tbl->title, title))
+			return tbl->block_id;
+		else if (strlen (title) > 14)
+			if (!strncmp (title + 5, "Star Trek", 9))
+				if (!strcasecmp (tbl->title, title + 4))
+					return tbl->block_id;
+		tbl = tbl->next;		
+	}
+	return 0;
+}
+
+int get_entry_id_by_fnbase (struct st_table *tbl, char *fnbase)
+{
+	if (!fnbase)
+		return 0;
+	while (tbl)
+		if (!strcasecmp (tbl->fnbase, fnbase))
+			return tbl->id;
+		else
+			tbl = tbl->next;		
+	return 0;
+}
+
+int get_entry_id_by_title (struct st_table *tbl, char *title)
+{
+	if (!title)
+		return 0;
+	while (tbl)
+	{
+		if (!strcmp (tbl->title, title))
+			return tbl->id;
+		else if (strlen (title) > 14)
+			if (!strncmp (title + 5, "Star Trek", 9))
+				if (!strcasecmp (tbl->title, title + 4))
+					return tbl->id;
+		tbl = tbl->next;		
+	}
+	return 0;
 }
 
 static struct ency_titles *sort_by_epis (struct ency_titles *root, int section)
@@ -1867,63 +2031,64 @@ static struct ency_titles *sort_by_epis (struct ency_titles *root, int section)
 	char fnbase[8];
 	char *title;
 
-	if (!epislist_head)
-		if (!(epislist_head = st_get_video_table (section, 1)))
-			return root;
+	load_entry_list (section);
 
-	tbl = epislist_head;
+	tbl = entrylist_head;
 	while ((tbl) && (isdigit (tbl->title[0]) || (isblank (tbl->title[0]))))
 	{
 		curr = root;
 		last = NULL;
 
-		atbl = tbl->next;
-		title = get_title (atbl, tbl->fnbase);
-		/* Special case */
-		if (!strcmp (tbl->fnbase, "oneong"))
-			title = "\"11001001\" (TNG)";
-		/* Strange cases */
-		if (!title)
+		if (tbl->fnbase)
 		{
-			sprintf (fnbase, "e%c%c%c%c%c", tbl->fnbase[0], tbl->fnbase[1], tbl->fnbase[2], tbl->fnbase[4], tbl->fnbase[5]);
-			title = get_title (atbl, fnbase);
-		}
-		if (!title)
-		{
-			sprintf (fnbase, "e%c%c%c%c%c", tbl->fnbase[0], tbl->fnbase[2], tbl->fnbase[3], tbl->fnbase[4], tbl->fnbase[5]);
-			title = get_title (atbl, fnbase);
-		}
-
-		if (title)
-			while (curr)
+			atbl = tbl->next;
+			title = get_title (atbl, tbl->fnbase);
+			/* Special case */
+			if (!strcmp (tbl->fnbase, "oneong"))
+				title = "\"11001001\" (TNG)";
+			/* Strange cases */
+			if (!title)
 			{
-				if (!strcasecmp (curr->title, title)
-				 || !strcasecmp (curr->title, tbl->title+3)
-				 || !strcasecmp (curr->title, tbl->title+4))
-				{
-					if (new_curr)
-					{
-						new_curr->next = curr;
-						new_curr = curr;
-					}
-					else
-						new_root = new_curr = curr;
-					if (last)
-						last->next = curr->next;
-					if (curr == root)
-						root = root->next;
-					curr->next = NULL;
-
-					free (curr->title);
-					curr->title = strdup (tbl->title);
-					
-					curr = NULL;
-				} else
-				{
-					last = curr;
-					curr = curr->next;
-				}
+				sprintf (fnbase, "e%c%c%c%c%c", tbl->fnbase[0], tbl->fnbase[1], tbl->fnbase[2], tbl->fnbase[4], tbl->fnbase[5]);
+				title = get_title (atbl, fnbase);
 			}
+			if (!title)
+			{
+				sprintf (fnbase, "e%c%c%c%c%c", tbl->fnbase[0], tbl->fnbase[2], tbl->fnbase[3], tbl->fnbase[4], tbl->fnbase[5]);
+				title = get_title (atbl, fnbase);
+			}
+
+			if (title)
+				while (curr)
+				{
+					if (!strcasecmp (curr->title, title)
+					 || !strcasecmp (curr->title, tbl->title+3)
+					 || !strcasecmp (curr->title, tbl->title+4))
+					{
+						if (new_curr)
+						{
+							new_curr->next = curr;
+							new_curr = curr;
+						}
+						else
+							new_root = new_curr = curr;
+						if (last)
+							last->next = curr->next;
+						if (curr == root)
+							root = root->next;
+						curr->next = NULL;
+
+						free (curr->title);
+						curr->title = strdup (tbl->title);
+					
+						curr = NULL;
+					} else
+					{
+						last = curr;
+						curr = curr->next;
+					}
+				}
+		}
 		tbl = tbl->next;
 	}
 
@@ -1993,166 +2158,119 @@ static struct ency_titles *sort_entries (struct ency_titles *root, int section, 
 		return (root);
 }
 
-static struct ency_titles *curr_find_list (int section, char *search_string, int exact, int options)
+void add_to_block_cache (int block_id, int id, long filepos)
 {
-	long this_one_starts_at = 0, temp_pos;
-	int found_any_yet = 0;
-	int first_time = 1;
+	if (cache)
+	{
+		cache_last->next = (struct ency_titles *) malloc (sizeof (struct ency_titles));
+		cache_last = cache_last->next;
+	}
+	else
+		cache_last = cache = (struct ency_titles *) malloc (sizeof (struct ency_titles));
+
+	cache_last->filepos = filepos;
+	cache_last->block_id = block_id;
+	cache_last->id = id;
+	cache_last->name = NULL;
+	cache_last->title = NULL;
+	cache_last->fmt = NULL;
+	cache_last->text = NULL;
+	cache_last->next = NULL;
+}
+
+void load_block_cache (void)
+{
 	char c;
-	int i = 0, z = 1;
-	struct ency_titles *root_title = NULL, *curr_title = NULL, *last_title = NULL;
-	int no_so_far = 0;
-	char *title = NULL, *temp_text = NULL, *new_title = NULL;
-	struct st_ency_formatting *text_fmt = NULL;
-	char last_year[5] = "";
-	int prepend_year=0, append_series=0;
+	int section, n, i=0;
+	int id;
+	struct st_part *part;
 
-	if (!st_open ())
+	/* this next for is *NOT* the right way to do this... */
+	for (section = 0; section < 3; section++)
 	{
-		return (st_title_error (1));
-	};
-
-	prepend_year = (st_fileinfo_get_data (st_file_type, prepend_year) ? 1 : 0);
-	append_series = (st_fileinfo_get_data (st_file_type, append_series) ? 1 : 0);
-	do
-	{
-		no_so_far++;
-		if (!first_time)
-			z = st_find_start (inp);
-		if (z)
+		n=0;
+		while ((part = get_part(st_file_type, section, n++, 0)))
 		{
-			this_one_starts_at = ftell (inp);
-
-			first_time = 0;
-			while ((getc(inp) != '@'));
-			getc(inp);
-
-			i = 0;
-
-			title = st_return_title ();
-
-			/* some chronology entries need years prepended */
-			if ((curr == 3) && prepend_year)
+			if ((part->start_id) && (part->bcount))
 			{
-				/* if it's a year, save it */
-				if (strlen (title) == 4)
-				{
-					strcpy (last_year, title);
-				}
-				/* if it's an episode or a movie, add the year */
-				if ((*title == '\"') || (!strncmp (title, "Star Trek", 9)))
-				{
-					new_title = (char *) malloc (strlen (title) + 6);
-					sprintf (new_title, "%s %s", last_year, title);
-					free (title);
-					title = new_title;
-				}
-			}
-
-			/* and episode entries need (TOS) etc. appended */
-			if ((curr == 2) && append_series)
-			{
-				getc (inp);
-				c = getc (inp);
-				if (c == 0x0D)
-				{
-					c = getc (inp);
-					fseek (inp, -1, SEEK_CUR);
-				}
-				fseek (inp, -2, SEEK_CUR);
-				new_title = (char *) malloc (strlen (title) + 7);
-				switch (c)
-				{
-				case 'O':
-					sprintf (new_title, "%s (TOS)", title);
-					break;
-				case 'N':
-					sprintf (new_title, "%s (TNG)", title);
-					break;
-				case 'D':
-					sprintf (new_title, "%s (DS9)", title);
-					break;
-				case 'V':
-					sprintf (new_title, "%s (VGR)", title);
-					break;
-				default:
-					sprintf (new_title, "%s", title);
-					break;
-				}
-				free (title);
-				title = new_title;
-			}
-
-#ifdef ENCY_DEBUG_PRINT_TITLES
-			fprintf (stderr, "%d:%s\n", no_so_far, title);
-#endif
-			/* build the cached version of this entry */
-			if (!(options & ST_OPT_NO_CACHE))
-				st_add_to_cache (section, title, this_one_starts_at);
-
-			c = getc (inp);
-
-			if (check_match (search_string, title, exact))
-			{	/* If its a match... */
-				found_any_yet = 1;
-				if (st_return_body)
-				{
-					temp_text = st_return_text (0);
-					/* this is a cheat. step back in the
-					   file to get the formatting. doing
-					   it this way saves time in the
-					   likely chance that the entry is
-					   the wrong one */
-					if (!(options & ST_OPT_NO_FMT))
+				inp = (FILE *) curr_open (part->start);
+				if (inp)
+					for (i=part->start_id;i<part->start_id + part->bcount;i++)
 					{
-						temp_pos = ftell (inp);
-						fseek (inp, this_one_starts_at, SEEK_SET);
-						text_fmt = st_return_fmt();
-						fseek (inp, temp_pos, SEEK_SET);
+						if (i > part->start_id)
+						{
+							find_next_stxt_block (inp);
+							fseek (inp, 16, SEEK_CUR);
+						}
+						add_to_block_cache (i, id=1, ftell (inp));
+						while ((c = getc (inp)))
+						{
+							if (c == '~')
+							{
+								c = getc (inp);
+								if (isdigit (c) || (c == '@'))
+								{
+									id++;
+									add_to_block_cache (i, id, ftell (inp)-1);
+								}
+							}
+						}
 					}
-				}
-					
-
-				/* define the pointer */
-				{
-					curr_title = (struct ency_titles *) malloc (sizeof (struct ency_titles));
-
-					if (curr_title == NULL)
-						printf ("Memory allocation failed\n");
-				}
-				if ((root_title) == NULL)
-					root_title = curr_title;
-
-/* copy pointer stuff over */
-				curr_title->err = 0;
-				curr_title->filepos = this_one_starts_at;
-				curr_title->title = title;
-				curr_title->next = NULL;
-				curr_title->text = temp_text;
-				curr_title->fmt = text_fmt;
-				if (last_title != NULL)
-					last_title->next = curr_title;
-				last_title = curr_title;
-				curr_title = NULL;
-				title = NULL;
-				temp_text = NULL;
-				text_fmt = NULL;
-/* */
 			}
-			else
-				/* It's not the one we want */
-			{
-				free (title);
-			}
+			free (part);
 		}
 	}
-	while (no_so_far != curr_lastone);
-	st_close_file ();
+}
 
-	if (found_any_yet)
-		return (root_title);
+long get_block_pos_from_cache (int block_id, int id)
+{
+	struct ency_titles *curr=NULL;
+	int ok_to_go_again=0;
+
+	curr = cache;
+	
+	while (curr)
+	{
+		if (curr->block_id > block_id)
+			ok_to_go_again = 1;
+		if ((curr->block_id == block_id) && (curr->id == id))
+			return (curr->filepos);
+		curr = curr->next;
+	}
+
+	if (ok_to_go_again)
+		return -2;
 	else
-		return (NULL);
+		return -1;
+}
+
+static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
+{
+	FILE *inp;
+	long filepos;
+
+	if (!block_id || !id)
+		return NULL;
+
+	if (!cache)
+		load_block_cache ();
+
+	filepos = get_block_pos_from_cache (block_id, id);
+
+	if (filepos >= 0)
+	{
+		inp = (FILE *) curr_open (filepos);
+		if (!inp)
+			return NULL;
+
+		return (st_read_title_at (ftell (inp), options));
+		fclose (inp);
+	}
+
+	if (filepos == -2)
+		return (get_entry_by_id (block_id+1, id, options));
+
+	return NULL;
 }
 
 static struct ency_titles *st_find_in_cache (int section, char *search_string, int exact, int get_body)
@@ -2311,38 +2429,54 @@ static struct ency_titles *st_find_unknown (int section, char *search_string, in
 
 static struct ency_titles *st_find_in_file (int file, int section, char *search_string, int exact, int options)
 {
-	struct ency_titles *root = NULL, *current = NULL, *temp = NULL;
-	struct st_part *part = NULL;
-	int first_time = 1;
-	int count = 0;
+	struct ency_titles *root = NULL, *curr = NULL;
+	struct st_table *tmp = NULL;
+	struct st_table *tbl=NULL;
+	int skip;
 
-	curr = section + 1;
+	if (!entry_list_has_section (section))
+		if (!load_entry_lists ())
+			return NULL;
 
-	while ((part = get_part (st_file_type, section, count, 0)))
+	tmp = entrylist_head;
+	if (!tmp)
+		return NULL;
+
+	while (tmp)
 	{
-		if (current)
-			while (current->next)
-				current = current->next;
-		curr_lastone = part->count;
-		curr_starts_at = part->start;
-		if (!first_time)
+		if (tmp->section == section)
 		{
-			temp = (curr_find_list (section, search_string, exact, options));
-			if (current)
-				current->next = temp;
-			else
-				root = current = temp;
+			skip = 0;
+			if (section == 1) // Episodes
+			{
+				if (isdigit(tmp->title[0]) || isblank (tmp->title[0]))
+				{
+					if (!(options & ST_OPT_SORTEPIS))
+						skip = 1;
+				} else
+				{
+					if (options & ST_OPT_SORTEPIS)
+						skip = 1;
+				}
+			}
+
+			if (!skip && check_match (search_string, tmp->title, exact))
+			{
+				tbl = get_table_entry_by_title (entrylist_head, tmp->title);
+				if (curr)
+				{
+					curr->next = get_entry_by_id (tbl->block_id, tbl->id, options);
+					curr = curr->next;
+				}
+				else
+					root = curr = get_entry_by_id (tbl->block_id, tbl->id, options);
+				curr->name = strdup (tmp->title);
+			}
 		}
-		else
-		{
-			root = (curr_find_list (section, search_string, exact, options));
-			current = root;
-			first_time = 0;
-		}
-		count++;
-		free (part);
+		tmp = tmp->next;
 	}
-	return (sort_entries (root, section, options));
+
+	return root;
 }
 
 int ft_list_has_section (int section)
@@ -2379,9 +2513,27 @@ void load_ft_list (int section)
 
 		for (i=0;i<part->count;i++)
 		{
-			c=0;
+			if (i)
+			{
+				find_next_stxt_block (inp);
+				fseek (inp, 16, SEEK_CUR);
+			}
+
+			if (getc (inp) == '\"')
+				ungetc ('\"', inp);
+			
+			c = getc (inp);
+			if (c != '\"')
+				c = ']';
+			else
+			{
+				ungetc (c, inp);
+				c=0;
+			}
+
 			while (c != ']')
 			{
+
 				while (getc (inp) != '\"');
 
 				t = word;
@@ -2452,7 +2604,6 @@ void load_ft_list (int section)
 				}
 				c = getc (inp);
 			}
-			find_next_stxt_block (inp);
 		}
 		fclose (inp);
 		free (part);
@@ -2465,7 +2616,9 @@ struct ency_titles *st_find_fulltext (char *search_string, int section, int opti
 	struct st_ftlist *fl;
 	struct st_wl *wl;
 	struct ency_titles *root=NULL, *curr=NULL;
-	char *last, *title;
+	struct st_table *tbl=NULL;
+	char *last=NULL, *title;
+	int bad;
 
 	if (!ft_list_has_section (section))
 		load_ft_list (section);
@@ -2475,6 +2628,9 @@ struct ency_titles *st_find_fulltext (char *search_string, int section, int opti
 	if (!st_ptbls)
 		st_ptbls = st_get_table ();
 	if (!st_ptbls)
+		return NULL;
+
+	if (!load_entry_lists ())
 		return NULL;
 
 	fl = ftlist;
@@ -2495,19 +2651,29 @@ struct ency_titles *st_find_fulltext (char *search_string, int section, int opti
 			title = get_title (st_ptbls, fl->fnbase);
 			if (title)
 			{
+				tbl = get_table_entry_by_title (entrylist_head, title);
+				bad = 0;
 				if (curr)
 				{
-					curr->next = st_find (get_title (st_ptbls, fl->fnbase), section, options | ST_OPT_CASE_SENSITIVE);
-					while (curr->next)
+					curr->next = get_entry_by_id (tbl->block_id, tbl->id, options);
+					if (curr->next)
 						curr = curr->next;
-				} else
+					else
+						bad = 1;
+				}
+				else
+					curr = root = get_entry_by_id (tbl->block_id, tbl->id, options);
+
+				if (curr && !bad)
 				{
-					curr = root = st_find (get_title (st_ptbls, fl->fnbase), section, options | ST_OPT_CASE_SENSITIVE);
+					curr->name = strdup (title);
+					curr->next = NULL;
 				}
 			}
 		}
 		fl = fl->next;
 	}
+
 	return root;
 }
 
@@ -2547,6 +2713,7 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 	default:
 		return (NULL);
 	}
+
 }
 
 struct ency_titles *st_read_title_at (long filepos, int options)
@@ -2595,28 +2762,11 @@ struct ency_titles *st_read_title_at (long filepos, int options)
 	root_title->title = ttl;
 	root_title->text = temp_text;
 	root_title->next = NULL;
+	root_title->name = NULL;
 	root_title->fmt = text_fmt;
 	root_title->err = 0;
 	st_return_body = return_body_was;
 	st_close_file ();
-
-	/* but of course, the title is often mangled :( */
-	/* thus, we check the cache for an entry w/ the same */
-	/* filepos, and use its title */
-	curr_title = cache;
-	while (curr_title)
-	{
-		if (curr_title->filepos == filepos)
-		{
-			free (root_title->title);
-			root_title->title = strdup (curr_title->title);
-			/* make sure we break out of the loop */
-			curr_title = NULL;
-			i = 3;
-		}
-		if (curr_title)
-			curr_title = curr_title->next;
-	}
 
 	return (root_title);
 }

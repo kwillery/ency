@@ -124,10 +124,10 @@ int main (int argc, char *argv[])
 		{
 
 			/* print the returned text */
-			printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
+			printf ("--<%s>--\n%s\n\n%s\n\n", thingy->name, thingy->title, thingy->text);
 
 			if (use_media)
-				media = st_get_media (thingy->title);
+				media = st_get_media (thingy->name);
 
 			if (media)
 			{

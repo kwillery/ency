@@ -15,6 +15,8 @@ struct st_part
 {
 	long start;
 	long count;
+	int start_id;
+	int bcount;
 };
 
 int load_file_info (char *filename);
