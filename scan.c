@@ -426,10 +426,33 @@ static void search_file (FILE *inp, int reverse)
 	}
 }
 
+void clean_up ()
+{
+	struct casttable *t;
+
+	while (casts)
+	{
+		t = casts;
+
+		casts = casts->next;
+
+		if (t->name)
+			free (t->name);
+		free (t);
+	}
+
+	parts = NULL;
+	pcurr = NULL;
+	plast = NULL;
+
+	curr_id = 0;
+}
+
 struct st_part *scan_file (FILE *inp)
 {
 	char start[5];
 	int reverse=0;
+	struct st_part *ret;
 
 	fread (start, 4, 1, inp);
 	start[4] = 0;
@@ -442,8 +465,10 @@ struct st_part *scan_file (FILE *inp)
 	fseek (inp, 0, SEEK_SET);
 	search_file (inp, reverse);
 
+	ret = parts;
+	clean_up ();
 //	return make_useful_information (inp);
-	return parts;
+	return ret;
 }
 
 
