@@ -32,3 +32,9 @@ install: findenc htmlenc showm
 uninstall:
 	rm -f $(BINDIR)/findenc $(BINDIR)/htmlenc $(BINDIR)/showm $(LIBDIR)/libency.a $(INCDIR)/ency.h
 
+doc: ency-api.txt ency-api.html
+
+ency-api.txt: ency-api.sgml
+	sgml2txt ency-api.sgml
+ency-api.html: ency-api.sgml
+	sgml2html ency-api.sgml
