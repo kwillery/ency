@@ -2,10 +2,10 @@ file
  name: "TNG Companion"
  dfile: type=ency, filename=eg_tng.dxr
  dfile: type=data, filename=TNGdata.cxt
- dfile: type=picon, filename=TNGpicns.cxt*
+ dfile: type=picon, filename=TNGpicns.cxt
  datadir: TNGprogram/Pro
- photodir: Media
- videodir: Media
+ photodir: MEDIA
+ videodir: MEDIA
  append_char
  fingerprint: 58;46;49;52;98;76;3b;0;33;39;56;4d;70;61;6d;69;
  needscan
