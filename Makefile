@@ -7,6 +7,7 @@ DOCDIR=/usr/doc
 BINDIR=/usr/bin
 MANDIR=/usr/man
 LIBDIR=/usr/lib
+INCDIR=/usr/include
 
 all: libency htmlenc findenc
 
@@ -27,6 +28,7 @@ install: findenc htmlenc
 	install -c findenc $(BINDIR)
 	install -c htmlenc $(BINDIR)
 	install -c libency.a $(LIBDIR)
+	install -c ency.h $(INCDIR)
 
 uninstall:
 	rm -f $(BINDIR)/findenc $(BINDIR)/htmlenc

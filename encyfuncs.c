@@ -36,40 +36,46 @@ char *ency_filename;
 int st_return_body = 1;
 int st_ignore_case = 0;
 long int file_pos_is = 0;
+int upto = 0;
 
 long int st_table_starts_at = 0x410c4;
-long int ency_starts_at = 0x7bc28;
-long int epis_starts_at = 0x3b8e20;
-long int chro_starts_at = 0x41e32c;
+long int ency_starts_at[3] =
+{0x7bc28, 0x576574, 0};
+long int epis_starts_at[3] =
+{0x3b8e20, 0x50431A, 0};
+long int chro_starts_at[2] =
+{0x41e32c, 0};
 long int set_starts_at = 0x0;
 
-long int ency_lastone = 7068;
-long int epis_lastone = 402;
-long int chro_lastone = 582;
+long int ency_lastone[3] =
+{7068, 68, 0};
+long int epis_lastone[3] =
+{402, 3, 0};
+long int chro_lastone[2] =
+{582, 0};
 
 long int curr_starts_at, curr_lastone, curr;
 int screwy = 0;
 
 int
-st_open (void)
+st_open ()
 {
   if (curr == 0)		// Defaults to ency
+    curr_starts_at = ency_starts_at[upto];
 
-    curr_starts_at = ency_starts_at;
   if (curr == 1)		// Ency
+    curr_starts_at = ency_starts_at[upto];
 
-    curr_starts_at = ency_starts_at;
   if (curr == 2)		// Epis
+    curr_starts_at = epis_starts_at[upto];
 
-    curr_starts_at = epis_starts_at;
   if (curr == 3)		// Chro
+    curr_starts_at = chro_starts_at[upto];
 
-    curr_starts_at = chro_starts_at;
   if (curr == 4)		// table
-
     curr_starts_at = st_table_starts_at;
-  if (curr == 5)		// Set value
 
+  if (curr == 5)		// Set value
     curr_starts_at = set_starts_at;
 
   return (curr_open ());
@@ -98,30 +104,6 @@ curr_open (void)
       file_pos_is += curr_starts_at;
     }
   return ((int) inp);
-}
-
-int
-ency_open (void)
-{
-  curr = 1;
-  curr_starts_at = ency_starts_at;
-  return (curr_open ());
-}
-
-int
-epis_open (void)
-{
-  curr = 2;
-  curr_starts_at = epis_starts_at;
-  return (curr_open ());
-}
-
-int
-chro_open (void)
-{
-  curr = 3;
-  curr_starts_at = chro_starts_at;
-  return (curr_open ());
 }
 
 int
@@ -185,10 +167,10 @@ ency_cleantext (unsigned char c)
     case 0x8F:
       return ('e');
       break;
-    case 0xA5: 
+    case 0xA5:
       return ('*');
       break;
- 
+
     default:
       return (c);
       break;
@@ -220,29 +202,33 @@ curr_return_fmt (void)
   char tmp_txt[50];
   root_fmt = last_fmt = curr_fmt = NULL;
 
-if (st_return_body) {
-  root_fmt = (struct st_ency_formatting *) malloc (sizeof (struct st_ency_formatting));
-  if (root_fmt == NULL)
+  if (st_return_body)
     {
-      printf ("Memory allocation failed\n");
-      exit (1);
+      root_fmt = (struct st_ency_formatting *) malloc (sizeof (struct st_ency_formatting));
+      if (root_fmt == NULL)
+	{
+	  printf ("Memory allocation failed\n");
+	  exit (1);
+	}
+      memset (root_fmt, 0, sizeof (struct st_ency_formatting));
+      curr_fmt = root_fmt;
     }
-  memset (root_fmt, 0, sizeof (struct st_ency_formatting));
-  curr_fmt = root_fmt;		}
 
   c = egetc ();
   while (c != '@')
     {
       if (!first_time)
 	{
-if (st_return_body) {
-	  curr_fmt = (struct st_ency_formatting *) malloc (sizeof (struct st_ency_formatting));
-	  if (curr_fmt == NULL)
+	  if (st_return_body)
 	    {
-	      printf ("Memory allocation failed\n");
-	      exit (1);
+	      curr_fmt = (struct st_ency_formatting *) malloc (sizeof (struct st_ency_formatting));
+	      if (curr_fmt == NULL)
+		{
+		  printf ("Memory allocation failed\n");
+		  exit (1);
+		}
+	      memset (curr_fmt, 0, sizeof (struct st_ency_formatting));
 	    }
-	  memset (curr_fmt, 0, sizeof (struct st_ency_formatting)); }
 
 	}
       first_time = 0;
@@ -254,8 +240,8 @@ if (st_return_body) {
 	  c = egetc ();
 	}
       tmp_txt[i] = 0;
-if (st_return_body)
-      curr_fmt->firstword = atoi (tmp_txt);	// starts at
+      if (st_return_body)
+	curr_fmt->firstword = atoi (tmp_txt);	// starts at
 
       c = egetc ();
       if (c != '[')
@@ -266,43 +252,43 @@ if (st_return_body)
 	  tmp_txt[i++] = c;
 	}
       tmp_txt[i] = 0;
-if (st_return_body)
-      curr_fmt->words = atoi (tmp_txt);		// words
+      if (st_return_body)
+	curr_fmt->words = atoi (tmp_txt);	// words
 
       c = egetc ();
       if (c != 35)
 	c = egetc ();
 
-if (st_return_body)
-      curr_fmt->bi = 0;
+      if (st_return_body)
+	curr_fmt->bi = 0;
 
       while ((c = egetc ()) != ']')
-{
-if (st_return_body) 
-	  switch (c)
-	    {
-	    case 'B':
-	      curr_fmt->bi += 1;
-	      break;
-	    case 'U':
-	      curr_fmt->bi += 4;
-	      break;
-	    case 'I':
-	      curr_fmt->bi += 2;
-	      break;
-	    default:
-	      break;
-	    }
+	{
+	  if (st_return_body)
+	    switch (c)
+	      {
+	      case 'B':
+		curr_fmt->bi += 1;
+		break;
+	      case 'U':
+		curr_fmt->bi += 4;
+		break;
+	      case 'I':
+		curr_fmt->bi += 2;
+		break;
+	      default:
+		break;
+	      }
 	}
       c = egetc ();
- if (st_return_body) 
-      {
-	curr_fmt->next = NULL;
-	if (last_fmt != NULL)
-	  last_fmt->next = curr_fmt;
-	last_fmt = curr_fmt;
-	curr_fmt = NULL;
-      }
+      if (st_return_body)
+	{
+	  curr_fmt->next = NULL;
+	  if (last_fmt != NULL)
+	    last_fmt->next = curr_fmt;
+	  last_fmt = curr_fmt;
+	  curr_fmt = NULL;
+	}
     }
   c = egetc ();
   return (root_fmt);
@@ -334,7 +320,7 @@ curr_find_start (void)
     {
       c = egetc ();
 //      if ((oldc == 0x16) && (c != 0x2E))
-if ((oldc == 0x16) && (c != 0x7E))
+      if ((oldc == 0x16) && (c != 0x7E))
 	{
 	  eungetc (c);
 	  return (0);
@@ -378,7 +364,10 @@ curr_return_text (void)
       if (c == 0)
 	bye = 1;
       if ((old_c == '\n') && (c == 0x7E))
-	{eungetc(c);bye = 1;}
+	{
+	  eungetc (c);
+	  bye = 1;
+	}
 
       if (!bye)
 	{
@@ -391,8 +380,8 @@ curr_return_text (void)
 	  old_c = c;
 	}
     }
-  temp_text[text_size-1] = 0;
-printf("\n");
+  temp_text[text_size - 1] = 0;
+  printf ("\n");
   return (temp_text);
 }
 char *
@@ -483,6 +472,7 @@ st_title_error (int error_no)
 
   return (return_error);
 }
+
 struct ency_titles *
 curr_find_list (char title[], int exact)
 {
@@ -592,6 +582,7 @@ curr_find_list (char title[], int exact)
     }
   while (no_so_far != curr_lastone);
 // printf("dbg6\n");
+  curr_close ();
   if (found_any_yet)
     return (root_title);
   else
@@ -601,23 +592,98 @@ curr_find_list (char title[], int exact)
 struct ency_titles *
 ency_find_list (char title[], int exact)
 {
+  struct ency_titles *root, *current, *temp;
   curr = 1;
-  curr_lastone = ency_lastone;
-  return (curr_find_list (title, exact));
+  root = current = temp = NULL;
+  upto = 0;
+  while (ency_lastone[upto] != 0)
+    {
+      if (current)
+	while (current->next)
+	  {
+	    current = current->next;
+	  }
+      curr_lastone = ency_lastone[upto];
+      if (upto)
+	{
+	  temp = (curr_find_list (title, exact));
+	  if (current)
+	    current->next = temp;
+	  else
+	    root = current = temp;
+	}
+      else
+	{
+	  root = (curr_find_list (title, exact));
+	  current = root;
+	}
+      upto++;
+    }
+  return (root);
 }
 struct ency_titles *
 epis_find_list (char title[], int exact)
 {
+  struct ency_titles *root, *current, *temp;
   curr = 2;
-  curr_lastone = epis_lastone;
-  return (curr_find_list (title, exact));
+  root = current = temp = NULL;
+  upto = 0;
+  while (epis_lastone[upto] != 0)
+    {
+      if (current)
+        while (current->next)
+          {
+            current = current->next;
+          }
+      curr_lastone = epis_lastone[upto];
+      if (upto)
+        {
+          temp = (curr_find_list (title, exact));
+          if (current)
+            current->next = temp;
+          else
+            root = current = temp;
+        }
+      else
+        {
+          root = (curr_find_list (title, exact));
+          current = root;
+        }
+      upto++;
+    }
+  return (root);
 }
 struct ency_titles *
 chro_find_list (char title[], int exact)
 {
+  struct ency_titles *root, *current, *temp;
   curr = 3;
-  curr_lastone = chro_lastone;
-  return (curr_find_list (title, exact));
+  root = current = temp = NULL;
+  upto = 0;
+  while (chro_lastone[upto] != 0)
+    {
+      if (current)
+        while (current->next)
+          {
+            current = current->next;
+          }
+      curr_lastone = chro_lastone[upto];
+      if (upto)
+        {
+          temp = (curr_find_list (title, exact));
+          if (current)
+            current->next = temp;
+          else
+            root = current = temp;
+        }
+      else
+        {
+          root = (curr_find_list (title, exact));
+          current = root;
+        }
+      upto++;
+    }
+  return (root);
 }
 
 struct ency_titles *
@@ -740,23 +806,29 @@ curr_find_titles (char title[])
 struct ency_titles *
 ency_find_titles (char title[])
 {
-  curr = 1;
-  curr_lastone = ency_lastone;
-  return (curr_find_titles (title));
+/* these havent been adapted to the new 'multi-staged' system and so wont work.
+   curr = 1;
+   curr_lastone = ency_lastone;
+   return (curr_find_titles (title));
+ */
 }
 struct ency_titles *
 epis_find_titles (char title[])
 {
-  curr = 2;
-  curr_lastone = epis_lastone;
-  return (curr_find_titles (title));
+/*
+   curr = 2;
+   curr_lastone = epis_lastone;
+   return (curr_find_titles (title));
+ */
 }
 struct ency_titles *
 chro_find_titles (char title[])
 {
-  curr = 3;
-  curr_lastone = chro_lastone;
-  return (curr_find_titles (title));
+/*
+   curr = 3;
+   curr_lastone = chro_lastone;
+   return (curr_find_titles (title));
+ */
 }
 
 
@@ -823,23 +895,29 @@ curr_get_title (char title[])
 struct ency_titles *
 ency_get_title (char title[])
 {
-  curr = 1;
-  curr_lastone = ency_lastone;
-  return (curr_get_title (title));
+/* these havent been adapted to the new multi-staged stuff.
+   curr = 1;
+   curr_lastone = ency_lastone;
+   return (curr_get_title (title));
+ */
 }
 struct ency_titles *
 epis_get_title (char title[])
 {
-  curr = 2;
-  curr_lastone = epis_lastone;
-  return (curr_get_title (title));
+/*
+   curr = 2;
+   curr_lastone = epis_lastone;
+   return (curr_get_title (title));
+ */
 }
 struct ency_titles *
 chro_get_title (char title[])
 {
-  curr = 3;
-  curr_lastone = chro_lastone;
-  return (curr_get_title (title));
+/*
+   curr = 3;
+   curr_lastone = chro_lastone;
+   return (curr_get_title (title));
+ */
 }
 
 struct st_table *

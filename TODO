@@ -1,14 +1,12 @@
-My todo list for my ency reader
+TODO: star trek ency reader
 -------------------------------
 
-- Create a gui
+- rewrite it with comments :)
+- rewrite it better, stop just adding hacks.
 - make it work on all versions of the ency
-- hyperlinking
 - thumbnail pictures
 - other pictures, movies, etc
-- split ency/timeline/episode/resource
 - make prettier code :-)
-- library functions ?
 - update the man pages  & docs heaps
 - better & more error handling
 - if (project != finished) drink(coffee) else goto bed;

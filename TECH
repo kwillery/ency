@@ -8,7 +8,7 @@ Each section (not necessarily in alphabetical order!) starts off with a header, 
 	-bold or italic
 the title is included in the word count.
 
-it then has the title, text, and two ascii 13 characters
+it then has the title, text, and (a) a 0x00 byte or (b) two '\n's and a 0x7E (~)
 
 it then continues.
 
