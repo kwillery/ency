@@ -30,6 +30,8 @@ extern int st_ignore_case;
 extern int st_return_body;
 extern int optind;		// for getopt()
 
+extern int st_file_type;
+
 int remove_fmt = 0;
 int words = 0;
 char filename[100] = "stdout";
@@ -245,45 +247,50 @@ main (int argc, char *argv[])
       printf ("Enter search string :");
       scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
     }
-
-  if (search_what == 'c')
-    thingy = chro_find_list (search_string, 0);
-  if (search_what == 'e')
-    thingy = epis_find_list (search_string, 0);
-  if ((search_what != 'c') && (search_what != 'e'))
-    thingy = ency_find_list (search_string, 0);
-
-  i = 0;
-  printf ("<html>\n");
-  printf ("<head><title>Search results for: %s</title></head>", search_string);
-  printf ("<h1>Star Trek Encyclopedia</h1>\n");
-  printf ("You searched for <b>%s</b>.\n", search_string);
-  if ((thingy != NULL) && (thingy->title != NULL))
+  st_file_type = st_fingerprint ();
+  if (st_file_type <= ST_FILE_TYPES)
     {
-      do
+      if (search_what == 'c')
+	thingy = chro_find_list (search_string, 0);
+      if (search_what == 'e')
+	thingy = epis_find_list (search_string, 0);
+      if ((search_what != 'c') && (search_what != 'e'))
+	thingy = ency_find_list (search_string, 0);
+
+      i = 0;
+      printf ("<html>\n");
+      printf ("<head><title>Search results for: %s</title></head>", search_string);
+      printf ("<h1>Star Trek Encyclopedia</h1>\n");
+      printf ("You searched for <b>%s</b>.\n", search_string);
+      if ((thingy != NULL) && (thingy->title != NULL))
 	{
-	  full_body = get_title_at (thingy->filepos);
+	  do
+	    {
+	      full_body = get_title_at (thingy->filepos);
 // printf("**\n%s\n%s\n**",full_body->title,full_body->text);
-	  printoff (full_body);
+	      printoff (full_body);
 //        printoff (thingy);
-	  kill_me = thingy;
-	  thingy = thingy->next;
+	      kill_me = thingy;
+	      thingy = thingy->next;
 //        free (kill_me->text);
-	  free (kill_me->title);
-	  free (kill_me);
-	  free (full_body->title);
-	  free (full_body->text);
-	  free (full_body);
+	      free (kill_me->title);
+	      free (kill_me);
+	      free (full_body->title);
+	      free (full_body->text);
+	      free (full_body);
+	    }
+	  while (thingy != NULL);
 	}
-      while (thingy != NULL);
+      else
+	printf ("No matches<br>\n");
+
+      printf ("<hr>\nMibus' ency reader<br>\n");
+      printf ("<a href=\"http://www.picknowl.com.au/homepages/beemer/ency.html\">http://www.picknowl.com.au/homepages/beemer/ency.html</a><br>\n");
+      printf ("queries, comments, flames, to <a href=\"mailto:beemer@picknowl.com.au\">Robert Mibus (beemer@picknowl.com.au)</a>");
+
+      printf ("</html>\n");
     }
   else
-    printf ("No matches<br>\n");
-
-  printf ("<hr>\nMibus' ency reader<br>\n");
-  printf ("<a href=\"http://www.picknowl.com.au/homepages/beemer/ency.html\">http://www.picknowl.com.au/homepages/beemer/ency.html</a><br>\n");
-  printf ("queries, comments, flames, to <a href=\"mailto:beemer@picknowl.com.au\">Robert Mibus (beemer@picknowl.com.au)</a>");
-
-  printf ("</html>\n");
+    printf ("An error has occurred.\n");
   return (0);
 }

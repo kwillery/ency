@@ -50,14 +50,14 @@ main (int argc, char *argv[])
       exit (0);
     }
 
-//  printf ("Enter search string :");
-//  scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
+  printf ("Enter search string :");
+  scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
 
   st_ignore_case = 1;
   st_file_type = st_fingerprint ();
 //  st_file_type = ST_FILE_OMNI2;
-//  if (st_file_type <= ST_FILE_TYPES)
-//    {
+  if (st_file_type <= ST_FILE_TYPES)
+    {
 //  ency_filename = (char *) malloc (60);
 
 //  strcpy (ency_filename, "/dose/trek/Reference/Encyclopedia/Ency98/Data.cxt");
@@ -65,7 +65,7 @@ main (int argc, char *argv[])
       //  strcpy (ency_filename, "/dose/trek/Reference/omni_v2.dxr");
       //  strcpy (ency_filename, "/dose/trek/Reference/ds9/ds9/eg_ds9.dxr");
       //  strcpy (ency_filename, "/dose/trek/Reference/tng/source/eg_tng.dxr");
-/*
+
       if (i == 'c')
 	thingy = chro_find_list (search_string, 0);
       if (i == 'e')
@@ -88,8 +88,8 @@ main (int argc, char *argv[])
 	}
       else
 	printf ("No matches\n");
-*/
-  tbl = st_get_table ();
+
+/*  tbl = st_get_table ();
    i = 0;
    while (tbl)
    {
@@ -104,8 +104,9 @@ main (int argc, char *argv[])
    free (oldtbl->fnbase);
    free (oldtbl);
    } 
-/*    }
+ */ 
+    }
   else
     printf ("An error has occurred.\n");
-  return (0); */
+  return (0);
 }
