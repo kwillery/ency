@@ -29,9 +29,7 @@
 #include "ency.h"
 
 extern int st_ignore_case;
-extern int st_file_type;
 extern int optind;
-extern char *ency_filename;
 
 int main (int argc, char *argv[])
 {
@@ -56,73 +54,60 @@ int main (int argc, char *argv[])
     scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
   }
 
+  /* run any ency init stuff */
+  st_init ();
+
   /* make the search *not* case sensitive */
   st_ignore_case = 1;
 
   /* if you want to manually set the filename
-   * ency_filename = (char *) malloc (60);
-   * strcpy (ency_filename, "/dose/trek/Reference/Encyclopedia/Ency98/Data.cxt");
+   * st_set_filename ("/dose/trek/Reference/eg_tng.dxr");
    */
 
-  /* identify the file were looking at
-   * (defaults to the env. var. ENCY_FILENAME
-   *  or, failing that, "./Data.cxt") */
-  st_file_type = st_fingerprint ();
+  if (i == 'c')
+    thingy = chro_find_list (search_string, 0);
+  if (i == 'e')
+    thingy = epis_find_list (search_string, 0);
+  if ((i != 'c') && (i != 'e'))
+    thingy = ency_find_list (search_string, 0);
 
-/*
- * If you want to set it manually, use:
- * st_file_type = ST_FILE_OMNI2;
- * (ST_FILE_* is in ency.h
- */
+  /*
+   * get from a certain point in the file...
+   * thingy = get_title_at (0x149310);
+   */
 
+  i = 0;
+  if ((thingy != NULL) && (thingy->title != NULL)) {
+    do {
+      /* print the returned text */
+      printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
 
-  if (st_file_type <= ST_FILE_TYPES) {
-    if (i == 'c')
-      thingy = chro_find_list (search_string, 0);
-    if (i == 'e')
-      thingy = epis_find_list (search_string, 0);
-    if ((i != 'c') && (i != 'e'))
-      thingy = ency_find_list (search_string, 0);
+      /* free the returned stuff */
+      kill_me = thingy;
+      thingy = thingy->next;
+      fmt = kill_me->fmt;
 
-    /*
-     * get from a certain point in the file...
-     * thingy = get_title_at (0x149310);
-     */
-
-    i = 0;
-
-    if ((thingy != NULL) && (thingy->title != NULL)) {
-      do {
-	/* print the returned text */
-	printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
-
-	/* free the returned stuff */
-	kill_me = thingy;
-	thingy = thingy->next;
-	fmt = kill_me->fmt;
-
-	while (fmt) {
-	  kill_fmt = fmt;
-	  fmt = fmt->next;
-	  if (kill_fmt)
-	    free (kill_fmt);
-	}
-
-	if (kill_me->title)
-	  free (kill_me->title);
-
-	if (kill_me->text)
-	  free (kill_me->text);
-
-	if (kill_me)
-	  free (kill_me);
-
+      while (fmt) {
+	kill_fmt = fmt;
+	fmt = fmt->next;
+	if (kill_fmt)
+	  free (kill_fmt);
       }
-      while (thingy != NULL);
-    } else
-      printf ("No matches\n");
 
+      if (kill_me->title)
+	free (kill_me->title);
+
+      if (kill_me->text)
+	free (kill_me->text);
+
+      if (kill_me)
+	free (kill_me);
+
+    }
+    while (thingy != NULL);
   } else
-    printf ("An error has occurred.\n");
+    printf ("No matches\n");
+
+  st_finish ();
   return (0);
 }

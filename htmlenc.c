@@ -30,11 +30,7 @@
 
 extern int st_ignore_case;
 extern int st_return_body;
-extern int optind;		// for getopt()
-
-extern char *ency_filename;
-
-extern int st_file_type;
+extern int optind;		/* for getopt() */
 
 int remove_fmt = 0;
 int words = 0;
@@ -223,50 +219,49 @@ int main (int argc, char *argv[])
     search_what = i;
   }
 
-//if (argc > optind) printf("%s\n",argv[optind]);
   if (argc > optind) {
     strcpy (search_string, argv[optind]);
   } else {
     printf ("Enter search string :");
     scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
   }
-  st_file_type = st_fingerprint ();
-  if (st_file_type <= ST_FILE_TYPES) {
-    if (search_what == 'c')
-      thingy = chro_find_list (search_string, 0);
-    if (search_what == 'e')
-      thingy = epis_find_list (search_string, 0);
-    if ((search_what != 'c') && (search_what != 'e'))
-      thingy = ency_find_list (search_string, 0);
+  st_init ();
 
-    i = 0;
-    printf ("<html>\n");
-    printf ("<head><title>Search results for: %s</title></head>", search_string);
-    printf ("<h1>Star Trek Encyclopedia</h1>\n");
-    printf ("You searched for <b>%s</b>.\n", search_string);
-    if ((thingy != NULL) && (thingy->title != NULL)) {
-      do {
-	full_body = get_title_at (thingy->filepos);
-	printoff (full_body);
-	kill_me = thingy;
-	thingy = thingy->next;
-	free (kill_me->title);
-	free (kill_me);
-	free (full_body->title);
-	free (full_body->text);
-	free (full_body);
-      }
-      while (thingy != NULL);
-    } else
-      printf ("No matches<br>\n");
+  if (search_what == 'c')
+    thingy = chro_find_list (search_string, 0);
+  if (search_what == 'e')
+    thingy = epis_find_list (search_string, 0);
+  if ((search_what != 'c') && (search_what != 'e'))
+    thingy = ency_find_list (search_string, 0);
 
-    printf ("<hr>\nMibus' ency reader<br>\n");
-    printf ("<a href=\"http://www.picknowl.com.au/homepages/beemer/ency.html\">http://www.picknowl.com.au/homepages/beemer/ency.html</a><br>\n");
-    printf ("queries, comments, flames, to <a href=\"mailto:mibus@bigpond.com\">Robert Mibus (mibus@bigpond.com)</a>");
-
-    printf ("</html>\n");
+  i = 0;
+  printf ("<html>\n");
+  printf ("<head><title>Search results for: %s</title></head>", search_string);
+  printf ("<h1>Star Trek Encyclopedia</h1>\n");
+  printf ("You searched for <b>%s</b>.\n", search_string);
+  if ((thingy != NULL) && (thingy->title != NULL)) {
+    do {
+      full_body = get_title_at (thingy->filepos);
+      printoff (full_body);
+      kill_me = thingy;
+      thingy = thingy->next;
+      free (kill_me->title);
+      free (kill_me);
+      free (full_body->title);
+      free (full_body->text);
+      free (full_body);
+    }
+    while (thingy != NULL);
   } else
-    printf ("An error has occurred.\n");
+    printf ("No matches<br>\n");
+
+  printf ("<hr>\nMibus' ency reader<br>\n");
+  printf ("<a href=\"http://www.picknowl.com.au/homepages/beemer/ency.html\">http://www.picknowl.com.au/homepages/beemer/ency.html</a><br>\n");
+  printf ("queries, comments, flames, to <a href=\"mailto:mibus@bigpond.com\">Robert Mibus (mibus@bigpond.com)</a>");
+
+  printf ("</html>\n");
+
+  st_finish ();
 
   return (0);
 }

@@ -2,7 +2,8 @@
 ency API
 --------
 (rough draft)
-
+*note: due to recent changes, this document is slightly out of date *
+*things may not work exactly as expected. sorry *
 ----------------
 global variables
 ----------------
@@ -133,18 +134,18 @@ use code like...
     /* do your stuff... */
     }
 
-int ency_init (void)
+int st_load_media (void)
 loads the tables & captions for later use (in st_get_media)
 
-int ency_finish (void)
+int ency_unload_media (void)
 unloads the tables & captions
 
-int ency_initted (void)
+int st_load_mediated (void)
 are the tables loaded? 0 == no, 1 == yes.
 
 struct st_media *st_get_media (char *search_string)
 returns a media struct with info in pics/captions/etc.
-requires ency_init() to have been run.
+requires st_load_media() to have been run.
 
 char *st_format_filename (char *fnbasen, char *base_path, int media)
 fnbasen is the 'file' part of the photos[] part of the st_media struct.

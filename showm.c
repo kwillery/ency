@@ -42,11 +42,10 @@ int main (int argc, char *argv[])
   struct st_media *media = NULL;
   char base_path[] = "/cdrom";
 
-  /* identify whatever file were looking at */
-  st_file_type = st_fingerprint ();
+  st_init ();
 
   /* this enables the media funcs. in encyfuncs.c */
-  ency_init ();
+  st_load_media ();
 
   /* get a table so we know what's in the encyclopedia */
   tbl = st_get_table ();
@@ -105,5 +104,5 @@ int main (int argc, char *argv[])
     free (oldtbl->fnbase);	/* free the last fnbase */
     free (oldtbl);		/* free the last entry */
   }
-  ency_finish ();		/* cleans up after ency_init() */
+  st_unload_media ();		/* cleans up after st_load_media() */
 }

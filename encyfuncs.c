@@ -30,48 +30,48 @@
 #include <string.h>
 #include "ency.h"
 
-FILE *inp;
+static FILE *inp;
 
-char *ency_filename = NULL;
+static char *ency_filename = NULL;
 
 int st_return_body = 1;
 int st_ignore_case = 0;
-int upto = 0;
-int st_file_type = 0;
+static int upto = 0;
+static int st_file_type = 0;
 
-const long int st_table_starts_at[] =
+static const long int st_table_starts_at[] =
 {0x410c4, 0, 0x388f2e, 0, 0x3CD470, 0, 0x2BBA98, 0x2BCD9B, 0, 0x322996, 0};
 
-const long int st_caption_starts_at[] =
+static const long int st_caption_starts_at[] =
 {0x4e5064, 0, 0x615552, 0, 0x646D0A, 0, 0x2C5F2C, 0, 1, 0};
 
-const long int ency_starts_at[] =
+static const long int ency_starts_at[] =
 {0x7bc28, 0x576574, 0, 0x3A9ED8, 0x56BB62, 0, 0x3FC3BE, 0x58B51E, 0x72E89C, 0, 0x1, 0, 0x1, 0};
 
-const long int epis_starts_at[] =
+static const long int epis_starts_at[] =
 {0x3b8e20, 0x50431A, 0, 0x5D961A, 0x622AA4, 0, 0x606630, 0x659F9E, 0, 0x2D2A6E, 0, 0x324B34, 0x390C40, 0};
 
-const long int chro_starts_at[] =
+static const long int chro_starts_at[] =
 {0x41e32c, 0, 0x62764A, 0, 0x66B9C4, 0, 0x1, 0, 0x1, 0};
 
-long int set_starts_at = 0x0;
+static long int set_starts_at = 0x0;
 
-const long int ency_lastone[] =
+static const long int ency_lastone[] =
 {7068, 68, 0, 4092, 491, 0, 3905, 476, 1353, 0, 0x1, 0, 0x1, 0};
 
-const long int epis_lastone[] =
+static const long int epis_lastone[] =
 {402, 3, 0, 261, 25, 0, 262, 93, 0, 181, 0, 89, 42, 0};
 
-const long int chro_lastone[] =
+static const long int chro_lastone[] =
 {582, 0, 465, 0, 582, 0, 0x1, 0, 0x1, 0};
 
-const long int st_table_lastone[] =
+static const long int st_table_lastone[] =
 {26, 0, 26, 0, 26, 0, 2, 22, 0, 15, 0};
 
-const long int st_caption_lastone[] =
+static const long int st_caption_lastone[] =
 {5, 0, 4, 0, 4, 0, 5, 0, 1, 0};
 
-long int curr_starts_at, curr_lastone, curr;
+static long int curr_starts_at, curr_lastone, curr;
 
 const struct st_file_info st_files[] =
 {
@@ -87,10 +87,46 @@ const struct st_file_info st_files[] =
    {0x52, 0x49, 0x46, 0x58, 0x0, 0x4C, 0xAE, 0xC4, 0x4D, 0x56, 0x39, 0x33, 0x69, 0x6D, 0x61, 0x70}, 1}
 };
 
-struct st_caption *st_cpts = NULL, *st_oldcpts = NULL;
-struct st_table *st_tbls = NULL, *st_oldtbls = NULL;
+static struct st_caption *st_cpts = NULL, *st_oldcpts = NULL;
+static struct st_table *st_tbls = NULL, *st_oldtbls = NULL;
 
-int ency_init (void)
+int st_init (void)
+{
+  st_fingerprint ();
+  return (1);
+}
+
+int st_finish (void)
+{
+  if (ency_filename)
+    free (ency_filename);
+}
+
+int st_set_filename (char *filename)
+{
+  int type = 255;
+  if (ency_filename)
+    free (ency_filename);
+  ency_filename = strdup (filename);
+  if (ency_filename) {
+    type = st_fingerprint ();
+    if (0 <= type < ST_FILE_TYPES) {
+      st_file_type = type;
+      return (1);
+    } else {
+      free (ency_filename);
+      return (0);
+    }
+  }
+  return (0);
+}
+
+char *st_get_filename (void)
+{
+  return (ency_filename);
+}
+
+int st_load_media (void)
 {
   /*
    * Get the table & captions (if we don't already have them)
@@ -102,7 +138,7 @@ int ency_init (void)
   return (1);
 }
 
-int ency_initted (void)
+int st_loaded_media (void)
 {
   if ((st_cpts) && (st_tbls))
     return (1);
@@ -110,7 +146,7 @@ int ency_initted (void)
     return (0);
 }
 
-int ency_finish (void)
+int st_unload_media (void)
 {
 /* Free the caption & table info */
   while (st_cpts) {
@@ -139,15 +175,17 @@ int ency_finish (void)
   return (1);
 }
 
-int curr_open (void)
+static int curr_open (void)
 {
   int i = 0;
+  char *temp_fn = NULL;
 
   if (ency_filename == NULL) {
-    ency_filename = getenv ("ENCY_FILENAME");
-    if (ency_filename == NULL) {
-      ency_filename = (char *) malloc (10);
-      strcpy (ency_filename, "Data.cxt");
+    temp_fn = getenv ("ENCY_FILENAME");
+    if (temp_fn == NULL) {
+      st_set_filename ("Data.cxt");
+    } else {
+      st_set_filename (temp_fn);
     }
   }
   inp = fopen (ency_filename, "rb");
@@ -162,7 +200,7 @@ int curr_open (void)
     return (0);
 }
 
-int st_open ()
+static int st_open ()
 {
   if (curr == 0)		/* Defaults to ency */
     curr_starts_at = ency_starts_at[upto];
@@ -189,13 +227,13 @@ int st_open ()
 }
 
 
-int st_close_file (void)
+static int st_close_file (void)
 {
   fclose (inp);
   return (0);
 }
 
-char st_cleantext (unsigned char c)
+static char st_cleantext (unsigned char c)
 {
   switch (c) {
   case 13:
@@ -247,8 +285,7 @@ char st_cleantext (unsigned char c)
 }
 
 
-char *
- st_lcase (char *mcase)
+char *st_lcase (char *mcase)
 {
   char *lcase = NULL;
   int i = 0;
@@ -312,69 +349,95 @@ char *st_autofind (int st_file_version, char *base_dir)
       ency_filename = ency_fn_backup;
       return (test_filename);
     }
-  
     strcpy (test_filename, base_dir);
     strcat (test_filename, "/");
     strcat (test_filename, st_files[st_file_version].filename);
     if (st_fingerprint () == st_file_version) {
       ency_filename = ency_fn_backup;
       return (test_filename);
-	  }
-	  strcpy (test_filename, base_dir);
-	  strcat (test_filename, "/");
-	  strcat (test_filename, st_files[st_file_version].data_dir);
-	  strcat (test_filename, "/");
-	  strcat (test_filename, st_files[st_file_version].filename);
-	  if (st_fingerprint () == st_file_version) {
-	    ency_filename = ency_fn_backup;
-	    return (test_filename);
-	  }
-	  strcpy (test_filename, base_dir);
-	  strcat (test_filename, "/");
-	  temp_string = st_lcase (st_files[st_file_version].filename);
-	  strcat (test_filename, temp_string);
-	  free (temp_string);
-	  if (st_fingerprint () == st_file_version) {
-	    ency_filename = ency_fn_backup;
-	    return (test_filename);
-	  }
-	  strcpy (test_filename, base_dir);
-	  strcat (test_filename, "/");
-	  temp_string = st_lcase (st_files[st_file_version].data_dir);
-	  strcat (test_filename, temp_string);
-	  free (temp_string);
-	  temp_string = st_lcase (st_files[st_file_version].filename);
-	  strcat (test_filename, temp_string);
-	  free (temp_string);
-	  if (st_fingerprint () == st_file_version) {
-	    ency_filename = ency_fn_backup;
-	    return (test_filename);
-	  }
-	  strcpy (test_filename, base_dir);
-	  strcat (test_filename, "/");
-	  strcat (test_filename, st_files[st_file_version].data_dir);
-	  temp_string = st_lcase (st_files[st_file_version].filename);
-	  strcat (test_filename, temp_string);
-	  free (temp_string);
-	  if (st_fingerprint () == st_file_version) {
-	    ency_filename = ency_fn_backup;
-	    return (test_filename);
-	  }
-	  strcpy (test_filename, base_dir);
-	  strcat (test_filename, "/");
-	  temp_string = st_lcase (st_files[st_file_version].data_dir);
-	  strcat (test_filename, temp_string);
-	  free (temp_string);
-	  strcat (test_filename, st_files[st_file_version].filename);
-	  if (st_fingerprint () == st_file_version) {
-	    ency_filename = ency_fn_backup;
-	    return (test_filename);
-	  }
-	}
+    }
+    strcpy (test_filename, base_dir);
+    strcat (test_filename, "/");
+    strcat (test_filename, st_files[st_file_version].data_dir);
+    strcat (test_filename, "/");
+    strcat (test_filename, st_files[st_file_version].filename);
+    if (st_fingerprint () == st_file_version) {
+      ency_filename = ency_fn_backup;
+      return (test_filename);
+    }
+    strcpy (test_filename, base_dir);
+    strcat (test_filename, "/");
+    temp_string = st_lcase (st_files[st_file_version].filename);
+    strcat (test_filename, temp_string);
+    free (temp_string);
+    if (st_fingerprint () == st_file_version) {
+      ency_filename = ency_fn_backup;
+      return (test_filename);
+    }
+    strcpy (test_filename, base_dir);
+    strcat (test_filename, "/");
+    temp_string = st_lcase (st_files[st_file_version].data_dir);
+    strcat (test_filename, temp_string);
+    free (temp_string);
+    temp_string = st_lcase (st_files[st_file_version].filename);
+    strcat (test_filename, temp_string);
+    free (temp_string);
+    if (st_fingerprint () == st_file_version) {
+      ency_filename = ency_fn_backup;
+      return (test_filename);
+    }
+    strcpy (test_filename, base_dir);
+    strcat (test_filename, "/");
+    strcat (test_filename, st_files[st_file_version].data_dir);
+    temp_string = st_lcase (st_files[st_file_version].filename);
+    strcat (test_filename, temp_string);
+    free (temp_string);
+    if (st_fingerprint () == st_file_version) {
+      ency_filename = ency_fn_backup;
+      return (test_filename);
+    }
+    strcpy (test_filename, base_dir);
+    strcat (test_filename, "/");
+    temp_string = st_lcase (st_files[st_file_version].data_dir);
+    strcat (test_filename, temp_string);
+    free (temp_string);
+    strcat (test_filename, st_files[st_file_version].filename);
+    if (st_fingerprint () == st_file_version) {
+      ency_filename = ency_fn_backup;
+      return (test_filename);
+    }
+  }
   return (NULL);
 }
 
-struct st_ency_formatting *st_return_fmt (void)
+static int st_find_start (void)
+{
+  int c = 0;
+  int oldc = 0;
+
+start_find_start:
+
+  while (c != '~') {
+    c = getc (inp);
+    if ((oldc == 0x16) && (c != 0x7E) && (c != 0x2E) && (c != 0x0D) && (c != 0x20) && (c != 0x5B) && (c)) {
+      ungetc (c, inp);
+      return (0);
+    }
+    oldc = c;
+  }
+
+  c = getc (inp);
+
+  if ((c == 0x0D) || (c == 0x20) || (c == 0x52)) {
+    c = ungetc (c, inp);
+    goto start_find_start;
+  } else {
+    c = ungetc (c, inp);
+    return (0);
+  }
+}
+
+static struct st_ency_formatting *st_return_fmt (void)
 {
   struct st_ency_formatting *root_fmt = NULL, *last_fmt = NULL, *curr_fmt = NULL;
   int first_time = 1;
@@ -465,35 +528,7 @@ struct st_ency_formatting *st_return_fmt (void)
   return (root_fmt);
 }
 
-int st_find_start (void)
-{
-  int c = 0;
-  int oldc = 0;
-
-start_find_start:
-
-  while (c != '~') {
-    c = getc (inp);
-    if ((oldc == 0x16) && (c != 0x7E) && (c != 0x2E) && (c != 0x0D) && (c != 0x20) && (c != 0x5B) && (c)) {
-      ungetc (c, inp);
-      return (0);
-    }
-    oldc = c;
-  }
-
-  c = getc (inp);
-
-  if ((c == 0x0D) || (c == 0x20) || (c == 0x52)) {
-    c = ungetc (c, inp);
-    goto start_find_start;
-  } else {
-    c = ungetc (c, inp);
-    return (0);
-  }
-}
-
-char *
- st_return_text (void)
+static char *st_return_text (void)
 {
   int text_size = 0;
   int bye = 0;
@@ -562,7 +597,7 @@ char *
   }
 }
 
-struct ency_titles *
+static struct ency_titles *
  st_title_error (int error_no)
 {
 
@@ -582,7 +617,7 @@ struct ency_titles *
 }
 
 
-struct ency_titles *
+static struct ency_titles *
  curr_find_list (char *search_string, int exact)
 {
   long this_one_starts_at = 0;
@@ -854,9 +889,9 @@ struct st_table *
 	    while (!c);
 	    ungetc (c, inp);
 	    while ((c = getc (inp)) != '\"') {
-          temp_text = realloc (temp_text, text_size + 2);
+	      temp_text = realloc (temp_text, text_size + 2);
 	      if (temp_text == NULL) {
-	        return (NULL);
+		return (NULL);
 	      }
 	      temp_text[text_size++] = tolower (st_cleantext (c));
 	    }
@@ -868,13 +903,13 @@ struct st_table *
 	    while ((c = getc (inp)) != '\"');
 	    while ((c = getc (inp)) != '\"') {
 	      if (c == 0xA5) {
-	        getc(inp);
+		getc (inp);
 	      } else {
-	        temp_text = realloc (temp_text, text_size + 2);
-	        if (temp_text == NULL) {
-		      return (NULL);
-	        }
-	        temp_text[text_size++] = st_cleantext (c);
+		temp_text = realloc (temp_text, text_size + 2);
+		if (temp_text == NULL) {
+		  return (NULL);
+		}
+		temp_text[text_size++] = st_cleantext (c);
 	      }
 	    }
 	    temp_text[text_size] = 0;
@@ -1033,7 +1068,7 @@ struct ency_titles *
   return (root_title);
 }
 
-struct st_photo st_parse_captions (char *fnbasen)
+static struct st_photo st_parse_captions (char *fnbasen)
 {
   struct st_photo photo;
 
@@ -1074,7 +1109,8 @@ struct st_media *
   while (st_tbls) {
     if ((!strcmp (st_tbls->title, search_string)) || (!strcmp (st_tbls->title, title_with_dot))) {
       for (i = 0; i < 5; i++) {
-      if (!i) media = malloc (sizeof (struct st_media));
+	if (!i)
+	  media = malloc (sizeof (struct st_media));
 	snprintf (temp_fnbase, 9, "%s%d", st_tbls->fnbase, i + 1);
 	media->photos[i] = st_parse_captions (temp_fnbase);
       }

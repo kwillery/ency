@@ -32,9 +32,15 @@
 #define ST_FILE_TNG1 3
 #define ST_FILE_DS91 4
 
-int ency_init (void);
-int ency_initted (void);
-int ency_finish (void);
+int st_init (void);
+int st_finish (void);
+
+int st_set_filename (char *);
+char *st_get_filename (void);
+
+int st_load_media (void);
+int st_loaded_media (void);
+int st_unload_media (void);
 
 struct ency_titles *ency_find_titles (char[]);
 struct ency_titles *ency_find_list (char[], int);
