@@ -205,7 +205,7 @@ The default is 1, which <em/does/ return <tt/fmt/ and <tt/text/ parts.
 <verb>
 int st_init (void);
 </verb>
-<tt/st_init/ should be the first <tt/ency/ function run. It initialised the library.
+<tt/st_init/ should be the first <tt/ency/ function run in simple programs. It initialised the library. In larger programs that use <ref id="st_set_filename" name="st_set_filename">, you don't need to worry about using st_init().
 
 
 <sect1>st_finish<label id="st_finish">

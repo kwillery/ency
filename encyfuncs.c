@@ -287,14 +287,14 @@ void st_force_unknown_file (int true)
 
 int st_set_filename (char *filename)
 {
-	int type = 255;
+	int type;
 	if (ency_filename)
 		free (ency_filename);
 	ency_filename = strdup (filename);
 	if (ency_filename)
 	{
-		type = st_fingerprint ();
-		if ((force_unknown) || ((type >= 0) && (type < ST_FILE_TYPES)))
+		type = st_fingerprint();
+		if ((force_unknown && (type = ST_FILE_UNKNOWN)) || ((type >= 0) && (type < ST_FILE_TYPES)))
 		{
 			st_file_type = type;
 			st_clear_cache ();
@@ -303,6 +303,7 @@ int st_set_filename (char *filename)
 		else
 		{
 			free (ency_filename);
+			ency_filename = NULL;
 			return (0);
 		}
 	}
@@ -409,11 +410,23 @@ static int curr_open (void)
 		temp_fn = getenv ("ENCY_FILENAME");
 		if (temp_fn == NULL)
 		{
-			st_set_filename ("Data.cxt");
+			for (i=0;i<ST_FILE_TYPES;i++)
+			{
+				if ((temp_fn = st_autofind (i,".")))
+				{
+					st_set_filename (temp_fn);
+					break;
+				}
+			}
+			if (ency_filename == NULL) return (0);
 		}
 		else
 		{
-			st_set_filename (temp_fn);
+			if (st_set_filename (temp_fn) == 0)
+			{
+				st_force_unknown_file (1);
+				st_set_filename (temp_fn);
+			}
 		}
 	}
 	inp = fopen (ency_filename, "rb");
@@ -423,10 +436,7 @@ static int curr_open (void)
 	{
 		i = fseek (inp, curr_starts_at, SEEK_SET);
 	}
-	if (i == 0)
-		return ((int) inp);
-	else
-		return (0);
+	return (i == 0 ? (int) inp : 0);
 }
 
 static int st_open ()
