@@ -82,6 +82,7 @@ static struct st_caption *st_vcpts = NULL, *st_vcpts_tail = NULL;
 /* cache */
 static struct ency_titles *cache = NULL;
 static struct ency_titles *cache_last = NULL;
+static struct ency_titles *cache_quick = NULL;
 
 static struct ency_titles *st_find_in_cache (int, char *, int, int);
 static void st_clear_cache (void);
@@ -2069,6 +2070,14 @@ long get_block_pos_from_cache (int block_id, int id)
 	struct ency_titles *curr=NULL;
 	int ok_to_go_again=0;
 
+
+	while (cache_quick)
+	{
+		if ((cache_quick->block_id == block_id) && (cache_quick->id == id))
+			return (cache_quick->filepos);
+		cache_quick = cache_quick->next;
+	}
+
 	curr = cache;
 	
 	while (curr)
@@ -2077,7 +2086,7 @@ long get_block_pos_from_cache (int block_id, int id)
 			ok_to_go_again = 1;
 		if ((curr->block_id == block_id) && (curr->id == id))
 			return (curr->filepos);
-		curr = curr->next;
+		cache_quick = curr = curr->next;
 	}
 
 	if (ok_to_go_again)
@@ -2102,14 +2111,29 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 
 	if (filepos >= 0)
 	{
-		input = (FILE *) curr_open (filepos);
-		if (!input)
+		if (st_return_body)
+		{
+			input = (FILE *) curr_open (filepos);
+			if (!input)
 				fprintf (stderr, "Oh damn! curr_open() failed for %ld (entry %d:%d)\n(%s)\n", filepos, block_id, id, strerror (errno));
-		if (!input)
-			return NULL;
+			if (!input)
+				return NULL;
 
-		ret = read_entry (input, options);
-		fclose (input);
+			ret = read_entry (input, options);
+			fclose (input);
+		} else {
+			ret = (struct ency_titles *) malloc (sizeof (struct ency_titles));
+			if (!ret)
+				return NULL;
+			ret->filepos = filepos;
+			ret->title = NULL;
+			ret->name = NULL;
+			ret->text = NULL;
+			ret->fmt = NULL;
+			ret->next = NULL;
+			ret->block_id = block_id;
+			ret->id = id;
+		}
 		return (ret);
 	}
 
@@ -2310,7 +2334,10 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 
 			if (!skip && check_match (search_string, tmp->title, exact))
 			{
-				tbl = get_table_entry_by_title (entrylist_head, tmp->title);
+				if (tbl)
+					tbl = get_table_entry_by_title (tbl, tmp->title);
+				if (!tbl)
+					tbl = get_table_entry_by_title (entrylist_head, tmp->title);
 				if (curr)
 				{
 					curr->next = get_entry_by_id (tbl->block_id, tbl->id, options);
@@ -2447,7 +2474,7 @@ void load_ft_list (int section)
 						last->next = curr;
 					curr->next = NULL;
 					last = curr;
-
+					
 					c = getc (inp);
 				}
 				c = getc (inp);
