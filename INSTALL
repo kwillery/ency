@@ -1,7 +1,5 @@
 To install:
 
-Link or copy your Data.cxt file to the install directory.
-
 Run:
 
  make
@@ -13,11 +11,20 @@ To run:
  findenc
  htmlenc
 
+That's about it.
+You need to either be in a directory with the Data.cxt file (case sensitive) or
+set the ENCY_FILENAME environment variable.
+eg in sh/bash/etc:
+ export ENCY_FILENAME=/dose/ency98/Data.cxt
+or in csh/tcsh/etc:
+ setenv ENCY_FILENAME /dose/ency98/Data.cxt
+(suiting filenames to match :)
+
 --
 Robert Mibus
 beemer@picknowl.com.au
 mibus@hallett-cove.schools.sa.edu.au
-http://www.picknowl.com.au/homepages/beemer/robonly.html
+http://www.picknowl.com.au/homepages/beemer/
 --
 "How should I know if it works?  That's what beta testers are for.  I only
 coded it."

@@ -19,7 +19,7 @@
 /* Author:                                                                    */
 /*      Email   mibus@hallett-cove.schools.sa.edu.au                          */
 /*              beemer@picknowl.com.au                                        */
-/*      webpage www.picknowl.com.au/homepages/beemer/robonly.html             */
+/*      webpage www.picknowl.com.au/homepages/beemer/                         */
 /******************************************************************************/
 
 #include <stdio.h>
@@ -44,8 +44,8 @@ main ()
   st_ignore_case = 1;
 
 
- thingy = ency_find_list (search_string, 0);
-//  thingy = chro_find_list (search_string, 0);
+// thingy = ency_find_list (search_string, 0);
+  thingy = chro_find_list (search_string, 0);
 //  thingy = epis_find_list (search_string, 0);
   // thingy = get_title_at (0x149310);
   // thingy = ency_find_titles (search_string);

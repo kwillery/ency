@@ -19,7 +19,7 @@
 /* Author:                                                                    */
 /*      Email   mibus@hallett-cove.schools.sa.edu.au                          */
 /*              beemer@picknowl.com.au                                        */
-/*      webpage www.picknowl.com.au/homepages/beemer/robonly.html             */
+/*      webpage www.picknowl.com.au/homepages/beemer/                         */
 /******************************************************************************/
 
 #include <stdio.h>

@@ -11,21 +11,18 @@ GNU GPL >= 2.0, see GPL.
 
 Installation
 ------------
-Uhhh... 
-Compile. Run. Behold.
-
-That's about it.
+Read INSTALL
 
 The More Technical Thingys
 --------------------------
 I am (slowly) implementing a set of functions to do stuff in the encyclopedia, so anyone can write a small app to do ency stuff. htmlenc.c is my sample.
-For info on how my program works, read the source.
+For info on how my program works, read the encyfuncs.c file. to use the api, read README.API
 
 --
 Robert Mibus
 beemer@picknowl.com.au
 mibus@hallett-cove.schools.sa.edu.au
-http://www.picknowl.com.au/homepages/beemer/robonly.html
+http://www.picknowl.com.au/homepages/beemer/
 --
 "How should I know if it works?  That's what beta testers are for.  I only
 coded it."

@@ -19,7 +19,7 @@
 /* Author:                                                                    */
 /*      Email   mibus@hallett-cove.schools.sa.edu.au                          */
 /*              beemer@picknowl.com.au                                        */
-/*      webpage www.picknowl.com.au/homepages/beemer/robonly.html             */
+/*      webpage www.picknowl.com.au/homepages/beemer/                         */
 /******************************************************************************/
 
 #include <stdio.h>
@@ -81,16 +81,19 @@ curr_open (void)
 {
   char c;
   int i;
+
   if (ency_filename == NULL)
     {
-      ency_filename = (char *) malloc (10);
-      strcpy (ency_filename, "Data.cxt");
+       ency_filename = getenv("ENCY_FILENAME");
+      if (ency_filename == NULL)
+        {
+       ency_filename = (char *) malloc (10);
+       strcpy (ency_filename, "Data.cxt");
+        }
     }
   inp = fopen (ency_filename, "r");
 
   if (inp)
-//    for (i = 0; i < curr_starts_at; i++)
-    //      c = egetc ();
     {
       fseek (inp, curr_starts_at, SEEK_CUR);
       file_pos_is += curr_starts_at;
@@ -522,7 +525,7 @@ curr_find_list (char title[], int exact)
       no_so_far++;
 
       ttl = ency_return_title ();
-/* printf("%d:%s\n",no_so_far,ttl); */
+/**Title & number: printf("%d:%s\n",no_so_far,ttl); **/
       c = egetc ();
 
 // printf ("%d: %s\n", no_so_far, ttl);
