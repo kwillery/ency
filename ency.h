@@ -48,6 +48,13 @@
 #define ST_OPT_FT 32
 #define ST_OPT_NO_FILEPOS 64
 
+/* Data file types */
+#define ST_DFILE_TYPES 4
+#define ST_DFILE_UNKNOWN 0
+#define ST_DFILE_ENCY 1 /* e.g. Ency99.dxr */
+#define ST_DFILE_DATA 2 /* e.g. Data99.cxt */
+#define ST_DFILE_PICON 3 /* e.g. Picons.cxt */
+
 /* enums/structs */
 typedef enum
 {
