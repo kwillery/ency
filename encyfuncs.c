@@ -2356,6 +2356,7 @@ static struct st_media *new_media (struct st_media *old_media)
 		strcpy (media->audio.caption, "");
 		strcpy (media->swf.file, "");
 		strcpy (media->swf.caption, "");
+		media->resource = NULL;
 	}
 	return media;
 }
@@ -2472,7 +2473,9 @@ struct st_media *st_get_media (char *search_string)
 				strcpy (media->audio.file, ret_tbl->audio);
 				strcpy (media->audio.caption, search_string);
 			}
-			if (strlen (media->video.file) || strlen (media->audio.file))
+			if (ret_tbl->resource)
+				media->resource = strdup (ret_tbl->resource);
+			if (strlen (media->video.file) || strlen (media->audio.file) || media->resource)
 				media_found = 1;
 		}
 
@@ -2558,6 +2561,7 @@ char *st_format_filename (char *fnbasen, char *base_path, media_type media)
 		case video:
 			strcat (filename, dir);
 			break;
+		default:
 		}
 
 		strcat (filename, "/");
@@ -2585,6 +2589,7 @@ char *st_format_filename (char *fnbasen, char *base_path, media_type media)
 		case video:
 			strcat (filename, "q.mov");
 			break;
+		default:
 		}
 	}
 	return (filename);
