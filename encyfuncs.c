@@ -732,17 +732,10 @@ static struct st_caption *st_get_captions (int section)
 static struct st_table *read_attribs_table (FILE *inp, int section, int count)
 {
 	struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
-	char c = 0;
+	char c;
 	int i;
 	int in_quote;
-	int text_size;
 	int level, commas;
-	char *temp_text = NULL;
-
-	c = getc (inp);
-	if (ungetc (getc (inp), inp) == ']')
-		return NULL;
-	ungetc (c, inp);
 
 	for (i = 0; i < count; i++)
 	{
@@ -752,100 +745,98 @@ static struct st_table *read_attribs_table (FILE *inp, int section, int count)
 			fseek (inp, 16, SEEK_CUR);
 		}
 
-		c = 0;
-		while (c != ']')
+		c = getc (inp);
+
+		if (c == 0)
+			return NULL;
+
+		if (ungetc (getc (inp), inp) == ']')
+			return NULL;
+
+		if (ungetc (getc (inp), inp) == ':')
+			return NULL;
+
+		if (c != '[')
+			ungetc (c, inp);
+
+		while (!feof (inp))
 		{	/* main loop */
 
-			while ((c = getc (inp)) != '[');
-			while (c != ']')
+			curr_tbl = (struct st_table *) malloc (sizeof (struct st_table));
+
+			if (curr_tbl == NULL)
 			{
-
-				curr_tbl = (struct st_table *) malloc (sizeof (struct st_table));
-
-				if (curr_tbl == NULL)
-				{
-					return (NULL);
-				}
-
-				curr_tbl->block_id = 0;
-				curr_tbl->id = 0;
-				curr_tbl->fnbase = NULL;
-				curr_tbl->audio = NULL;
-				curr_tbl->section = section;
-
-				/* TODO: Make this '70' an autodetected size */
-				temp_text = malloc (sizeof (char) * 70);
-				text_size = 0;
-				while ((c = getc (inp)) != '\"');
-				while ((temp_text[text_size++] = getc (inp)) != '\"');
-				temp_text[--text_size] = 0;
-
-				do
-				{
-					text_size--;
-					temp_text[text_size] = st_cleantext (temp_text[text_size]);
-				} while (text_size);
-
-				curr_tbl->title = temp_text;
-				temp_text = NULL;
-				curr_tbl->fnbase = NULL;
-
-				c = getc (inp);
-				if (c == ':')
-				{
-					c = getc (inp);
-					c = getc (inp);
-					level = 1;
-					commas = 0;
-					in_quote = 0;
-					while (level)
-					{
-						c = getc (inp);
-						if (!in_quote)
-						{
-							if (c == '[')
-								level++;
-							if (c == ']')
-								level--;
-							if ((level == 1) && (c == ','))
-								commas++;
-							/* commas == 4 is video fnbase, 5 is aif FN */
-							if ((c == '\"') && ((commas == 4) || (commas == 5)))
-							{
-								/* TODO: Make this '70' an autodetected size */
-								temp_text = malloc (sizeof (char) * 70);
-								text_size = 0;
-
-								while ((temp_text[text_size++] = tolower (getc (inp))) != '\"');
-								temp_text[text_size - 1] = 0;
-								if (commas == 4)
-									curr_tbl->fnbase = temp_text;
-								else
-									curr_tbl->audio = temp_text;
-								c=0;
-							}
-							if (commas == 8) /* Block ID */
-								fscanf (inp, "%d", &(curr_tbl->block_id));
-							if (commas == 9) /* Entry ID in block*/
-								fscanf (inp, "%d", &(curr_tbl->id));
-						}
-						if (c == '\"')
-							in_quote = !in_quote;
-					}
-					c = getc (inp);
-				}
-
-				if (curr_tbl->fnbase)
-					st_cleanstring (curr_tbl->fnbase);
-				st_cleanstring (curr_tbl->title);
-				if (!root_tbl)
-					root_tbl = curr_tbl;
-				curr_tbl->next = NULL;
-				if (last_tbl)
-					last_tbl->next = curr_tbl;
-				last_tbl = curr_tbl;
-				curr_tbl = NULL;
+				return (NULL);
 			}
+
+			curr_tbl->block_id = 0;
+			curr_tbl->id = 0;
+			curr_tbl->fnbase = NULL;
+			curr_tbl->audio = NULL;
+			curr_tbl->section = section;
+
+			curr_tbl->title = get_text_from_file (inp);
+
+			curr_tbl->fnbase = NULL;
+
+			c = getc (inp);
+			if (c == ':')
+			{
+				c = getc (inp);
+				c = getc (inp);
+				level = 1;
+				commas = 0;
+				in_quote = 0;
+				while (level)
+				{
+					c = getc (inp);
+					if (!in_quote)
+					{
+						if (c == '[')
+							level++;
+						if (c == ']')
+							level--;
+						if ((level == 1) && (c == ','))
+							commas++;
+						/* commas == 4 is video fnbase, 5 is aif FN */
+						if ((c == '\"') && ((commas == 4) || (commas == 5)))
+						{
+							ungetc (c, inp);
+							if (commas == 4)
+								curr_tbl->fnbase = get_text_from_file (inp);
+							else
+								curr_tbl->audio = get_text_from_file (inp);
+							c=0;
+						}
+						if (commas == 8) /* Block ID */
+							fscanf (inp, "%d", &(curr_tbl->block_id));
+						if (commas == 9) /* Entry ID in block*/
+							fscanf (inp, "%d", &(curr_tbl->id));
+					}
+					if (c == '\"')
+						in_quote = !in_quote;
+				}
+			}
+
+			if (curr_tbl->fnbase)
+				st_cleanstring (curr_tbl->fnbase);
+			st_cleanstring (curr_tbl->title);
+			curr_tbl->next = NULL;
+			if (last_tbl)
+				last_tbl->next = curr_tbl;
+			else
+				root_tbl = curr_tbl;
+			last_tbl = curr_tbl;
+			curr_tbl = NULL;
+
+			do {
+				c = getc (inp);
+			} while ((c == ' ') || (c == ','));
+			ungetc (c, inp);
+
+			if (ungetc (getc (inp), inp) == ']')
+				break;
+
 		}
 	}
 	return root_tbl;
