@@ -2436,7 +2436,6 @@ struct ency_titles *st_find_fulltext (char *search_string, int section, int opti
 			last = fl->word;
 		if (!strcasecmp (last, search_string))
 		{
-			printf ("%s\n", get_title (st_ptbls, fl->fnbase));
 			if (curr)
 			{
 				curr->next = st_find (get_title (st_ptbls, fl->fnbase), section, options | ST_OPT_CASE_SENSITIVE);
@@ -2478,8 +2477,8 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 	case ST_SECT_CHRO:
 		if (options & ST_OPT_FT)
 			return (st_find_fulltext (search_string, section, options));
-		if ((cache_has_section(section)) && (!st_return_body))
-			return (st_find_in_cache (section, search_string, exact, 0));
+		if (cache_has_section(section))
+			return (st_find_in_cache (section, search_string, exact, st_return_body ? 1 : 0));
 		else
 			if (st_file_type == ST_FILE_UNKNOWN)
 				return (st_find_unknown (section, search_string, exact, options));
