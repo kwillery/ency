@@ -34,14 +34,14 @@ extern int optind;
 
 void print_usage (void)
 {
-	printf ("findenc - Searches the Star Trek encyclopedias\nUsage: findenc [OPTION...] [search string]\n\n  --chronology\t(-c)\tSearches the chronology section\n  --episode\t(-e)\tSearches the episode guide section\n   (Default: Search the encyclopedia section)\n  --media\t(-m)\tDisplays associated media\n");
+	printf ("findenc - Searches the Star Trek encyclopedias\nUsage: findenc [OPTION...] [search string]\n\n  --chronology\t(-c)\tSearches the chronology section\n  --episode\t(-e)\tSearches the episode guide section\n   (Default: Search the encyclopedia section)\n  --media\t(-m)\tDisplays associated media\n  --fulltext\t(-f)\tPerform a fulltext search\n");
 	exit (1);
 }
 
 int main (int argc, char *argv[])
 {
 	int i = 0;
-	char search_string[70];
+	char search_string[256];
 	char *temp_fn = NULL;
 	struct ency_titles *thingy = NULL;
 	struct st_media *media = NULL;
@@ -96,6 +96,11 @@ int main (int argc, char *argv[])
 	if (argc > optind)
 	{
 		strcpy (search_string, argv[optind]);
+		for (i=optind+1;i<argc;i++)
+		{
+			strcat (search_string, " ");
+			strcat (search_string, argv[i]);
+		}
 	}
 	else
 	{

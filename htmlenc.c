@@ -111,13 +111,13 @@ int printoff (struct ency_titles *stuff, FILE * output)
 
 void print_usage (void)
 {
-	printf (" htmlenc - Searches the Star Trek encyclopedias\nUsage: htmlenc [OPTION...] [search string]\n\n  --chronology\t(-c)\tSearches the chronology section\n  --episode\t(-e)\tSearches the episode guide section\n   (Default: Search the encyclopedia section)\n  --media\t(-m)\tDisplays associated media\n  --save FILE\t(-s)\tSaves to a given file\n");
+	printf (" htmlenc - Searches the Star Trek encyclopedias\nUsage: htmlenc [OPTION...] [search string]\n\n  --chronology\t(-c)\tSearches the chronology section\n  --episode\t(-e)\tSearches the episode guide section\n   (Default: Search the encyclopedia section)\n  --media\t(-m)\tDisplays associated media\n  --fulltext\t(-f)\tPerform a fulltext search\n  --save FILE\t(-s)\tSaves to a given file\n");
 	exit (0);
 }
 
 int main (int argc, char *argv[])
 {
-	char search_string[50];
+	char search_string[256];
 	char *temp_fn = NULL;
 	struct ency_titles *thingy = NULL, *full_body = NULL;
 	struct st_media *media = NULL;
@@ -185,6 +185,11 @@ int main (int argc, char *argv[])
 	if (argc > optind)
 	{
 		strcpy (search_string, argv[optind]);
+		for (i=optind+1;i<argc;i++)
+		{
+			strcat (search_string, " ");
+			strcat (search_string, argv[i]);
+		}
 	}
 	else
 	{
