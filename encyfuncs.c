@@ -2052,7 +2052,7 @@ static struct st_media *new_media (struct st_media *old_media)
 	media = malloc (sizeof (struct st_media));
 	if (media)
 	{
-		for (i=0;i<5;i++)
+		for (i=0;i<6;i++)
 		{
 			strcpy (media->photos[i].file, "");
 			strcpy (media->photos[i].caption, "");
