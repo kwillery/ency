@@ -11,7 +11,13 @@ To run:
  htmlenc
  showm
 
+findenc and htmlenc both can take a switch of either "-e" or "-c" to search the episode list or chronology sections respectively.
+you can also pass a search string on the command line.
+eg:
+  findenc -e emissary
+
 That's about it.
+
 You need to either be in a directory with the Data.cxt file (case sensitive) or
 set the ENCY_FILENAME environment variable.
 eg in sh/bash/etc:
@@ -29,6 +35,11 @@ Other files to look for:
 just set the ENCY_FILENAME variable to one of these, eg:
  setenv ENCY_FILENAME /dose/tng_ep/eg_tng.dxr
 if you are using (t)csh
+
+If you use the eg_tng.dxr or eg_ds9.dxr (episode guide) files, you will need to look in the EPISODE section, ie:
+  findenc -e emissary
+or:
+  htmlenc -e yesterday
 
 BUT MOST IMPORTANTLY:
 dont forget - if you can't get it to work, dont hesitate to mail me.
