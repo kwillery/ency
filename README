@@ -13,9 +13,7 @@ Read INSTALL
 
 The More Technical Thingys
 --------------------------
-I am implementing a set of functions to do stuff in the encyclopedias etc., so anyone can write a small app to do ency stuff. htmlenc, findenc, and showm are my examples.
-
-For info on how my program works, read the encyfuncs.c file. to use the api, read README.API
+I am implementing a set of functions to do stuff in the encyclopedias etc., so anyone can write a small app to do ency stuff. findenc and htmlenc are my examples.
 
 --
 Robert Mibus

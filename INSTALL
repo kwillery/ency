@@ -9,13 +9,11 @@ To run:
 
  findenc
  htmlenc
- showm
 
 findenc and htmlenc both can take a switch of either "-e" or "-c" to search the episode list or chronology sections respectively.
 you can also pass a search string on the command line.
 eg:
   findenc -e emissary
-  showm kirk
 
 That's about it.
 
