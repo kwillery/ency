@@ -123,12 +123,12 @@ const struct st_file_info st_files[] =
 #define ST_SECT_VCPT 13
 
 /* for pictures */
-static struct st_table *st_ptbls = NULL, *st_oldptbls = NULL;
-static struct st_caption *st_pcpts = NULL, *st_oldpcpts = NULL;
+static struct st_table *st_ptbls = NULL;
+static struct st_caption *st_pcpts = NULL;
 
 /* for videos */
-static struct st_table *st_vtbls = NULL, *st_oldvtbls = NULL;
-static struct st_caption *st_vcpts = NULL, *st_oldvcpts = NULL;
+static struct st_table *st_vtbls = NULL;
+static struct st_caption *st_vcpts = NULL;
 
 /* cache */
 static struct ency_titles *cache[3] =
@@ -980,6 +980,11 @@ int st_loaded_media (void)
 
 void st_unload_media (void)
 {
+	static struct st_table *st_oldptbls = NULL;
+	static struct st_caption *st_oldpcpts = NULL;
+	static struct st_table *st_oldvtbls = NULL;
+	static struct st_caption *st_oldvcpts = NULL;
+
 /* Free the caption & table info for the pictures */
 	while (st_pcpts)
 	{
@@ -1709,46 +1714,46 @@ struct ency_titles *st_get_title_at (long filepos)
 static struct st_photo st_parse_captions (char *fnbasen)
 {
 	struct st_photo photo;
+	struct st_caption *temp_pcpts = NULL;
 
-	st_oldpcpts = st_pcpts;
+	temp_pcpts = st_pcpts;
 
 	strcpy (photo.file, "");
 	strcpy (photo.caption, "");
-	while (st_pcpts && (!strlen (photo.file)))
+	while (temp_pcpts && (!strlen (photo.file)))
 	{
-		if (!strcmp (fnbasen, st_pcpts->fnbasen))
+		if (!strcmp (fnbasen, temp_pcpts->fnbasen))
 		{
 			strcpy (photo.file, fnbasen);
-			strcpy (photo.caption, st_pcpts->caption);
+			strcpy (photo.caption, temp_pcpts->caption);
 		}
-		st_pcpts = st_pcpts->next;
+		temp_pcpts = temp_pcpts->next;
 	}
 
-	st_pcpts = st_oldpcpts;
 	return (photo);
 }
 
 static struct st_photo st_parse_video_captions (char *fnbasen)
 {
 	struct st_photo photo;
+	struct st_caption *temp_vcpts = NULL;
 
-	st_oldvcpts = st_vcpts;
+	temp_vcpts = st_vcpts;
 
 	strcpy (photo.file, "");
 	strcpy (photo.caption, "");
 
-	while (st_vcpts && (!strlen (photo.file)))
+	while (temp_vcpts && (!strlen (photo.file)))
 	{
-		if (!strcmp (fnbasen, st_vcpts->fnbasen))
+		if (!strcmp (fnbasen, temp_vcpts->fnbasen))
 		{
 			strcpy (photo.file, fnbasen);
 			strcat (photo.file, "1");
-			strcpy (photo.caption, st_vcpts->caption);
+			strcpy (photo.caption, temp_vcpts->caption);
 		}
-		st_vcpts = st_vcpts->next;
+		temp_vcpts = temp_vcpts->next;
 	}
 
-	st_vcpts = st_oldvcpts;
 	return (photo);
 }
 
@@ -1759,18 +1764,14 @@ struct st_media *st_get_media (char *search_string)
 	struct st_media *media = NULL;
 	char *temp_fnbase = NULL;
 	char *title_with_dot = NULL;
-	struct st_table *root_ptbl = NULL;
-	struct st_table *root_vtbl = NULL;
-	struct st_caption *root_pcpt = NULL;
-	struct st_caption *root_vcpt = NULL;
+	struct st_table *temp_ptbls = NULL;
+	struct st_table *temp_vtbls = NULL;
 
 	if (st_loaded_media ())
 	{
 
-		root_ptbl = st_ptbls;
-		root_pcpt = st_pcpts;
-		root_vtbl = st_vtbls;
-		root_vcpt = st_vcpts;
+		temp_ptbls = st_ptbls;
+		temp_vtbls = st_vtbls;
 
 		temp_fnbase = malloc (9);
 
@@ -1778,9 +1779,9 @@ struct st_media *st_get_media (char *search_string)
 		sprintf (title_with_dot, "%s.", search_string);
 
 
-		while (st_ptbls)
+		while (temp_ptbls)
 		{
-			if ((!strcmp (st_ptbls->title, search_string)) || (!strcmp (st_ptbls->title, title_with_dot)))
+			if ((!strcmp (temp_ptbls->title, search_string)) || (!strcmp (temp_ptbls->title, title_with_dot)))
 			{
 				for (i = 0; i < 5; i++)
 				{
@@ -1789,32 +1790,32 @@ struct st_media *st_get_media (char *search_string)
 						media = malloc (sizeof (struct st_media));
 						strcpy (media->video.file, "");
 					}
-					sprintf (temp_fnbase, "%s%d", st_ptbls->fnbase, i + 1);
+					sprintf (temp_fnbase, "%s%d", temp_ptbls->fnbase, i + 1);
 					media->photos[i] = st_parse_captions (temp_fnbase);
 					if (strlen (media->photos[i].file))
 						media_found = 1;
 				}
 				goto end_photo_search;
 			}
-			st_ptbls = st_ptbls->next;
+			temp_ptbls = temp_ptbls->next;
 		}
 
 	      end_photo_search:
 
-		while (st_vtbls)
+		while (temp_vtbls)
 		{
-			if ((!strcmp (st_vtbls->title, search_string)) || (!strcmp (st_vtbls->title, title_with_dot)))
+			if ((!strcmp (temp_vtbls->title, search_string)) || (!strcmp (temp_vtbls->title, title_with_dot)))
 			{
 				if (!media)
 				{
 					media = malloc (sizeof (struct st_media));
 					strcpy (media->video.file, "");
 				}
-				media->video = st_parse_video_captions (st_vtbls->fnbase);
+				media->video = st_parse_video_captions (temp_vtbls->fnbase);
 				media_found = 1;
 				goto end_video_search;
 			}
-			st_vtbls = st_vtbls->next;
+			temp_vtbls = temp_vtbls->next;
 		}
 
 	      end_video_search:
@@ -1824,11 +1825,6 @@ struct st_media *st_get_media (char *search_string)
 			free (media);
 			media = NULL;
 		}
-
-		st_ptbls = root_ptbl;
-		st_pcpts = root_pcpt;
-		st_vtbls = root_vtbl;
-		st_vcpts = root_vcpt;
 
 		free (temp_fnbase);
 		free (title_with_dot);
