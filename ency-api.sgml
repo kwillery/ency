@@ -204,9 +204,9 @@ int st_finish (void);
 int st_open_ency (char *directory);
 </verb>
 This function sets the directory for the encyclopedia which is to be opened.
-Often used in conjunction with <tt/<ref id="st_is_ency" name="st_is_ency">/.
 <p>
-If the filename is not set, ency will check for an environment variable called <tt/ENCY_DIR/. Failing that, ency will attempt to look for known files itself.
+If the filename is not set using this function, ency will check at startup for an environment variable called <tt/ENCY_DIR/ and also check the current directory for encyclopedia files.
+It returns the encyclopedia version (0 to ST_FILE_TYPES-1) if the open was succesful, else ST_FILE_UNKNOWN.
 
 <sect1>st_get_directory<label id="st_get_directory">
 <p>
@@ -226,16 +226,6 @@ char *st_fileinfo_get_name (int filetype);
 </verb>
 This returns a descriptive string for a given encyclopedia's name.
 Use either <tt/0/ to <tt/<ref id="st_count_filetypes" name="st_count_filetypes()">/-1, or <tt/<ref id="ST_FILE_*" name="ST_FILE_CURR">/.
-
-<sect1>st_is_ency<label id="st_is_ency">
-<p>
-<verb>
-int st_is_ency (int filetype, char *directory);
-</verb>
-This function determines whether a certain encyclopedia is in a directory.
-<p>
-<tt/filetype/ is a unique number identifying an encyclopedia to libency; N.B. that these numbers can change. Usually you just loop for each possible encyclopedia (see <tt/<ref id="st_count_filetypes" name="st_count_filetypes()">/), or just one picked by a user by it's name (see <tt/<ref id="st_fileinfo_get_name" name="st_fileinfo_get_name()">/).
-<tt/directory/ is the base directory to look in for the data file. If one is found, 1 is returned, else 0 is returned. If '1' is returned, <ref id="st_open_ency" name="st_open_ency"> can then be used with the directory name to open the encyclopedia.
 
 <sect1>rc files<label id="rc files">
 <p>

@@ -140,7 +140,7 @@ struct st_media
 int st_init (void);
 int st_finish (void);
 
-/* For controlling what file is opened */
+/* For controlling what encyclopedia is opened */
 int st_open_ency (char *directory);
 char *st_get_directory (void);
 int st_count_filetypes(void);
@@ -148,9 +148,6 @@ int st_count_filetypes(void);
 /* load/unload the rc file containing file info */
 int st_load_rc_file (char *);
 void st_unload_data(void);
-
-/* For checking a directory to see if a certain encyclopedia is there */
-int st_is_ency (int, char *);
 
 /* For getting a description of a file type */
 char *st_fileinfo_get_name (int);

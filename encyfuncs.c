@@ -443,36 +443,77 @@ static void st_clear_entry_list ()
 }
 
 /* try and set the directory libency will use
- * NB this will fail & return 0 if the main file
- * can't be identified by st_fingerprint() */
+ * returns the encyclopedia version
+ * (0 to ST_FILE_TYPES-1) or ST_FILE_UNKNOWN
+ */
 int st_open_ency (char *directory)
 {
-	int i;
+#define st_open_ency_FOUND {\
+                            free (lc_data_dir); \
+                            free (lc_filename); \
+                            len = strrchr (test_filename, '/') - test_filename; \
+                            ency_directory = malloc (len + 1); \
+                            strncpy (ency_directory, test_filename, len); \
+                            ency_directory[len] = 0; \
+                            st_file_type = i; \
+                            DBG ((stderr, "Found ency #%d in '%s'\n", i, ency_directory)); \
+                            return i; \
+                           }
+
+	char *test_filename = NULL;
+	const char *datadir = NULL, *filename = NULL;
+	char *lc_data_dir = NULL, *lc_filename = NULL;
+	int i,len;
 
 	DBG((stderr,"st_open_ency: Opening '%s'...", directory));
 
+	/* Get rid of the old info */
 	if (ency_directory)
 		free (ency_directory);
+	ency_directory = NULL;
+	st_file_type = ST_FILE_UNKNOWN;
 
-	ency_directory = strdup (directory);
-
-	if (ency_directory)
+	for (i=0;i<ST_FILE_TYPES;i++)
 	{
-		for (i=0;i<ST_FILE_TYPES;i++)
-		{
-			if (st_is_ency (i,directory))
-			{
-				st_file_type = i;
-				st_clear_cache ();
-				st_clear_entry_list ();
-				return (1);
-			}
-		}
-		free (ency_directory);
-		ency_directory = NULL;
-		st_file_type = 255;
+		/* Try and locate ency type 'i' */
+		datadir = st_fileinfo_get_data (i,data_dir);
+		filename = st_fileinfo_get_data (i,mainfilename);
+
+		lc_data_dir = st_lcase ((char *)datadir);
+		lc_filename = st_lcase ((char *)filename);
+
+		test_filename = malloc (safe_strlen (directory) + safe_strlen (datadir) + safe_strlen (filename) + 3);
+
+		sprintf (test_filename, "%s/%s", directory, filename);
+		if (st_fingerprint (test_filename) == i)
+			st_open_ency_FOUND;
+
+		sprintf (test_filename, "%s/%s/%s", directory, datadir, filename);
+		if (st_fingerprint (test_filename) == i)
+			st_open_ency_FOUND;
+
+		sprintf (test_filename, "%s/%s", directory, lc_filename);
+		if (st_fingerprint (test_filename) == i)
+			st_open_ency_FOUND;
+
+		sprintf (test_filename, "%s/%s/%s", directory, lc_data_dir, lc_filename);
+		if (st_fingerprint (test_filename) == i)
+			st_open_ency_FOUND;
+
+		sprintf (test_filename, "%s/%s/%s", directory, datadir, lc_filename);
+		if (st_fingerprint (test_filename) == i)
+			st_open_ency_FOUND;
+
+		sprintf (test_filename, "%s/%s/%s", directory, lc_data_dir, lc_filename);
+		if (st_fingerprint (test_filename) == i)
+			st_open_ency_FOUND;
+
+		free (lc_filename);
+		free (lc_data_dir);
+		free (test_filename);
 	}
-	return (0);
+	return ST_FILE_UNKNOWN;
+#undef st_open_ency_FOUND
 }
 
 char *st_get_directory (void)
@@ -600,84 +641,6 @@ FILE *open_block(int dfile, struct st_block *block)
 	filename = get_filename (st_file_type, dfile);
 
 	return open_file (filename, block->start);
-}
-
-/* Look to see if a directory contains a certain encyclopedia
- * Try lowering the case of the directory, etc. etc.
- */
-int st_is_ency (int st_file_version, char *base_dir)
-{
-	char *test_filename = NULL;
-	const char *datadir = NULL, *filename = NULL;
-	char *lc_data_dir = NULL, *lc_filename = NULL;
-
-	datadir = st_fileinfo_get_data (st_file_version,data_dir);
-	filename = st_fileinfo_get_data (st_file_version,mainfilename);
-
-	lc_data_dir = st_lcase ((char *)datadir);
-	lc_filename = st_lcase ((char *)filename);
-
-	test_filename = malloc (safe_strlen (base_dir) + safe_strlen (datadir) + safe_strlen (filename) + 3);
-
-	sprintf (test_filename, "%s/%s", base_dir, filename);
-	if (st_fingerprint (test_filename) == st_file_version)
-	{
-		free (lc_data_dir);
-		free (lc_filename);
-		free (test_filename);
-		return 1;
-	}
-
-	sprintf (test_filename, "%s/%s/%s", base_dir, datadir, filename);
-	if (st_fingerprint (test_filename) == st_file_version)
-	{
-		free (lc_data_dir);
-		free (lc_filename);
-		free (test_filename);
-		return 1;
-	}
-
-	sprintf (test_filename, "%s/%s", base_dir, lc_filename);
-	if (st_fingerprint (test_filename) == st_file_version)
-	{
-		free (lc_data_dir);
-		free (lc_filename);
-		free (test_filename);
-		return 1;
-	}
-
-	sprintf (test_filename, "%s/%s/%s", base_dir, lc_data_dir, lc_filename);
-	if (st_fingerprint (test_filename) == st_file_version)
-	{
-		free (lc_data_dir);
-		free (lc_filename);
-		free (test_filename);
-		return 1;
-	}
-
-	sprintf (test_filename, "%s/%s/%s", base_dir, datadir, lc_filename);
-	if (st_fingerprint (test_filename) == st_file_version)
-	{
-		free (lc_data_dir);
-		free (lc_filename);
-		free (test_filename);
-		return 1;
-	}
-
-	sprintf (test_filename, "%s/%s/%s", base_dir, lc_data_dir, lc_filename);
-	if (st_fingerprint (test_filename) == st_file_version)
-	{
-		free (lc_data_dir);
-		free (lc_filename);
-		free (test_filename);
-		return 1;
-	}
-
-	free (lc_filename);
-	free (lc_data_dir);
-	free (test_filename);
-
-	return 0;
 }
 
 /* Read in a small block of text.
