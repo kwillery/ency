@@ -1597,7 +1597,7 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 			{
 				if (isdigit(tmp->title[0]) || isblank (tmp->title[0]))
 				{
-					if (!(options & ST_OPT_SORTEPIS))
+					if (!(options & ST_OPT_SORTEPIS) && isdigit(tmp->title[0]))
 						skip = 1;
 				} else
 				{
