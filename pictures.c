@@ -8,8 +8,6 @@
 
 char *decompressed=NULL;
 char *d=NULL;
-int verbose=0;
-int allow_compression=1;
 int size=0;
 
 char *matches[256]=
