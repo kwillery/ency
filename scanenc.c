@@ -175,9 +175,9 @@ int check_for_table (FILE *inp, FILE *outp, FILE *data)
 						return 0;
 
 					*strchr (fnbase, '\"') = 0;
-					printf ("found tbl @ 0x%lx\t%s\n", found_at, fnbase);
+					printf ("found tbl @ 0x%lx\t%s\n", found_at-2, fnbase);
 					if (outp)
-						fprintf (outp, "found tbl @ 0x%lx\t%s\n", found_at, fnbase);
+						fprintf (outp, "found tbl @ 0x%lx\t%s\n", found_at-2, fnbase);
 					if (data)
 						fprintf (data, "  <ptable start=\"0x%lx\" count=\"1\"/>\n", found_at-2);
 					fseek (inp, found_at, SEEK_SET);
@@ -198,7 +198,9 @@ void check_for_old_captions (FILE *inp, FILE *outp, FILE *data)
 
 	found_at = ftell(inp);
 
+#if 0
 	fseek (inp, 16, SEEK_CUR);
+#endif
 
 	fread (temp, 32, 1, inp);
 
@@ -219,7 +221,7 @@ void check_for_old_captions (FILE *inp, FILE *outp, FILE *data)
 
 	fseek (inp, found_at, SEEK_SET);
 }
-
+#if 0
 void find_media_tables (FILE *inp, FILE *outp, FILE *data)
 {
 	unsigned char c=0, old_c=0, old_old_c=0;
@@ -253,7 +255,53 @@ void find_media_tables (FILE *inp, FILE *outp, FILE *data)
 		old_c = c;
 	}
 }
+#endif
+static int find_next_stxt_block (FILE *inp, char *stxt)
+{
+	char d[5]="    ";
 
+	while (!feof (inp))
+	{
+		d[3] = getc (inp);
+
+		if ((!strcmp (d, stxt)))
+			return 1;
+		d[0] = d[1];
+		d[1] = d[2];
+		d[2] = d[3];
+	}
+	return 0;
+}
+
+void find_media_tables (FILE *inp, FILE *outp, FILE *data)
+{
+	char temp[5]="1234";
+	char c;
+	int reverse;
+
+	fread (temp, 4, 1, inp);
+	if (!strcmp (temp, "XFIR"))
+		reverse = 1;
+	else
+		reverse = 0;
+	while (find_next_stxt_block (inp, reverse ? "TXTS" : "STXT"))
+	{
+		fseek (inp, 16, SEEK_CUR);
+		c = getc (inp);
+		if (c == '[')
+			c = getc (inp);
+		if (c == '\"')
+		{
+			if (!check_for_table(inp, outp, data))
+				check_for_captions(inp, outp, data);
+		} else
+		{
+			ungetc (c, inp);
+			ungetc ('[', inp);
+			check_for_old_captions(inp, outp, data);
+		}
+	}
+}
 void save_match (FILE *inp, FILE *outp)
 {
 	int i;
