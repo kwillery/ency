@@ -89,7 +89,6 @@ int printoff (struct ency_titles *stuff, FILE * output)
 	char *tmp;
 	struct st_ency_formatting *fmt1;
 
-	fprintf (output, "<hr>\n");
 	tmp = stuff->title;
 	fmt1 = stuff->fmt;
 	words = 0;
@@ -122,6 +121,7 @@ int main (int argc, char *argv[])
 	char base_path[] = "/cdrom";	/* where the media dirs etc. are */
 	int i = 0;
 	int use_media = 0;
+	int count = 0;
 	int section = ST_SECT_ENCY;
 	FILE *out = stdout;
 	char *filename = NULL;
@@ -188,12 +188,23 @@ int main (int argc, char *argv[])
 	fprintf (out, "<head><title>Search results for: %s</title></head>", search_string);
 	fprintf (out, "<h1>Star Trek %s</h1>\n", st_fileinfo_get_name (ST_FILE_CURR));
 	fprintf (out, "You searched for <b>%s</b>.\n", search_string);
+	fprintf (out, "<hr><b>Found:</b><br>\n");
+
+	full_body = thingy;
+	while (full_body)
+	{
+		fprintf (out, "<a href=\"#%d\">%s</a><br>\n", count++, full_body->title);
+		full_body = full_body->next;
+	}
+
+	count = 0;
 	if ((thingy != NULL) && (thingy->title != NULL))
 	{
 		do
 		{
 			full_body = st_get_title_at (thingy->filepos);
 
+			fprintf (out, "<hr>\n<a name=\"%d\">\n", count++);
 			printoff (full_body, out);
 
 			media = st_get_media (thingy->title);
