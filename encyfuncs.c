@@ -689,6 +689,8 @@ static struct st_caption *read_captions (FILE *input, struct st_caption *root, i
 		while (!c);
 		ungetc (c, inp);
 
+		if ((c = getc (inp)) != '[')
+			c = ungetc (c, inp);
 		if ((c = getc (inp)) != ' ')
 			c = ungetc (c, inp);
 		if ((c = getc (inp)) != ' ')
@@ -1414,7 +1416,10 @@ static void add_to_block_cache (int block_id, int id, long filepos)
 		}
 		new_entry = (struct ency_titles *) malloc (sizeof (struct ency_titles));
 		new_entry->next = tmp;
-		otmp->next = new_entry;
+		if (otmp)
+			otmp->next = new_entry;
+		else
+			cache = new_entry;
 		cache_last = new_entry;
 	}
 	else
@@ -2010,7 +2015,7 @@ static struct st_photo st_parse_captions (char *fnbasen)
 	strcpy (photo.caption, "");
 	while (temp_pcpts && (!strlen (photo.file)))
 	{
-		if (!strcmp (fnbasen, temp_pcpts->fnbasen))
+		if (!strcasecmp (fnbasen, temp_pcpts->fnbasen))
 		{
 			strcpy (photo.file, fnbasen);
 			strcpy (photo.caption, temp_pcpts->caption);
@@ -2033,7 +2038,7 @@ static struct st_photo st_parse_video_captions (char *fnbasen)
 
 	while (temp_vcpts && (!strlen (photo.file)))
 	{
-		if (!strcmp (fnbasen, temp_vcpts->fnbasen))
+		if (!strcasecmp (fnbasen, temp_vcpts->fnbasen))
 		{
 			strcpy (photo.file, fnbasen);
 			strcat (photo.file, "1");
@@ -2066,6 +2071,39 @@ static struct st_media *new_media (struct st_media *old_media)
 		strcpy (media->swf.file, "");
 	}
 	return media;
+}
+
+static int in_simple_list (long filepos, int entrylen, char *match)
+{
+	FILE *inp;
+	char entry[entrylen+1];
+
+	inp = (FILE *) curr_open (filepos);
+	while (getc (inp) != ']')
+	{
+		while (getc (inp) != '\"');
+		fread (entry, entrylen, 1, inp);
+		entry[entrylen] = 0;
+		getc (inp);
+		if (!strncasecmp (match, entry, strlen (entry)))
+		{
+			fclose (inp);
+			return 1;
+		}
+	}
+	fclose (inp);
+	return 0;
+}
+
+static int is_flash_except (char *fnbase)
+{
+	struct st_part *part;
+	int count=0;
+
+	while ((part = get_part (st_file_type, ST_BLOCK_FLASHEXCEPT, 0, count++, 0)))
+		if (in_simple_list (part->start, 6, fnbase))
+			return 1;
+	return 0;
 }
 
 struct st_media *st_get_media (char *search_string)
@@ -2102,6 +2140,19 @@ struct st_media *st_get_media (char *search_string)
 			media->swf = st_parse_captions (temp_fnbase);
 			if (strlen (media->swf.file))
 				media_found = 1;
+
+			if (is_flash_except (ret_fnbase))
+			{
+				for (i = 0; i < 6; i++)
+				{
+					if (!strcmp (media->photos[i].caption, media->swf.caption))
+					{
+						strcpy (media->photos[i].file, "");
+						strcpy (media->photos[i].caption, "");
+						break;
+					}
+				}
+			}
 		}
 
 		if ((ret_tbl = get_table_entry_by_title (st_vtbls, search_string)))
@@ -2132,27 +2183,15 @@ static char *get_video_dir (char *fnbasen)
 {
 	struct st_part *part=NULL;
 	char *dir;
-	char filename[13];
-	FILE *inp;
 	int count=0;
 
 	while ((part = get_part (st_file_type, ST_SECT_VLST, 0, count++, 0)))
-	{
-		inp = (FILE *) curr_open (part->start);
-		while (getc (inp) != ']')
+		if (in_simple_list (part->start, 12, fnbasen))
 		{
-			while (getc (inp) != '\"');
-			fread (filename, 13, 1, inp);
-			filename[12] = 0;
-			if (!strncasecmp (fnbasen, filename, strlen (fnbasen)))
-			{
-				fclose (inp);
-				dir = part->dir;
-				return dir;
-			}
+			dir = part->dir;
+			return dir;
 		}
-		fclose (inp);
-	}
+
 	return (char *) st_fileinfo_get_data(st_file_type,video_dir);
 
 }
@@ -2235,3 +2274,5 @@ char *st_format_filename (char *fnbasen, char *base_path, media_type media)
 	}
 	return (filename);
 }
+
+

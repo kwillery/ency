@@ -7,6 +7,7 @@
 #define ST_BLOCK_TEXT 0
 #define ST_BLOCK_ATTRIB 1
 #define ST_BLOCK_FTLIST 2
+#define ST_BLOCK_FLASHEXCEPT 3
 #define ST_BLOCK_SCAN 254 /* If we should scan this file */
 #define ST_BLOCK_SCANNED 255 /* If we have scanned this file */
 
@@ -59,6 +60,7 @@ int count_files (void);
 int st_fingerprint (void);
 
 struct st_data_filenode *st_data_new_filenode (void);
+void free_data_filenode (struct st_data_filenode *file);
 void st_data_append_filenode (struct st_data_filenode *new_file);
 
 char *get_name_of_file (int file_type);
@@ -67,8 +69,10 @@ struct st_part *get_part (int file, int type, int section, int number, int optio
 struct st_part *get_part_by_id (int file, int block_id);
 struct st_part *get_part_by_name (int file, char *name);
 char *get_exception (int file, char *type, char *from);
+void free_exception (struct st_data_exception *ex)
 
 struct st_part *new_part(void);
+void free_part (struct st_part *part);
 
 #endif
 

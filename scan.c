@@ -143,6 +143,12 @@ static void identify_section (struct st_part *part)
 		part->section = 2;
 	}
 
+	if (!strncmp (temp, "flash_except", 12))
+	{
+		part->type = ST_BLOCK_FLASHEXCEPT;
+		part->section = 0;
+	}
+
 	free (temp);
 	return;
 }
