@@ -277,7 +277,7 @@ static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock
 	tmp->start_id = 0;
 	tmp->next = NULL;
 
-	printf ("found '%s' at %ld\n", tmp->name, tmp->start);
+	printf ("found '%s' block '%s' at %ld\n", btype, tmp->name, tmp->start);
 
 	if (blockname)
 		if (!strcasecmp (blockname, tmp->name))
