@@ -388,6 +388,16 @@ int st_free_entry_and_advance (struct ency_titles **);
 </verb>
 <tt/st_free_entry/ frees a single <ref id="ency_titles" name="ency_titles"> struct. <tt/st_free_entry_tree/ does that, but also removes all after it (referenced by the '->next'). <tt/st_free_entry_and_advance/ frees a single entry, then progresses to the next. (note the **, this means you will probably need a '&amp;' before the argument).
 
+<sect1>st_find_start<label id="st_find_start">
+<p>
+<tt/st_find_start/ is used to locate the beginning of the next entry in a data file.
+<verb>
+int st_find_start (FILE *);
+</verb>
+<tt/FILE/ is the open file to search in.
+<p>
+<tt/st_find_start/ returns 0 if it reaches the end of the file, else 1.
+
 <sect>Example Implementation
 <p>
 Compile the following program as such:
