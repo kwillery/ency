@@ -814,6 +814,8 @@ static struct st_table *read_attribs_table (FILE *inp, int section, int count)
 
 				curr_tbl->block_id = 0;
 				curr_tbl->id = 0;
+				curr_tbl->fnbase = NULL;
+				curr_tbl->audio = NULL;
 				curr_tbl->section = section;
 
 				/* TODO: Make this '70' an autodetected size */
