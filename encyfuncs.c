@@ -342,76 +342,66 @@ int st_fingerprint (void)
 
 char *st_autofind (int st_file_version, char *base_dir)
 {
-  char *test_filename = NULL, *temp_string = NULL;
+  char *test_filename = NULL;
   char *ency_fn_backup = NULL;
+  char *data_dir = NULL, *filename = NULL;
+  char *lc_data_dir = NULL, *lc_filename = NULL;
 
   if (0 <= st_file_version < ST_FILE_TYPES) {
+
+    data_dir = st_files[st_file_version].data_dir;
+    filename = st_files[st_file_version].filename;
+    lc_data_dir = st_lcase (data_dir);
+    lc_filename = st_lcase (filename);
+
     ency_fn_backup = ency_filename;
-    test_filename = malloc (strlen (base_dir) + strlen (st_files[st_file_version].data_dir) + strlen (st_files[st_file_version].filename) + 3);
+    test_filename = malloc (strlen (base_dir) + strlen (data_dir) + strlen (filename) + 3);
     ency_filename = test_filename;
 
-    strcpy (test_filename, base_dir);
+    sprintf (test_filename, "%s", base_dir);
     if (st_fingerprint () == st_file_version) {
       ency_filename = ency_fn_backup;
       return (test_filename);
     }
-    strcpy (test_filename, base_dir);
-    strcat (test_filename, "/");
-    strcat (test_filename, st_files[st_file_version].filename);
+
+    sprintf (test_filename, "%s/%s",base_dir, filename);
     if (st_fingerprint () == st_file_version) {
       ency_filename = ency_fn_backup;
       return (test_filename);
     }
-    strcpy (test_filename, base_dir);
-    strcat (test_filename, "/");
-    strcat (test_filename, st_files[st_file_version].data_dir);
-    strcat (test_filename, "/");
-    strcat (test_filename, st_files[st_file_version].filename);
+
+    sprintf (test_filename, "%s/%s/%s", base_dir, data_dir, filename);
     if (st_fingerprint () == st_file_version) {
       ency_filename = ency_fn_backup;
       return (test_filename);
     }
-    strcpy (test_filename, base_dir);
-    strcat (test_filename, "/");
-    temp_string = st_lcase (st_files[st_file_version].filename);
-    strcat (test_filename, temp_string);
-    free (temp_string);
+
+    sprintf (test_filename, "%s/%s", lc_filename);
     if (st_fingerprint () == st_file_version) {
       ency_filename = ency_fn_backup;
       return (test_filename);
     }
-    strcpy (test_filename, base_dir);
-    strcat (test_filename, "/");
-    temp_string = st_lcase (st_files[st_file_version].data_dir);
-    strcat (test_filename, temp_string);
-    free (temp_string);
-    temp_string = st_lcase (st_files[st_file_version].filename);
-    strcat (test_filename, temp_string);
-    free (temp_string);
+
+    sprintf (test_filename, "%s/%s/%s", base_dir, lc_data_dir, lc_filename);
     if (st_fingerprint () == st_file_version) {
       ency_filename = ency_fn_backup;
       return (test_filename);
     }
-    strcpy (test_filename, base_dir);
-    strcat (test_filename, "/");
-    strcat (test_filename, st_files[st_file_version].data_dir);
-    temp_string = st_lcase (st_files[st_file_version].filename);
-    strcat (test_filename, temp_string);
-    free (temp_string);
+
+    sprintf (test_filename, "%s/%s/%s", base_dir, data_dir, lc_filename);
     if (st_fingerprint () == st_file_version) {
       ency_filename = ency_fn_backup;
       return (test_filename);
     }
-    strcpy (test_filename, base_dir);
-    strcat (test_filename, "/");
-    temp_string = st_lcase (st_files[st_file_version].data_dir);
-    strcat (test_filename, temp_string);
-    free (temp_string);
-    strcat (test_filename, st_files[st_file_version].filename);
+
+    sprintf(test_filename, "%s/%s/%s", base_dir, lc_data_dir, lc_filename);
     if (st_fingerprint () == st_file_version) {
       ency_filename = ency_fn_backup;
       return (test_filename);
     }
+
+    free (lc_filename);
+    free (lc_data_dir);
   }
   return (NULL);
 }
