@@ -2,7 +2,6 @@
 <article>
 <title>Star Trek Encyclopedia reader API
 <author>Robert Mibus, <tt/mibus@bigpond.com/
-<!-- date --><!-- v1.0, 28 March 1994 -->
 <abstract>
 This document explains the libency API
 </abstract>
