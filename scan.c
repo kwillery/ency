@@ -35,8 +35,8 @@ struct block
 	long size;
 };
 
-struct st_part *parts=NULL;
-struct st_part *plast=NULL;
+struct st_block *blocks=NULL;
+struct st_block *blast=NULL;
 
 static void get_4b_string (FILE *inp, char *string, int reverse)
 {
@@ -79,7 +79,7 @@ static long get_4b_int (FILE *inp, int reverse)
 	return num;
 }
 
-static struct block *get_block(FILE *inp, int reverse)
+static struct block *read_block(FILE *inp, int reverse)
 {
 	struct block *b=NULL;
 
@@ -97,19 +97,19 @@ static struct block *get_block(FILE *inp, int reverse)
 	return b;
 }
 
-static void identify_section (struct st_part *part)
+static void identify_section (struct st_block *block)
 {
 	char *temp;
 	int i;
 
-	if (!part->name)
+	if (!block->name)
 		return;
 
 	/* We only want to identify STXT blocks */
-	if (strcmp (part->btype, "STXT"))
+	if (strcmp (block->btype, "STXT"))
 		return;
 
-	temp = strdup (part->name);
+	temp = strdup (block->name);
 	for (i=0;(temp[i] = tolower (temp[i])); i++);
 
 	/* drop -URGH ones */
@@ -125,54 +125,54 @@ static void identify_section (struct st_part *part)
 	/* Attrib */
 	if (!strncmp (temp, "attrib_", 7))
 	{
-		part->type = ST_BLOCK_ATTRIB;
+		block->type = ST_BLOCK_ATTRIB;
 		if (strstr (temp, "_ency"))
-			part->section = 0;
+			block->section = 0;
 		else if (strstr (temp, "_epis"))
-			part->section = 1;
+			block->section = 1;
 		else if (strstr (temp, "_chro"))
-			part->section = 2;
+			block->section = 2;
 		else
-			part->type = 0;
+			block->type = 0;
 
 		if (strstr (temp, "_epissub"))
-			part->section = 3;
+			block->section = 3;
 	}
 
 	/* Look Up - ptbl etc. */
 	if (strstr (temp, "_lu_") || !strncmp (temp, "lu_", 3))
-		part->type = ST_SECT_PTBL;
+		block->type = ST_SECT_PTBL;
 
 	/* Captions */
 	if (!strncmp (temp, "captxt", 6))
 	{
 		if (strstr (temp, "_vid"))
-			part->type = ST_SECT_VCPT;
+			block->type = ST_SECT_VCPT;
 		else
-			part->type = ST_SECT_PCPT;
+			block->type = ST_SECT_PCPT;
 	}
 
 	/* FT Lists */
 	if (!strncmp (temp, "ftency", 6) && !strstr (temp, "breakpoint"))
 	{
-		part->type = ST_BLOCK_FTLIST;
-		part->section = 0;
+		block->type = ST_BLOCK_FTLIST;
+		block->section = 0;
 	}
 	if (!strncmp (temp, "ftepis", 6) && !strstr (temp, "breakpoint"))
 	{
-		part->type = ST_BLOCK_FTLIST;
-		part->section = 1;
+		block->type = ST_BLOCK_FTLIST;
+		block->section = 1;
 	}
 	if (!strncmp (temp, "ftchro", 6) && !strstr (temp, "breakpoint"))
 	{
-		part->type = ST_BLOCK_FTLIST;
-		part->section = 2;
+		block->type = ST_BLOCK_FTLIST;
+		block->section = 2;
 	}
 
 	if (!strncmp (temp, "flash_except", 12))
 	{
-		part->type = ST_BLOCK_FLASHEXCEPT;
-		part->section = 0;
+		block->type = ST_BLOCK_FLASHEXCEPT;
+		block->section = 0;
 	}
 
 	free (temp);
@@ -181,7 +181,7 @@ static void identify_section (struct st_part *part)
 
 static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock_pos, long pblock_size)
 {
-	struct st_part *tmp, *curr;
+	struct st_block *tmp, *curr;
 	unsigned char *block;
 	unsigned char *t=NULL;
 	int i,j;
@@ -197,17 +197,17 @@ static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock
 	block = malloc (size * sizeof (char));
 	fread (block, size, 1, inp);
 
-	tmp = new_part();
+	tmp = new_block();
 
-	if (!parts)
-		parts = tmp;
+	if (!blocks)
+		blocks = tmp;
 	else
 	{
-		if (plast)
-			plast->next = tmp;
+		if (blast)
+			blast->next = tmp;
 	}
 
-	plast = tmp;
+	blast = tmp;
 
 	tmp->start = pblock_pos;
 	tmp->size = pblock_size;
@@ -257,7 +257,7 @@ static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock
 
 	/* We don't want duplicate names being used */
 	/* so we set later ones to Unimportant      */
-	curr = parts;
+	curr = blocks;
 
 	while ((curr) && (curr != tmp))
 	{
@@ -275,7 +275,7 @@ static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock
 
 static void load_cast_table (FILE *inp)
 {
-	struct st_part *p=NULL;
+	struct st_block *b=NULL;
 	char name[256]="";
 	char *t;
 	int id=0;
@@ -295,45 +295,47 @@ static void load_cast_table (FILE *inp)
 
 		/* Find the block w/ that name, set its ID */
 		/* (continue from where we were...) */
-		while (p)
+		while (b)
 		{
-			if (!strcmp (p->name, name))
+			if (!strcmp (b->name, name))
 			{
 //				printf ("Given id %d to '%s' (%ld).\n", id,p->name,p->start);
-				p->start_id = id;
-				p=p->next;
+				b->start_id = id;
+				b=b->next;
 				break;
 			}
-			p = p->next;
+			b = b->next;
 		}
 
-		/* Start again if we didn't find it. */
-		if (p)
+		/* Skip this if we found it. */
+		if (b)
 			continue;
-		p = parts;
-		while (p)
+
+		/* ... but try again if we didn't */
+		b = blocks;
+		while (b)
 		{
-			if (!strcmp (p->name, name))
+			if (!strcmp (b->name, name))
 			{
 				//printf ("Given id %d to '%s' (%ld) on a restarted search.\n", id,p->name,p->start);
-				p->start_id = id;
-				p=p->next;
+				b->start_id = id;
+				b=b->next;
 				break;
 			}
-			p = p->next;
+			b = b->next;
 		}
 	}
 }
 
 static void sort_blocks ()
 {
-	struct st_part *p=NULL, *l=NULL, *t=NULL;
+	struct st_block *p=NULL, *l=NULL, *t=NULL;
 	int need_sort=1;
 
 	while (need_sort)
 	{
 		need_sort = 0;
-		p = parts;
+		p = blocks;
 		l = NULL;
 		while (p)
 		{
@@ -345,7 +347,7 @@ static void sort_blocks ()
 					if (l)
 						l->next = t;
 					else
-						parts = t;
+						blocks = t;
 					p->next = t->next;
 					t->next = p;
 					need_sort = 1;
@@ -416,9 +418,9 @@ static void process_key(FILE *inp, int reverse)
 
 static void load_cast_tables (FILE *inp, int reverse)
 {
-	struct st_part *p = NULL;
+	struct st_block *p = NULL;
 
-	p = parts;
+	p = blocks;
 	while (p)
 	{
 		if (!strncmp (p->name, "CastTable", 9))
@@ -432,10 +434,10 @@ static void load_cast_tables (FILE *inp, int reverse)
 
 static void fill_block_ids()
 {
-	struct st_part *p=NULL;
+	struct st_block *p=NULL;
 	int curr_id=0;
 
-	p = parts;
+	p = blocks;
 	while (p)
 	{
 		if (p->start_id)
@@ -458,7 +460,7 @@ static void search_file (FILE *inp, int reverse)
 	/* this seems to always be 'imap'    */
 	/* ('pami' in some, due to reversal) */
 	fseek (inp, 12, SEEK_SET);
-	while ((b = get_block (inp, reverse)))
+	while ((b = read_block (inp, reverse)))
 	{
 		if (!strcmp (b->name, "KEY*"))
 		{
@@ -481,8 +483,8 @@ static void search_file (FILE *inp, int reverse)
 
 static void clean_up ()
 {
-	parts = NULL;
-	plast = NULL;
+	blocks = NULL;
+	blast = NULL;
 }
 
 int integrity_ok (FILE *inp, int reverse)
@@ -493,11 +495,11 @@ int integrity_ok (FILE *inp, int reverse)
 	return 1;
 }
 
-struct st_part *scan_file (FILE *inp)
+struct st_block *scan_file (FILE *inp)
 {
 	char start[5];
 	int reverse=0;
-	struct st_part *ret;
+	struct st_block *ret;
 
 	fread (start, 4, 1, inp);
 	start[4] = 0;
@@ -513,7 +515,7 @@ struct st_part *scan_file (FILE *inp)
 
 	search_file (inp, reverse);
 
-	ret = parts;
+	ret = blocks;
 	clean_up ();
 	return ret;
 }

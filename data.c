@@ -53,14 +53,14 @@ static struct st_data_filenode *get_filenode (int file_type)
 	return tmp;
 }
 
-/* Frees a part struct and things it points to. */
-void free_part (struct st_part *part)
+/* Frees a block struct and things it points to. */
+void free_block (struct st_block *block)
 {
-	if (part->name)
-		free (part->name);
-	if (part->dir)
-		free (part->dir);
-	free (part);
+	if (block->name)
+		free (block->name);
+	if (block->dir)
+		free (block->dir);
+	free (block);
 }
 
 /* Frees an exception. */
@@ -75,18 +75,18 @@ void free_exception (struct st_data_exception *ex)
 	free (ex);
 }
 
-/* Frees a data_filenode, its parts, exceptions,
+/* Frees a data_filenode, its blocks, exceptions,
  * etc. etc. etc. */
 void free_data_filenode (struct st_data_filenode *file)
 {
-	struct st_part *part,*tmp_part;
+	struct st_block *block,*tmp_block;
 	struct st_data_exception *ex, *tmp_ex;
-	part = file->parts;
-	while (part)
+	block = file->blocks;
+	while (block)
 	{
-		tmp_part = part;
-		part = part->next;
-		free_part (tmp_part);
+		tmp_block = block;
+		block = block->next;
+		free_block (tmp_block);
 	}
 	ex = file->exceptions;
 	while (ex)
@@ -124,27 +124,27 @@ void st_data_clear (void)
 	}
 }
 
-/* A quick & safe way to make a part. */
-struct st_part *new_part()
+/* A quick & safe way to make a block. */
+struct st_block *new_block()
 {
-	struct st_part *part=NULL;
-	part = (struct st_part *) malloc (sizeof (struct st_part));
+	struct st_block *block=NULL;
+	block = (struct st_block *) malloc (sizeof (struct st_block));
 
-	if (part)
+	if (block)
 	{
-		part->name = NULL;
-		part->type = 0;
-		part->section = 0;
-		part->start = 0;
-		part->count = 0;
-		part->start_id = 0;
-		part->bcount = 1;
-		part->dir = NULL;
-		part->next = NULL;
-		strcpy (part->btype, "");
+		block->name = NULL;
+		block->type = 0;
+		block->section = 0;
+		block->start = 0;
+		block->count = 0;
+		block->start_id = 0;
+		block->bcount = 1;
+		block->dir = NULL;
+		block->next = NULL;
+		strcpy (block->btype, "");
 	}
 
-	return part;
+	return block;
 }
 
 /* A quick, easy & safe way to make an exception */
@@ -272,35 +272,35 @@ const char *st_fileinfo_get_data (int file, st_filename_type type)
 /* ST_BLOCK_SCAN is a pseudo-block entry. It triggers off
  * a call to scan_file() so that less info needs to be
  * kept in the rcfile. */
-static void data_scan (struct st_part *part)
+static void data_scan (struct st_block *block)
 {
 	FILE *inp;
-	struct st_part *tmp=NULL;
+	struct st_block *tmp=NULL;
 
 	inp = (FILE *) curr_open (0);
 	tmp = scan_file (inp);
 	fclose (inp);
 	/* NB. we don't do 
-		tmp->next = part->next;
+		tmp->next = block->next;
 	   because we don't want to have to screw
 	   around w/ the returned list,
-	   so <needscan/> should be the last
-	   parts tag for that file
+	   so "needscan" should be the last
+	   block tag for that file
 	   (not that you need others when using it
 	   :-) */
-	part->next = tmp;
-	part->type = ST_BLOCK_SCANNED;
+	block->next = tmp;
+	block->type = ST_BLOCK_SCANNED;
 
 	return;
 }
 
-/* Gets a 'part' based on its type, section, and number in the list.
+/* Gets a 'block' based on its type, section, and number in the list.
  * (The first one matching type & section is '0', the next that matches
  * is '1', etc.) */
-struct st_part *get_part (int file, int type, int section, int number, int options)
+struct st_block *get_block (int file, int type, int section, int number, int options)
 {
 	struct st_data_filenode *file_node=NULL;
-	struct st_part *part=NULL;
+	struct st_block *block=NULL;
 	int i=0;
 
 	file_node = get_filenode (file);
@@ -308,63 +308,63 @@ struct st_part *get_part (int file, int type, int section, int number, int optio
 	if (!file_node)
 		return NULL;
 
-	part = file_node->parts;
+	block = file_node->blocks;
 
-	while (part)
+	while (block)
 	{
-		if ((part->type == type) && ((part->section == section) || (section == -1)))
+		if ((block->type == type) && ((block->section == section) || (section == -1)))
 		{
 			if (i == number)
-				return part;
+				return block;
 			i++;
 		}
 
-		if (part->type == ST_BLOCK_SCAN)
-			data_scan (part);
+		if (block->type == ST_BLOCK_SCAN)
+			data_scan (block);
 
-		if (part)
-			part = part->next;
+		if (block)
+			block = block->next;
 	}
 
 	return NULL;
 }
 
-/* Similar to get_part(), but does it by block number.
- * (Usually 500+). This is for getting the part an entry
- * is in. */
-struct st_part *get_part_by_id (int file, int block_id)
+/* Similar to get_block(), but does it by block number.
+ * (Usually 500+). This is mainly for getting the block an
+ * entry is in. */
+struct st_block *get_block_by_id (int file, int block_id)
 {
 	struct st_data_filenode *file_node=NULL;
-	struct st_part *part=NULL;
+	struct st_block *block=NULL;
 
 	file_node = get_filenode (file);
 
 	if (!file_node)
 		return NULL;
 
-	part = file_node->parts;
+	block = file_node->blocks;
 
-	while (part)
+	while (block)
 	{
-		if (part->start_id == block_id)
-			return part;
+		if (block->start_id == block_id)
+			return block;
 
-		if (part->type == ST_BLOCK_SCAN)
-			data_scan (part);
+		if (block->type == ST_BLOCK_SCAN)
+			data_scan (block);
 
-		part = part->next;
+		block = block->next;
 	}
 
 	return NULL;
 }
 
-/* Similar to get_part(), but does it by block name.
- * (eg. "LU_A_ENCY"). This is for getting the part a thumbnail
- * is in. */
-struct st_part *get_part_by_name (int file, char *name)
+/* Similar to get_block(), but does it by block name.
+ * (eg. "LU_A_ENCY"). This is mainly for getting the
+ * block a thumbnail is in. */
+struct st_block *get_block_by_name (int file, char *name)
 {
         struct st_data_filenode *file_node=NULL;
-        struct st_part *part=NULL;
+        struct st_block *block=NULL;
 
 	if (!name)
 		return NULL;
@@ -374,18 +374,18 @@ struct st_part *get_part_by_name (int file, char *name)
         if (!file_node)
                 return NULL;
 
-        part = file_node->parts;
+        block = file_node->blocks;
 
-        while (part)
+        while (block)
         {
-                if (part->name)
-			if (!strcasecmp (part->name, name))
-	                        return part;
+                if (block->name)
+			if (!strcasecmp (block->name, name))
+	                        return block;
 
-		if (part->type == ST_BLOCK_SCAN)
-			data_scan (part);
+		if (block->type == ST_BLOCK_SCAN)
+			data_scan (block);
 
-                part = part->next;
+                block = block->next;
         }
 
         return NULL;
@@ -429,7 +429,7 @@ struct st_data_filenode *st_data_new_filenode (void)
 		new_node->videodir = NULL;
 		new_node->fingerprint = NULL;
 		new_node->append_char = 1;
-		new_node->parts = NULL;
+		new_node->blocks = NULL;
 		new_node->exceptions = NULL;
 		new_node->next = NULL;
 	}

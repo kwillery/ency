@@ -250,18 +250,18 @@ static char *get_rc_arg (struct rcfile_args *arg, char *name)
 	return NULL;
 }
 
-/* Makes a part out of an rc argument list. */
-static struct st_part *append_part_from_rc_file (struct st_part *part_root, struct rcfile_args *arg)
+/* Makes a block out of an rc argument list. */
+static struct st_block *append_block_from_rc_file (struct st_block *block_root, struct rcfile_args *arg)
 {
-	struct st_part *part=NULL, *part_last=NULL;
+	struct st_block *block=NULL, *block_last=NULL;
 	char *name, *type, *section, *start, *count;
 	char *start_id, *bcount, *dir;
 
-	part = part_root;
-	while (part)
+	block = block_root;
+	while (block)
 	{
-		part_last = part;
-		part = part->next;
+		block_last = block;
+		block = block->next;
 	}
 
 	/* NB name & dir are the only ones which we
@@ -283,41 +283,41 @@ static struct st_part *append_part_from_rc_file (struct st_part *part_root, stru
 
 	if (type == NULL || start == NULL)
 	{
-		fprintf (stderr, "Bogus part in rc file!\n");
+		fprintf (stderr, "Bogus block in rc file!\n");
 		fprintf (stderr, "Bombing out...\n");
 		exit (1);
 	}
 
-	part = new_part ();
+	block = new_block ();
 
 	/* set the strings... */
-	part->name = name;
-	part->dir = dir;
+	block->name = name;
+	block->dir = dir;
 
 	/* get the type */
 	if (!strcasecmp (type, "videolist"))
-		part->type = ST_SECT_VLST;
+		block->type = ST_SECT_VLST;
 	/* the others should really be here too, but... */
 	/* :-D */
 
 	/* get the section, etc... */
 	if (section)
-		sscanf (section, "%d", &(part->section));
+		sscanf (section, "%d", &(block->section));
 	if (start)
-		sscanf (start, "%ld", &(part->start));
+		sscanf (start, "%ld", &(block->start));
 	if (count)
-		sscanf (count, "%ld", &(part->count));
+		sscanf (count, "%ld", &(block->count));
 	if (start_id)
-		sscanf (start_id, "%d", &(part->start_id));
+		sscanf (start_id, "%d", &(block->start_id));
 	if (bcount)
-		sscanf (bcount, "%d", &(part->bcount));
+		sscanf (bcount, "%d", &(block->bcount));
 
-	if (part_last)
-		part_last->next = part;
+	if (block_last)
+		block_last->next = block;
 	else
-		return part;
+		return block;
 
-	return part_root;
+	return block_root;
 }
 
 /* Makes an exception out of an rc arg list. */
@@ -420,11 +420,11 @@ static struct st_data_filenode *make_filenode_from_rc_file (FILE *inp)
 			new_node->append_char = 1;
 		if (!strcasecmp (cmd->name, "needscan"))
 		{
-			new_node->parts = new_part ();
-			new_node->parts->type = ST_BLOCK_SCAN;
+			new_node->blocks = new_block ();
+			new_node->blocks->type = ST_BLOCK_SCAN;
 		}
-		if (!strcasecmp (cmd->name, "part"))
-			new_node->parts = append_part_from_rc_file (new_node->parts, cmd->args);
+		if (!strcasecmp (cmd->name, "block"))
+			new_node->blocks = append_block_from_rc_file (new_node->blocks, cmd->args);
 		if (!strcasecmp (cmd->name, "exception"))
 			new_node->exceptions = append_exception_from_rc_file (new_node->exceptions, cmd->args);
 

@@ -3,22 +3,29 @@
 
 #include "ency.h"
 
-/* internal */
-#define ST_BLOCK_TEXT 0
+/* Block types */
+/* The default - no guarantees on what's in it */ 
+#define ST_BLOCK_DATA 0
+/* ATTRIB list */
 #define ST_BLOCK_ATTRIB 1
+/* Full-text work lookup table */
 #define ST_BLOCK_FTLIST 2
-#define ST_BLOCK_FLASHEXCEPT 3
+/* Lookup table, long entry name to 6 letter code */
+#define ST_SECT_PTBL 3
+/* Captions for photos & swfs */
+#define ST_SECT_PCPT 4
+/* Captions for videos */
+#define ST_SECT_VCPT 5
+/* A list of videos on a different CD */
+#define ST_SECT_VLST 6
+/* A list of swfs that have a numeric suffix (instead of the 'F') */
+#define ST_BLOCK_FLASHEXCEPT 7
+/* Pseudo-blocks */
 #define ST_BLOCK_SCAN 254 /* If we should scan this file */
 #define ST_BLOCK_SCANNED 255 /* If we have scanned this file */
 
-#define ST_SECT_PTBL 10
-#define ST_SECT_VTBL 11
-#define ST_SECT_PCPT 12
-#define ST_SECT_VCPT 13
-#define ST_SECT_VLST 14
-#define ST_SECT_BLK  15
 
-struct st_part
+struct st_block
 {
 	char *name;
 	char btype[5];
@@ -30,7 +37,7 @@ struct st_part
 	int bcount;
 	long size;
 	char *dir;
-	struct st_part *next;
+	struct st_block *next;
 };
 
 struct st_data_exception
@@ -50,7 +57,7 @@ struct st_data_filenode
 	char *videodir;
 	char *fingerprint;
 	int append_char;
-	struct st_part *parts;
+	struct st_block *blocks;
 	struct st_data_exception *exceptions;
 
 	struct st_data_filenode *next;
@@ -67,15 +74,15 @@ void st_data_append_filenode (struct st_data_filenode *new_file);
 
 char *get_name_of_file (int file_type);
 const char *st_fileinfo_get_data (int file, st_filename_type type);
-struct st_part *get_part (int file, int type, int section, int number, int options);
-struct st_part *get_part_by_id (int file, int block_id);
-struct st_part *get_part_by_name (int file, char *name);
+struct st_block *get_block (int file, int type, int section, int number, int options);
+struct st_block *get_block_by_id (int file, int block_id);
+struct st_block *get_block_by_name (int file, char *name);
 char *get_exception (int file, char *type, char *from);
 void free_exception (struct st_data_exception *ex);
 
-struct st_part *new_part(void);
+struct st_block *new_block(void);
 struct st_data_exception *new_exception(char *type, char *from, char *to);
-void free_part (struct st_part *part);
+void free_block (struct st_block *block);
 
 #endif
 

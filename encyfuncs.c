@@ -73,12 +73,6 @@ struct entry_scores
 	struct entry_scores *next;
 };
 
-/* internal */
-#define ST_SECT_PTBL 10
-#define ST_SECT_VTBL 11
-#define ST_SECT_PCPT 12
-#define ST_SECT_VCPT 13
-
 /* the attribs table */
 static struct st_table *entrylist_head=NULL;
 
@@ -487,13 +481,13 @@ FILE *curr_open (long start)
 	return (inp);
 }
 
-/* Open the file referenced by the part */
-FILE *open_part(struct st_part *part)
+/* Open the file referenced by the block */
+FILE *open_block(struct st_block *block)
 {
-	if (!part)
+	if (!block)
 		return NULL;
 
-	return curr_open (part->start);
+	return curr_open (block->start);
 }
 
 /* Look for a given encyclopedia version in a directory.
@@ -765,16 +759,16 @@ static struct st_table *st_get_table ()
 	int i;
 	int count = 0;
 	struct st_table *root_tbl = NULL;
-	struct st_part *part;
+	struct st_block *block;
 
-	while ((part = get_part (st_file_type, ST_SECT_PTBL, 0, count, 0)))
+	while ((block = get_block (st_file_type, ST_SECT_PTBL, 0, count, 0)))
 	{
-		if (!(inp = open_part (part)))
+		if (!(inp = open_block (block)))
 			return (NULL);
 		else
 		{
 			fseek (inp, 12, SEEK_CUR);
-			for (i = 0; i < part->count; i++)
+			for (i = 0; i < block->count; i++)
 			{
 				if (i)
 				{
@@ -863,16 +857,16 @@ static struct st_caption *st_get_captions (int section)
 	int i;
 	int count = 0;
 	struct st_caption *root_cpt = NULL;
-	struct st_part *part;
+	struct st_block *block;
 
-	while ((part = get_part (st_file_type, section, 0, count, 0)))
+	while ((block = get_block (st_file_type, section, 0, count, 0)))
 	{
-		if (!(inp = open_part (part)))
+		if (!(inp = open_block (block)))
 			return (NULL);
 		else
 		{
 			fseek (inp, 12, SEEK_CUR);
-			for (i = 0; i < part->count; i++)
+			for (i = 0; i < block->count; i++)
 				root_cpt = read_captions (inp, root_cpt);
 		}
 		count++;
@@ -994,12 +988,12 @@ static struct st_table *st_get_video_table (int section)
 {
 	FILE *inp;
 	struct st_table *root_tbl = NULL, *curr_tbl=NULL;
-	struct st_part *part;
+	struct st_block *block;
 	int count=0;
 
-	while ((part = get_part (st_file_type, ST_BLOCK_ATTRIB, section, count, 0)))
+	while ((block = get_block (st_file_type, ST_BLOCK_ATTRIB, section, count, 0)))
 	{
-		if (!(inp = open_part (part)))
+		if (!(inp = open_block (block)))
 			return (root_tbl);
 		else
 		{
@@ -1009,10 +1003,10 @@ static struct st_table *st_get_video_table (int section)
 				while (curr_tbl->next)
 					curr_tbl = curr_tbl->next;
 
-				curr_tbl->next = read_attribs_table (inp, part->section, part->count);
+				curr_tbl->next = read_attribs_table (inp, block->section, block->count);
 			}
 			else
-				curr_tbl = root_tbl = read_attribs_table (inp, part->section, part->count);
+				curr_tbl = root_tbl = read_attribs_table (inp, block->section, block->count);
 
 			fclose (inp);
 			count++;
@@ -1567,23 +1561,23 @@ static void load_block_cache (int block_id)
 	char c;
 	int i;
 	int id;
-	struct st_part *part;
+	struct st_block *block;
 
-	part = get_part_by_id (st_file_type, block_id);
+	block = get_block_by_id (st_file_type, block_id);
 
-	if (!part) /* just in case... */
+	if (!block) /* just in case... */
 		return;
 
-	if (!(inp = open_part (part)))
+	if (!(inp = open_block (block)))
 		return;
 
 	fseek (inp, 12, SEEK_CUR);
 
 	if (inp)
 	{
-		for (i=part->start_id;i<part->start_id + part->bcount;i++)
+		for (i=block->start_id;i<block->start_id + block->bcount;i++)
 		{
-			if (i > part->start_id)
+			if (i > block->start_id)
 			{
 				find_next_stxt_block (inp);
 				fseek (inp, 16, SEEK_CUR);
@@ -1849,20 +1843,20 @@ static struct st_wl *load_ft_word (FILE *inp)
  * get_ft_word_at(). */
 static void load_ft_list (int section)
 {
-	struct st_part *part;
+	struct st_block *block;
 	struct st_ftlist *root=NULL, *curr=NULL, *last=NULL;
 	char c=0;
 	FILE *inp=NULL;
 	int count=0, i;
 
-	while ((part = get_part (st_file_type, ST_BLOCK_FTLIST, section, count++, 0)))
+	while ((block = get_block (st_file_type, ST_BLOCK_FTLIST, section, count++, 0)))
 	{
-		if (!(inp = open_part (part)))
+		if (!(inp = open_block (block)))
 			return;
 
 		fseek (inp, 12, SEEK_CUR);
 
-		for (i=0;i<part->count;i++)
+		for (i=0;i<block->count;i++)
 		{
 			if (i)
 			{
@@ -2359,11 +2353,11 @@ static int in_simple_list (long filepos, int entrylen, char *match)
  * photo. */
 static int is_flash_except (char *fnbase)
 {
-	struct st_part *part;
+	struct st_block *block;
 	int count=0;
 
-	while ((part = get_part (st_file_type, ST_BLOCK_FLASHEXCEPT, 0, count++, 0)))
-		if (in_simple_list (part->start, 6, fnbase))
+	while ((block = get_block (st_file_type, ST_BLOCK_FLASHEXCEPT, 0, count++, 0)))
+		if (in_simple_list (block->start, 6, fnbase))
 			return 1;
 	return 0;
 }
@@ -2449,14 +2443,14 @@ struct st_media *st_get_media (char *search_string)
  * (eg. Video99/ instead of Video98/ */
 static char *get_video_dir (char *fnbasen)
 {
-	struct st_part *part=NULL;
+	struct st_block *block=NULL;
 	char *dir;
 	int count=0;
 
-	while ((part = get_part (st_file_type, ST_SECT_VLST, 0, count++, 0)))
-		if (in_simple_list (part->start, 12, fnbasen))
+	while ((block = get_block (st_file_type, ST_SECT_VLST, 0, count++, 0)))
+		if (in_simple_list (block->start, 12, fnbasen))
 		{
-			dir = part->dir;
+			dir = block->dir;
 			return dir;
 		}
 
@@ -2547,22 +2541,22 @@ char *st_format_filename (char *fnbasen, char *base_path, media_type media)
 
 int st_get_picture(char *name, char *file, long width, long height)
 {
-	struct st_part *part=NULL;
+	struct st_block *block=NULL;
 	int ret;
 	FILE *inp=NULL;
 
 	if (!name)
 		return 1;
 
-	part = get_part_by_name (st_file_type, name);
+	block = get_block_by_name (st_file_type, name);
 
-	if (!part)
+	if (!block)
 		return 1;
 
-	DBG ((stderr, "Got part '%s' @ %ld, %ld bytes long.\n", name, part->start, part->size));
+	DBG ((stderr, "Got block '%s' @ %ld, %ld bytes long.\n", name, block->start, block->size));
 
-	inp = open_part (part);
-	ret = create_ppm_from_image (file, inp, width, height, part->size);
+	inp = open_block (block);
+	ret = create_ppm_from_image (file, inp, width, height, block->size);
 
 	DBG ((stderr, "Ret: %d\n", ret));
 	fclose (inp);
