@@ -501,26 +501,21 @@ char *st_fileinfo_get_name (int file_type)
 
 /* try to open the selected file, and
  * seek to 'start'.
- * It returns 0 for failure, the file pointer otherwise */
+ * It returns NULL for failure, the file pointer otherwise */
 FILE *curr_open (char *filename, long start)
 {
 	FILE *inp;
-	char *fn=NULL;
 	int i = 0;
 
 	DBG ((stderr, "curr_open: %s, %ld (ency_directory = %s)\n", filename, start, ency_directory));
 
 	if (!filename)
 	{
-		DBG ((stderr, "curr_open: no filenames available\n"));
+		DBG ((stderr, "curr_open: no filename!\n"));
 		return NULL;
 	}
 
-	fn = malloc (strlen(ency_directory) + strlen (filename) + 2);
-	sprintf (fn, "%s/%s", ency_directory ? ency_directory : "", filename);
-
-	inp = fopen (fn, "rb");
-	free (fn);
+	inp = fopen (filename, "rb");
 
 	if (inp)
 	{
@@ -560,10 +555,15 @@ FILE *open_file (char *fn, long start)
 
 	path = st_get_directory ();
 
-	new_fn = malloc (strlen (path) + strlen (fn) + 2);
-	strcpy (new_fn, path);
-	strcat (new_fn, "/");
-	strcat (new_fn, fn);
+	if (path)
+	{
+		new_fn = malloc (strlen (path) + strlen (fn) + 2);
+		strcpy (new_fn, path);
+		strcat (new_fn, "/");
+		strcat (new_fn, fn);
+	} else {
+		new_fn = strdup (fn);
+	}
 
 	ret = curr_open (new_fn, start);
 
@@ -571,9 +571,14 @@ FILE *open_file (char *fn, long start)
 	if (!ret)
 	{
 		t = st_lcase (fn);
-		strcpy (new_fn, path);
-		strcat (new_fn, "/");
-		strcat (new_fn, t);
+		if (path)
+		{
+			strcpy (new_fn, path);
+			strcat (new_fn, "/");
+			strcat (new_fn, t);
+		} else {
+			new_fn = strdup (t);
+		}
 		ret = curr_open (new_fn, start);
 		free (t);
 	}
