@@ -119,6 +119,7 @@ int st_finish (void)
 	st_clear_cache ();
 	st_data_clear();
 	free_cmap ();
+	st_clear_entry_list();
 
 	return (1);
 }
