@@ -857,7 +857,7 @@ int st_load_media (void)
 
 int st_loaded_media (void)
 {
-  if ((st_pcpts) && (st_ptbls) && (st_vtbls) && (st_vcpts))
+  if (((st_pcpts) && (st_ptbls)) || ((st_vtbls) && (st_vcpts)))
     return (1);
   else
     return (0);
