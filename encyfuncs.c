@@ -523,9 +523,9 @@ static const char *st_fileinfo_get_data (int file, st_filename_type type)
 			return "yes";
 #ifndef ENCY_DONT_PREPEND_APPEND_TO_UNKNOWN
 		case prepend_year:
-			return st_files[file].prepend_year ? "yes" : NULL;
+			return "yes";
 		case append_series:
-			return st_files[file].append_series ? "yes" : NULL;
+			return "yes";
 #endif
 		default:
 			return NULL;
