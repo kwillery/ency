@@ -715,8 +715,6 @@ static struct st_table *read_table (FILE *input, struct st_table *root)
 		fread (temp_text, 1, 6, input);
 		temp_text[6] = 0;
 
-		fgetc (inp);
-		fgetc (inp);
 		if (strstr (temp_text, "\""))
 		{
 			fseek (input, -7, SEEK_CUR);
@@ -2280,7 +2278,7 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 		if (tmp->section == section)
 		{
 			skip = 0;
-			if (section == 1) // Episodes
+			if (section == 1) /* Episodes */
 			{
 				if (isdigit(tmp->title[0]) || isblank (tmp->title[0]))
 				{
@@ -2481,6 +2479,9 @@ struct ency_titles *st_find_fulltext (char *search_string, int section, int opti
 
 		if (!strcasecmp (last, search_string))
 		{
+/* Special case - eentng == "Enterprise Incident, The (TNG)", should be (TOS) */
+			if (!strcasecmp (fl->fnbase, "eentng"))
+				strcpy (fl->fnbase, "eentos");
 			title = get_title (st_ptbls, fl->fnbase);
 			if (title)
 			{
