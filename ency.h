@@ -87,8 +87,8 @@ struct st_file_info
     char *name;
     char *filename;
     char *data_dir;
-    char *vid_dir;
     char *pic_dir;
+    char *vid_dir;
     int append_char;
     int fingerprint[16];
     long int filesize;

@@ -1,9 +1,7 @@
-Mibus's Ency Reader '98.
-------------------------
+Star Trek Ency Reader
+---------------------
 
-For the Star Trek Encyclopedia. The '98 one. With ST:FC etc...
-
-(So called because it is mine (Robert Mibus), it reads an "Ency"clopedia, and it reads the '98 version.)
+For the Star Trek Encyclopedias, Omnipedias, and Episode guides.
 
 License
 -------
@@ -15,7 +13,8 @@ Read INSTALL
 
 The More Technical Thingys
 --------------------------
-I am (slowly) implementing a set of functions to do stuff in the encyclopedia, so anyone can write a small app to do ency stuff. htmlenc.c is my sample.
+I am implementing a set of functions to do stuff in the encyclopedias etc., so anyone can write a small app to do ency stuff. htmlenc, findenc, and showm are my examples.
+
 For info on how my program works, read the encyfuncs.c file. to use the api, read README.API
 
 --

@@ -3,13 +3,13 @@ To install:
 Run:
 
  make
-
-Copy or move the findenc & htmlenc files to the install directory.
+ make install
 
 To run:
 
  findenc
  htmlenc
+ showm
 
 That's about it.
 You need to either be in a directory with the Data.cxt file (case sensitive) or
@@ -21,10 +21,10 @@ or in csh/tcsh/etc:
 (suiting filenames to match :)
 
 Other files to look for:
-eg_tng.dxr
-eg_ds9.dxr
-omni1.dxr
-omni_v2.dxr
+ eg_tng.dxr
+ eg_ds9.dxr
+ omni1.dxr
+ omni_v2.dxr
 
 just set the ENCY_FILENAME variable to one of these, eg:
  setenv ENCY_FILENAME /dose/tng_ep/eg_tng.dxr

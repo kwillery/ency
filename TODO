@@ -1,13 +1,12 @@
-TODO: star trek ency reader
+TODO: Star Trek Ency Reader
 -------------------------------
 
 - rewrite it with comments :)
 - rewrite it better, stop just adding hacks.
-- make it work on all versions of the ency
 - thumbnail pictures
 - other pictures, movies, etc
 - make prettier code :-)
-- update the man pages  & docs heaps
+- update the docs heaps
 - better & more error handling
 - if (project != finished) drink(coffee) else goto bed;
 
