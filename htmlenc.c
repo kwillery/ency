@@ -215,7 +215,8 @@ int main (int argc, char *argv[])
 			fprintf (out, "<hr>\n<a name=\"%d\">\n", count++);
 			printoff (full_body, out);
 
-			media = st_get_media (thingy->title);
+			if (use_media)
+				media = st_get_media (thingy->title);
 
 			if (media)
 			{

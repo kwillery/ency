@@ -126,7 +126,8 @@ int main (int argc, char *argv[])
 			/* print the returned text */
 			printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
 
-			media = st_get_media (thingy->title);
+			if (use_media)
+				media = st_get_media (thingy->title);
 
 			if (media)
 			{

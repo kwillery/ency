@@ -907,6 +907,22 @@ char *st_autofind (int st_file_version, char *base_dir)
 }
 
 /* media stuff */
+static void find_next_stxt_block (FILE *input)
+{
+	char d[5]="    ";
+	
+	while (!feof (inp))
+	{
+		d[3] = getc (input);
+
+		if ((!strcmp (d, "STXT")) || (!strcmp (d, "TXTS")))
+			return;
+		d[0] = d[1];
+		d[1] = d[2];
+		d[2] = d[3];
+	}
+}
+
 static struct st_table *read_table (FILE *input, struct st_table *root)
 {
 	struct st_table *root_tbl = NULL;
@@ -925,6 +941,11 @@ static struct st_table *read_table (FILE *input, struct st_table *root)
 		while (last_tbl->next)
 			last_tbl = last_tbl->next;
 	}
+
+	if (getc (inp) != '[')
+		if (ungetc (getc (inp), inp) != '\"')
+			return (root);
+	ungetc ('[', inp);
 
 	while ((c = getc (input)) != ']')
 	{	/* main loop */
@@ -1018,6 +1039,11 @@ static struct st_table *st_get_table ()
 
 			for (i = 0; i < part->count; i++)
 			{
+				if (i)
+				{
+					find_next_stxt_block (inp);
+					fseek (inp, 16, SEEK_CUR);
+				}
 				root_tbl = read_table (inp, root_tbl);
 			}
 		}
@@ -1153,15 +1179,113 @@ static struct st_caption *st_get_captions (int section)
 	return (root_cpt);
 }
 
+static struct st_table *read_attribs_table (FILE *inp, int count)
+{
+	struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
+	char c = 0;
+	int i;
+	int text_size;
+	int level, commas;
+	char *temp_text = NULL;
+
+	for (i = 0; i < count; i++)
+	{
+		if (i)
+		{
+			find_next_stxt_block (inp);
+			fseek (inp, 16, SEEK_CUR);
+		}
+
+		c = 0;
+		while (c != ']')
+		{	/* main loop */
+
+			while ((c = getc (inp)) != '[');
+			while (c != ']')
+			{
+
+				curr_tbl = (struct st_table *) malloc (sizeof (struct st_table));
+
+				if (curr_tbl == NULL)
+				{
+					return (NULL);
+				}
+
+				/* TODO: Make this '70' an autodetected size */
+				temp_text = malloc (sizeof (char) * 70);
+				text_size = 0;
+				while ((c = getc (inp)) != '\"');
+				while ((temp_text[text_size++] = getc (inp)) != '\"');
+				temp_text[--text_size] = 0;
+
+				do
+				{
+					text_size--;
+					temp_text[text_size] = st_cleantext (temp_text[text_size]);
+				} while (text_size);
+
+				curr_tbl->title = temp_text;
+				temp_text = NULL;
+				curr_tbl->fnbase = NULL;
+
+				c = getc (inp);
+				if (c == ':')
+				{
+					c = getc (inp);
+					c = getc (inp);
+					level = 1;
+					commas = 0;
+					while (level)
+					{
+						c = getc (inp);
+						if (c == '[')
+							level++;
+						if (c == ']')
+							level--;
+						if ((level == 1) && (c == ','))
+							commas++;
+						if ((c == '\"') && (commas == 4))
+						{
+							/* TODO: Make this '70' an autodetected size */
+							temp_text = malloc (sizeof (char) * 70);
+							text_size = 0;
+
+							while ((temp_text[text_size++] = tolower (getc (inp))) != '\"');
+							temp_text[text_size - 1] = 0;
+							curr_tbl->fnbase = temp_text;
+						}
+					}
+					c = getc (inp);
+				}
+
+				if (curr_tbl->fnbase)
+				{
+					st_cleanstring (curr_tbl->fnbase);
+					st_cleanstring (curr_tbl->title);
+					if (!root_tbl)
+						root_tbl = curr_tbl;
+					curr_tbl->next = NULL;
+					if (last_tbl)
+						last_tbl->next = curr_tbl;
+					last_tbl = curr_tbl;
+					curr_tbl = NULL;
+				}
+				else
+				{
+					free (curr_tbl->title);
+					free (curr_tbl);
+				}
+			}
+		}
+	}
+	return root_tbl;
+}
+
 static struct st_table *st_get_video_table (int section, int reverse)
 {
-	int i = 0;
-	struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
+	struct st_table *root_tbl = NULL, *curr_tbl=NULL;
 	struct st_part *part;
-	char c = 0;
-	int text_size;
-	int level, commas, count = 0;
-	char *temp_text = NULL;
+	int count=0;
 
 	curr = 7;
 
@@ -1174,95 +1298,16 @@ static struct st_table *st_get_video_table (int section, int reverse)
 		}
 		else
 		{
-
-			for (i = 0; i < part->count; i++)
+			if (curr_tbl)
 			{
-				c = 0;
-				while (c != ']')
-				{	/* main loop */
+				while (curr_tbl->next)
+					curr_tbl = curr_tbl->next;
 
-					while ((c = getc (inp)) != '[');
-					while (c != ']')
-					{
-
-						curr_tbl = (struct st_table *) malloc (sizeof (struct st_table));
-
-						if (curr_tbl == NULL)
-						{
-							return (NULL);
-						}
-
-						/* TODO: Make this '70' an autodetected size */
-						temp_text = malloc (sizeof (char) * 70);
-						text_size = 0;
-						while ((c = getc (inp)) != '\"');
-						while ((temp_text[text_size++] = getc (inp)) != '\"');
-						temp_text[--text_size] = 0;
-
-						do
-						{
-							text_size--;
-							temp_text[text_size] = st_cleantext (temp_text[text_size]);
-						}
-						while (text_size);
-
-						curr_tbl->title = temp_text;
-						temp_text = NULL;
-						curr_tbl->fnbase = NULL;
-
-						c = getc (inp);
-						if (c == ':')
-						{
-							c = getc (inp);
-							c = getc (inp);
-							level = 1;
-							commas = 0;
-							while (level)
-							{
-								c = getc (inp);
-								if (c == '[')
-									level++;
-								if (c == ']')
-									level--;
-								if ((level == 1) && (c == ','))
-									commas++;
-								if ((c == '\"') && (commas == 4))
-								{
-
-									/* TODO: Make this '70' an autodetected size */
-									temp_text = malloc (sizeof (char) * 70);
-									text_size = 0;
-
-									while ((temp_text[text_size++] = tolower (getc (inp))) != '\"');
-									temp_text[text_size - 1] = 0;
-									curr_tbl->fnbase = temp_text;
-								}
-							}
-							c = getc (inp);
-						}
-
-						if (curr_tbl->fnbase)
-						{
-							st_cleanstring (curr_tbl->fnbase);
-							st_cleanstring (curr_tbl->title);
-							if (!root_tbl)
-								root_tbl = curr_tbl;
-							curr_tbl->next = NULL;
-							if (last_tbl)
-								last_tbl->next = curr_tbl;
-							last_tbl = curr_tbl;
-							curr_tbl = NULL;
-						}
-						else
-						{
-							free (curr_tbl->title);
-							free (curr_tbl);
-						}
-
-					}
-				}	/* end main loop */
-
+				curr_tbl->next = read_attribs_table (inp, part->count);
 			}
+			else
+				curr_tbl = root_tbl = read_attribs_table (inp, part->count);
+
 			st_close_file ();
 			count++;
 			free (part);
@@ -1550,22 +1595,6 @@ static int check_match (char *search_string, char *title, int exact)
 	return found;
 }
 
-static void find_next_stxt_block (FILE *input)
-{
-	char d[5]="    ";
-	
-	while (!feof (inp))
-	{
-		d[3] = getc (input);
-
-		if ((!strcmp (d, "STXT")) || (!strcmp (d, "TXTS")))
-			return;
-		d[0] = d[1];
-		d[1] = d[2];
-		d[2] = d[3];
-	}
-}
-
 inline int st_find_start (FILE * input)
 {
 	unsigned char c = 0, old_c = 0, old_old_c = 0, old_old_old_c = 0;
@@ -1598,7 +1627,7 @@ inline int st_find_start (FILE * input)
 				}
 				break;
 			case '@':
-				if ((old_old_c == 0x16) && (old_old_old_c == 0))
+				if (((old_old_c == 0x16) && (old_old_old_c == 0)) || ((old_old_c == '~') && (old_old_old_c == 0x0d)))
 				{
 					keep_going = 0;
 					fseek (input, -2, SEEK_CUR);
@@ -1620,6 +1649,18 @@ inline int st_find_start (FILE * input)
 			if ((!old_old_old_c) && (!old_old_c) && (!old_c))
 				fseek (input, 6, SEEK_CUR);
 		}
+
+		if (((c == 'S') && (old_c == 'T') && (old_old_c == 'X') && (old_old_old_c == 'T')) || ((c == 'T') && (old_c == 'X') && (old_old_c == 'T') && (old_old_old_c == 'S')))
+		{
+			fseek (input, 16, SEEK_CUR);
+			return 1;
+		}
+		if ((c != '1') && isdigit (c) && (old_c == '~'))
+		{
+			ungetc (c, inp);
+			return 1;
+		}
+
 		old_old_old_c = old_old_c;
 		old_old_c = old_c;
 		old_c = c;
@@ -2634,6 +2675,7 @@ static struct st_photo st_parse_video_captions (char *fnbasen)
 static struct st_media *new_media (struct st_media *old_media)
 {
 	struct st_media *media;
+	int i;
 
 	if (old_media)
 		return (old_media);
@@ -2641,6 +2683,11 @@ static struct st_media *new_media (struct st_media *old_media)
 	media = malloc (sizeof (struct st_media));
 	if (media)
 	{
+		for (i=0;i<5;i++)
+		{
+			strcpy (media->photos[i].file, "");
+			strcpy (media->photos[i].caption, "");
+		}
 		strcpy (media->video.file, "");
 		strcpy (media->audio.file, "");
 		strcpy (media->swf.file, "");
