@@ -39,8 +39,6 @@ struct block
 struct st_part *parts=NULL;
 struct st_part *plast=NULL;
 
-int curr_id = 0;
-
 static void get_4b_string (FILE *inp, char *string, int reverse)
 {
 	int i;
@@ -506,7 +504,6 @@ static void clean_up ()
 	parts = NULL;
 	plast = NULL;
 
-	curr_id = 0;
 }
 
 int integrity_ok (FILE *inp, int reverse)
