@@ -237,6 +237,9 @@ static char *st_lcase (char *mcase)
 	int i = 0;
 	int length = 0;
 
+	if (!mcase)
+		return NULL;
+
 	length = strlen (mcase) + 1;
 	lcase = (char *) malloc (length);
 
@@ -495,7 +498,11 @@ char *st_fileinfo_get_name (int file_type)
 		return (st_files[st_file_type].name);
 	}
 	else
+	{
+		if (file_type == ST_FILE_UNKNOWN)
+			return ("Unknown encyclopedia");
 		return (st_files[file_type].name);
+	}
 }
 
 static const char *st_fileinfo_get_data (int file, st_filename_type type)
@@ -505,7 +512,7 @@ static const char *st_fileinfo_get_data (int file, st_filename_type type)
 		switch (type)
 		{
 		case mainfilename:
-			return ency_filename;
+			return ency_filename ? ency_filename : "";
 		case data_dir:
 			return "";
 		case picture_dir:
@@ -514,10 +521,12 @@ static const char *st_fileinfo_get_data (int file, st_filename_type type)
 			return "";
 		case append_char:
 			return "yes";
-/*		case prepend_year:
+#ifndef ENCY_DONT_PREPEND_APPEND_TO_UNKNOWN
+		case prepend_year:
 			return st_files[file].prepend_year ? "yes" : NULL;
 		case append_series:
-			return st_files[file].append_series ? "yes" : NULL; */
+			return st_files[file].append_series ? "yes" : NULL;
+#endif
 		default:
 			return NULL;
 		}
@@ -733,7 +742,8 @@ char *st_autofind (int st_file_version, char *base_dir)
 	const char *datadir = NULL, *filename = NULL;
 	char *lc_data_dir = NULL, *lc_filename = NULL;
 
-	if ((st_file_version < ST_FILE_TYPES) && (st_file_version >= 0))
+	if (((st_file_version < ST_FILE_TYPES) && (st_file_version >= 0)) ||
+			(st_file_version == ST_FILE_UNKNOWN))
 	{
 
 		datadir = st_fileinfo_get_data (st_file_version,data_dir);
@@ -1477,7 +1487,7 @@ inline int st_find_start (FILE * input)
 				if ((old_old_c == 0) && (old_old_old_c != 0xFC))
 				{
 					temp = getc (input);
-					if ((temp != 0xff) && (temp != 0))
+					if ((temp != 0xff) && (temp != 0) && (temp != '.'))
 						ungetc (temp, input);
 					else
 						break;
@@ -2043,6 +2053,7 @@ struct ency_titles *st_get_title_at (long filepos)
 	root_title->text = temp_text;
 	root_title->next = NULL;
 	root_title->fmt = text_fmt;
+	root_title->err = 0;
 	st_return_body = return_body_was;
 	st_close_file ();
 
@@ -2116,7 +2127,7 @@ static struct st_photo st_parse_video_captions (char *fnbasen)
 	return (photo);
 }
 
-struct st_media *new_media (struct st_media *old_media)
+static struct st_media *new_media (struct st_media *old_media)
 {
 	struct st_media *media;
 
