@@ -146,55 +146,38 @@ static char st_cleantext (unsigned char c)
 	{
 	case 13:
 		return ('\n');
-		break;
 	case 0x88:
 		return ('a');
-		break;
 	case 0x8E:
 		return ('e');
-		break;
 	case 0x8F:
 		return ('e');
-		break;
 	case 0x92:
 		return ('\'');
-		break;
 	case 0x93:
 		return ('\"');
-		break;
 	case 0x94:
 		return ('\"');
-		break;
 	case 0x95:
 		return ('*');
-		break;
 	case 0x97:
 		return (':');
-		break;
 	case 0xA5:
 		return ('*');
-		break;
 	case 0xD0:
 		return ('-');
-		break;
 	case 0xD1:
 		return ('-');
-		break;
 	case 0xD2:
 		return ('\"');
-		break;
 	case 0xD3:
 		return ('\"');
-		break;
 	case 0xD4:
 		return ('\'');
-		break;
 	case 0xD5:
 		return ('\'');
-		break;
 	default:
 		return (c);
-		break;
 	}
 }
 
