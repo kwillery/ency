@@ -254,7 +254,6 @@ int st_fingerprint (void)
 	unsigned char text_fp[16 * 3 + 1]="";
 	char *match_fp=NULL;
 
-/*	inp = fopen (filename, "r b");*/
 	inp = (FILE *) curr_open (0);
 
 	if (inp) {

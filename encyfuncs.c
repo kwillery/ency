@@ -28,12 +28,11 @@
 #include <malloc.h>
 #include <ctype.h>
 #include <string.h>
+#include <errno.h>
+
 #include "ency.h"
 #include "encyfuncs.h"
-
-#ifndef DONT_USE_XML
 #include "data.h"
-#endif
 
 static FILE *inp;
 
@@ -43,84 +42,6 @@ int st_return_body = 1;
 int st_ignore_case = 0;
 static int force_unknown = 0;
 static int st_file_type = 0;
-
-#ifdef DONT_USE_XML
-/* for pictures */
-static const long int st_table_starts_at[] =
-{0x410c4, 0, 0x388f2e, 0, 0x3CD470, 0, 0x2BBA98, 0x2BCD9B, 0, 0x322996, 0};
-
-static const long int st_caption_starts_at[] =
-{0x4e5064, 0, 0x615552, 0, 0x646D0A, 0, 0x2C5F2C, 0, 0x37CB82, 0};
-
-/* for videos */
-static const long st_video_table_starts_at[] =
-{0x50e690, 0, 0x59baaa, 0, 0x5b9820, 0, 0x3967aa, 0, 0x37684a, 0};
-static const long st_video_caption_starts_at[] =
-{0x4FCED6, 0, 0x621174, 0, 0x65860a, 0, 0x2bba98, 0, 0x322968, 0};
-
-/* the actual encyclopedia entries */
-static const long int ency_starts_at[] =
-{0x7bc28, 0x39d0d8, 0x576574, 0, 0x3A9ED8, 0x56BB62, 0, 0x3FC3BE, 0x58B51E, 0x72E89C, 0, 0x2D2A6E, 0, 0x324B34, 0x390C40, 0};
-
-static const long int epis_starts_at[] =
-{0x3b8e20, 0x397322, 0x50431A, 0, 0x5D961A, 0x622AA4, 0, 0x606630, 0x659F9E, 0, 0x1, 0, 0x1, 0};
-
-static const long int chro_starts_at[] =
-{0x41e32c, 0, 0x62764A, 0, 0x66B9C4, 0, 0x1, 0, 0x1, 0};
-
-/* hm. articles or sections or whatever to get */
-static const long int ency_lastone[] =
-{6814, 230, 68, 0, 4092, 491, 0, 3904, 476, 1347, 0, 181, 0, 89, 42, 0};
-
-static const long int epis_lastone[] =
-{402, 23, 3, 0, 261, 25, 0, 262, 93, 0, 0x1, 0, 0x1, 0};
-
-static const long int chro_lastone[] =
-{582, 0, 465, 0, 582, 0, 0x1, 0, 0x1, 0};
-
-static const long int st_table_lastone[] =
-{26, 0, 26, 0, 26, 0, 2, 22, 0, 15, 0};
-
-static const long int st_caption_lastone[] =
-{5, 0, 4, 0, 4, 0, 4, 0, 4, 0};
-
-static const long st_video_table_lastone[] =
-{26, 0, 26, 0, 26, 0, 26, 0, 26, 0};
-
-static const long st_video_caption_lastone[] =
-{1, 0, 1, 0, 1, 0, 24, 0, 15, 0};
-
-struct st_file_info
-{
-	char *name;
-	char *filename;
-	char *data_dir;
-	char *pic_dir;
-	char *vid_dir;
-	int append_char;
-	int prepend_year;
-	int append_series;
-	int fingerprint[16];
-	long int filesize;
-};
-
-const struct st_file_info st_files[] =
-{
-	{"Encyclopedia", "Data.cxt", "Ency98", "media98", "video98", 1, 1, 1,
-	 {0x52, 0x49, 0x46, 0x58, 0x0, 0x99, 0xD7, 0x6E, 0x4D, 0x43, 0x39, 0x35, 0x69, 0x6D, 0x61, 0x70}, 1},
-	{"Omnipedia", "OMNI1.DXR", "", "media", "media", 1, 1, 1,
-	 {0x58, 0x46, 0x49, 0x52, 0xBC, 0x42, 0xB7, 0x0, 0x33, 0x39, 0x56, 0x4D, 0x70, 0x61, 0x6D, 0x69}, 1},
-	{"Omnipedia (updated)", "omni_v2.dxr", "startrek", "media", "media", 1, 1, 1,
-	 {0x52, 0x49, 0x46, 0x58, 0x0, 0xFa, 0x1C, 0x7A, 0x4D, 0x56, 0x39, 0x33, 0x69, 0x6D, 0x61, 0x70}, 1},
-	{"TNG Episode guide", "eg_tng.dxr", "source", "media", "media", 1, 0, 0,
-	 {0x52, 0x49, 0x46, 0x58, 0x00, 0x51, 0x91, 0xF4, 0x4D, 0x56, 0x39, 0x33, 0x69, 0x6D, 0x61, 0x70}, 1},
-	{"DS9 Episode guide", "eg_ds9.dxr", "ds9", "media", "media", 1, 0, 0,
-	 {0x52, 0x49, 0x46, 0x58, 0x0, 0x4C, 0xAE, 0xC4, 0x4D, 0x56, 0x39, 0x33, 0x69, 0x6D, 0x61, 0x70}, 1}
-};
-
-#define ST_PART_OPT_EPISLIST 1
-#define ST_PART_OPT_FTLIST 2
-#endif
 
 struct st_wl
 {
@@ -168,9 +89,7 @@ static void st_clear_cache (void);
 /* init/de-init stuff */
 int st_init (void)
 {
-#ifndef DONT_USE_XML
 	load_file_info(NULL);
-#endif
 	st_fingerprint ();
 	return (st_file_type >= 254 ? force_unknown : 1);
 }
@@ -182,9 +101,8 @@ int st_finish (void)
 	if (ency_filename)
 		free (ency_filename);
 	st_clear_cache ();
-#ifndef DONT_USE_XML
 	free_xml_doc();
-#endif
+
 	return (1);
 }
 
@@ -287,12 +205,10 @@ static char *st_lcase (char *mcase)
 	return (lcase);
 }
 
-#ifndef DONT_USE_XML
 int st_count_filetypes(void)
 {
 	return count_files();
 }
-#endif
 
 /* struct manipulation */
 void st_free_fmt (struct st_ency_formatting *fmt)
@@ -543,159 +459,12 @@ char *st_get_filename (void)
 	return (ency_filename);
 }
 
-#ifndef DONT_USE_XML
 int st_load_xml_file (char *filename)
 {
 	free_xml_doc();
 	return (load_file_info (filename));
 }
-#endif
 
-#ifdef DONT_USE_XML
-char *st_fileinfo_get_name (int file_type)
-{
-	if (file_type == ST_FILE_CURR)
-	{
-		if (st_file_type == ST_FILE_UNKNOWN)
-			return (("Unknown encyclopedia"));
-		return (st_files[st_file_type].name);
-	}
-	else
-	{
-		if (file_type == ST_FILE_UNKNOWN)
-			return ("Unknown encyclopedia");
-		return (st_files[file_type].name);
-	}
-}
-
-static const char *st_fileinfo_get_data (int file, st_filename_type type)
-{
-	if (file == ST_FILE_UNKNOWN)
-	{
-		switch (type)
-		{
-		case mainfilename:
-			return ency_filename ? ency_filename : "";
-		case data_dir:
-			return "";
-		case picture_dir:
-			return "";
-		case video_dir:
-			return "";
-		case append_char:
-			return "yes";
-#ifndef ENCY_DONT_PREPEND_APPEND_TO_UNKNOWN
-		case prepend_year:
-			return "yes";
-		case append_series:
-			return "yes";
-#endif
-		default:
-			return NULL;
-		}
-	}
-
-	if ((file < 0) || (file >= ST_FILE_TYPES))
-			return NULL;
-	else
-		switch (type)
-		{
-			case mainfilename:
-				return st_files[file].filename;
-			case data_dir:
-				return st_files[file].data_dir;
-			case picture_dir:
-				return st_files[file].pic_dir;
-			case video_dir:
-				return st_files[file].vid_dir;
-			case append_char:
-				return st_files[file].append_char ? "yes" : NULL;
-			case prepend_year:
-				return st_files[file].prepend_year ? "yes" : NULL;
-			case append_series:
-				return st_files[file].append_series ? "yes" : NULL;
-			default:
-				return NULL;
-		}
-}
-
-static struct st_part *get_part (int file, int section, int number, int options)
-{
-	int i, tmp = 0;
-	struct st_part *ret;
-	long *starts;
-	long *counts;
-
-	if (number < 0)
-		return NULL;
-	if (options)
-		return NULL;
-
-	switch (section)
-	{
-	case ST_SECT_ENCY:
-		starts = (long *) ency_starts_at;
-		counts = (long *) ency_lastone;
-		break;
-	case ST_SECT_EPIS:
-		starts = (long *) epis_starts_at;
-		counts = (long *) epis_lastone;
-		break;
-	case ST_SECT_CHRO:
-		starts = (long *) chro_starts_at;
-		counts = (long *) chro_lastone;
-		break;
-	case ST_SECT_PTBL:
-		starts = (long *) st_table_starts_at;
-		counts = (long *) st_table_lastone;
-		break;
-	case ST_SECT_VTBL:
-		starts = (long *) st_video_table_starts_at;
-		counts = (long *) st_video_table_lastone;
-		break;
-	case ST_SECT_PCPT:
-		starts = (long *) st_caption_starts_at;
-		counts = (long *) st_caption_lastone;
-		break;
-	case ST_SECT_VCPT:
-		starts = (long *) st_video_caption_starts_at;
-		counts = (long *) st_video_caption_lastone;
-		break;
-	default:
-		return NULL;
-	}
-
-	/* find the right file */
-	for (i = 0; i < file; i++)
-	{
-		while (starts[tmp] != 0)
-			tmp++;
-		tmp++;
-	}
-
-	/* find the part theyre after */
-	for (i = 0; i < number; i++)
-	{
-		if (starts[tmp])
-			tmp++;
-	}
-
-	/* if there is one there, return the part data */
-	/* a '1' means 'Reserved' ATM */
-	if (starts[tmp] > 1)
-	{
-		ret = (struct st_part *) malloc (sizeof (struct st_part));
-		if (!ret)
-			return NULL;
-
-		ret->start = starts[tmp];
-		ret->count = counts[tmp];
-
-		return ret;
-	}
-	return NULL;
-}
-#else
 char *st_fileinfo_get_name (int file_type)
 {
 	if (file_type > ST_FILE_TYPES)
@@ -706,7 +475,6 @@ char *st_fileinfo_get_name (int file_type)
 
 	return get_name_of_file (file_type);
 }
-#endif
 
 int curr_open (long start)
 {
@@ -742,10 +510,16 @@ int curr_open (long start)
 
 	i = 0;
 	if (inp)
-	{
+       	{
 		i = fseek (inp, start, SEEK_SET);
+		if (i)
+		{
+			fclose (inp);
+			inp = 0;
+		}
 	}
-	return (i == 0 ? (int) inp : 0);
+
+	return ((int) inp);
 }
 
 static int st_open ()
@@ -777,44 +551,6 @@ static int st_close_file (void)
 	fclose (inp);
 	return (0);
 }
-
-#ifdef DONT_USE_XML
-int st_fingerprint (void)
-{
-	int i = 0, z = 0;
-	unsigned char input_fp[16];
-
-	curr = 5;
-
-	set_starts_at = 0;
-
-	i = st_open ();
-	if (i)
-	{
-		fread (input_fp, 1, 16, inp);
-
-/* compare fingerprints etc... */
-		for (i = 0; i < ST_FILE_TYPES; i++)
-		{
-			for (z = 0; z < 16; z++)
-				if (input_fp[z] != st_files[i].fingerprint[z])
-					break;
-
-			if (z == 16)
-			{
-				st_close_file ();
-				return i;
-			}
-		}
-		st_close_file ();
-		return (254);
-	}
-	else
-	{
-		return (255);
-	}
-}
-#endif
 
 char *st_autofind (int st_file_version, char *base_dir)
 {
@@ -978,15 +714,18 @@ static struct st_table *read_table (FILE *input, struct st_table *root)
 
 		fread (temp_text, 1, 6, input);
 		temp_text[6] = 0;
-		fgetc (input);
-		fgetc (input);
+
+		fgetc (inp);
+		fgetc (inp);
 		if (strstr (temp_text, "\""))
 		{
 			fseek (input, -7, SEEK_CUR);
 			while ((c = getc (input)) != '\"');
 			str_text = (strstr (temp_text, "\""));
 			str_text[0] = 0;
-		}
+		} else
+			while ((getc (input) != '\"'))
+				;
 
 		curr_tbl->fnbase = temp_text;
 		z = 0;
@@ -1951,6 +1690,8 @@ struct st_table *get_table_entry_by_fnbase (struct st_table *tbl, char *fnbase)
 struct st_table *get_table_entry_by_title (struct st_table *tbl, char *title)
 {
 	struct st_table *root=tbl;
+	char *temp;
+
 	if (!title)
 		return NULL;
 	while (tbl)
@@ -1962,6 +1703,16 @@ struct st_table *get_table_entry_by_title (struct st_table *tbl, char *title)
 	if (strlen (title) > 14)
 		if (!strncmp (title + 5, "Star Trek", 9))
 			return (get_table_entry_by_title (root, title + 4));
+
+	if (*title != '*')
+	{
+		temp = (char *) malloc (strlen (title) + 3);
+		sprintf (temp, "* %s", title);
+		root = get_table_entry_by_title (root, temp);
+		free (temp);
+		return root;
+	}
+
 	return NULL;
 }
 
@@ -2158,6 +1909,79 @@ static struct ency_titles *sort_entries (struct ency_titles *root, int section, 
 		return (root);
 }
 
+struct ency_titles *read_entry (FILE *inp, int options)
+{
+	int return_body_was;
+	char c;
+	char *temp_text = NULL;
+	struct ency_titles *root_title = NULL;
+	char *ttl = NULL;
+	struct st_ency_formatting *text_fmt = NULL;
+	long filepos;
+
+	root_title = NULL;
+	return_body_was = st_return_body;
+	st_return_body = 1;
+
+	filepos = ftell (inp);
+
+	root_title = (struct ency_titles *) malloc (sizeof (struct ency_titles));
+
+	if (root_title == NULL)
+	{
+		return (st_title_error (2));
+	}
+
+	if (options & ST_OPT_NO_FMT)
+	{
+		while ((getc (inp) != '@'));
+		getc (inp);
+	} else
+		text_fmt = st_return_fmt ();
+
+	ttl = st_return_title ();
+
+	c = getc (inp);
+
+	if (options & ST_OPT_RETURN_BODY)
+		temp_text = st_return_text (options);
+
+/* copy pointer stuff over */
+	root_title->filepos = filepos;
+	root_title->title = ttl;
+	root_title->text = temp_text;
+	root_title->next = NULL;
+	root_title->name = NULL;
+	root_title->fmt = text_fmt;
+	root_title->err = 0;
+	st_return_body = return_body_was;
+
+	return (root_title);
+}
+
+struct ency_titles *st_read_title_at (long filepos, int options)
+{
+	FILE *input;
+	struct ency_titles *ret=NULL;
+
+	input = (FILE *) curr_open (filepos);
+	if (!input)
+	{
+		return (st_title_error (1));
+	}
+
+	ret = read_entry (input, options);
+
+	fclose (inp);
+
+	return (ret);
+}
+
+struct ency_titles *st_get_title_at (long filepos)
+{
+	return (st_read_title_at (filepos, ST_OPT_RETURN_BODY));
+}
+
 void add_to_block_cache (int block_id, int id, long filepos)
 {
 	if (cache)
@@ -2195,6 +2019,7 @@ void load_block_cache (void)
 			{
 				inp = (FILE *) curr_open (part->start);
 				if (inp)
+				{
 					for (i=part->start_id;i<part->start_id + part->bcount;i++)
 					{
 						if (i > part->start_id)
@@ -2216,6 +2041,8 @@ void load_block_cache (void)
 							}
 						}
 					}
+					fclose (inp);
+				}
 			}
 			free (part);
 		}
@@ -2246,7 +2073,8 @@ long get_block_pos_from_cache (int block_id, int id)
 
 static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 {
-	FILE *inp;
+	static struct ency_titles *ret;
+	FILE *input;
 	long filepos;
 
 	if (!block_id || !id)
@@ -2259,13 +2087,18 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 
 	if (filepos >= 0)
 	{
-		inp = (FILE *) curr_open (filepos);
-		if (!inp)
+		input = (FILE *) curr_open (filepos);
+		if (!input)
+				fprintf (stderr, "Oh damn! curr_open() failed for %ld (entry %d:%d)\n(%s)\n", filepos, block_id, id, strerror (errno));
+		if (!input)
 			return NULL;
 
-		return (st_read_title_at (ftell (inp), options));
-		fclose (inp);
+		ret = read_entry (input, options);
+		fclose (input);
+		return (ret);
 	}
+
+	fprintf (stderr, "Uhoh - entry not found @ %d:%d%s\n", block_id, id, (filepos == -2) ? ", retrying" : "");
 
 	if (filepos == -2)
 		return (get_entry_by_id (block_id+1, id, options));
@@ -2714,66 +2547,6 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 		return (NULL);
 	}
 
-}
-
-struct ency_titles *st_read_title_at (long filepos, int options)
-{
-	int return_body_was;
-	char c;
-	char *temp_text = NULL;
-	int i = 0;
-	struct ency_titles *root_title = NULL, *curr_title = NULL;
-	char *ttl = NULL;
-	struct st_ency_formatting *text_fmt = NULL;
-
-	root_title = NULL;
-	return_body_was = st_return_body;
-	st_return_body = 1;
-	set_starts_at = filepos;
-	curr = 5;
-
-	if (!st_open ())
-	{
-		return (st_title_error (1));
-	}
-	root_title = (struct ency_titles *) malloc (sizeof (struct ency_titles));
-
-	if (root_title == NULL)
-	{
-		return (st_title_error (2));
-	}
-
-	if (options & ST_OPT_NO_FMT)
-	{
-		while ((getc (inp) != '@'));
-		getc (inp);
-	} else
-		text_fmt = st_return_fmt ();
-
-	ttl = st_return_title ();
-
-	c = getc (inp);
-
-	if (options & ST_OPT_RETURN_BODY)
-		temp_text = st_return_text (options);
-
-/* copy pointer stuff over */
-	root_title->filepos = filepos;
-	root_title->title = ttl;
-	root_title->text = temp_text;
-	root_title->next = NULL;
-	root_title->name = NULL;
-	root_title->fmt = text_fmt;
-	root_title->err = 0;
-	st_return_body = return_body_was;
-	st_close_file ();
-
-	return (root_title);
-}
-
-struct ency_titles *st_get_title_at (long filepos)
-{
-	return (st_read_title_at (filepos, ST_OPT_RETURN_BODY));
 }
 
 static struct st_photo st_parse_captions (char *fnbasen)

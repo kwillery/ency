@@ -27,16 +27,7 @@
 
 #include <stdio.h>
 
-#ifdef DONT_USE_XML
-#define ST_FILE_TYPES 5
-#define ST_FILE_ENCY98 0
-#define ST_FILE_OMNI1 1
-#define ST_FILE_OMNI2 2
-#define ST_FILE_TNG1 3
-#define ST_FILE_DS91 4
-#else
 #define ST_FILE_TYPES st_count_filetypes()
-#endif
 
 #define ST_FILE_CURR -1
 #define ST_FILE_UNKNOWN 254
@@ -130,14 +121,6 @@ struct st_media
 	struct st_photo swf;
 };
 
-#ifdef DONT_USE_XML
-struct st_part
-{
-	long start;
-	long count;
-};
-#endif
-
 /* Initialisation & De-init */
 int st_init (void);
 int st_finish (void);
@@ -173,9 +156,6 @@ struct ency_titles *st_read_title_at (long, int options);
 
 /* Takes an error # & returns a string */
 char *st_nice_error (int);
-#ifdef DONT_USE_XML
-int st_fingerprint (void);
-#endif DONT_USE_XML
 char *st_autofind (int, char *);
 
 /* dealing w/ structs */
