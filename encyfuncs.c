@@ -48,9 +48,9 @@ static const long int st_caption_starts_at[] =
 
 /* for videos */
 static const long st_video_table_starts_at[] =
-{0x50e690, 0,0x59baaa,0,0x5b9820,0,1,0,1,0};
+{0x50e690, 0,0x59baaa,0,0x5b9820,0,0x3967aa,0,0x37684a,0};
 static const long st_video_caption_starts_at[] =
-{0x4FCED6, 0,0x621174,0,0x65860a,0,1,0,1,0};
+{0x4FCED6, 0,0x621174,0,0x65860a,0,0x2bba98,0,0x322968,0};
 
 /* the actual encyclopedia entries */
 static const long int ency_starts_at[] =
@@ -81,8 +81,8 @@ static const long int st_table_lastone[] =
 static const long int st_caption_lastone[] =
 {5, 0, 4, 0, 4, 0, 5, 0, 4, 0};
 
-static const long st_video_table_lastone[] = {26,0,26,0,26,0,1,0,1,0};
-static const long st_video_caption_lastone[] = {1,0,1,0,1,0,1,0,1,0};
+static const long st_video_table_lastone[] = {26,0,26,0,26,0,26,0,26,0};
+static const long st_video_caption_lastone[] = {1,0,1,0,1,0,24,0,15,0};
 
 static long int curr_starts_at, curr_lastone, curr;
 
@@ -712,7 +712,8 @@ struct st_caption *st_get_video_captions (void)
               root_cpt = curr_cpt;
 
             do {
-              while ((c != '\"') && (c != '[') && (c = getc (inp)) != (' '));
+              while ((c != '\"') && (c != '[') && (c = getc (inp)) != (' '))
+                ;
 
               c = getc (inp);
             }
@@ -722,6 +723,8 @@ struct st_caption *st_get_video_captions (void)
               c = ungetc (c, inp);
             if ((c = getc (inp)) != '\"')
               c = ungetc (c, inp);
+            if ((c = getc (inp)) != ':')
+              { c = ungetc (c, inp);
             c = 0;
 
             temp_text = malloc (8);
@@ -753,7 +756,7 @@ struct st_caption *st_get_video_captions (void)
             if (last_cpt)
               last_cpt->next = curr_cpt;
             last_cpt = curr_cpt;
-            curr_cpt = NULL;
+            curr_cpt = NULL;} else {free (root_cpt); root_cpt = NULL;}
           }                     /* end main loop */
 
         }
@@ -1348,7 +1351,7 @@ static struct st_photo st_parse_captions (char *fnbasen)
 
   strcpy (photo.file, "");
   strcpy (photo.caption, "");
-  while (st_pcpts) {
+  while (st_pcpts && (!strlen(photo.file))) {
     if (!strcmp (fnbasen, st_pcpts->fnbasen)) {
       strcpy (photo.file, fnbasen);
       strcpy (photo.caption, st_pcpts->caption);
@@ -1368,7 +1371,8 @@ static struct st_photo st_parse_video_captions (char *fnbasen)
 
   strcpy (photo.file, "");
   strcpy (photo.caption, "");
-  while (st_vcpts) {
+
+  while (st_vcpts && (!strlen(photo.file))) {
     if (!strcmp (fnbasen, st_vcpts->fnbasen)) {
       strcpy (photo.file, fnbasen); strcat (photo.file, "1");
       strcpy (photo.caption, st_vcpts->caption);
@@ -1390,6 +1394,7 @@ struct st_media *st_get_media (char *search_string)
   struct st_table *root_ptbl = NULL;
   struct st_table *root_vtbl = NULL;
   struct st_caption *root_pcpt = NULL;
+  struct st_caption *root_vcpt = NULL;
 
   if (st_loaded_media ())
   {
@@ -1397,6 +1402,7 @@ struct st_media *st_get_media (char *search_string)
     root_ptbl = st_ptbls;
     root_pcpt = st_pcpts;
     root_vtbl = st_vtbls;
+    root_vcpt = st_vcpts;
 
     temp_fnbase = malloc (9);
 
@@ -1407,9 +1413,9 @@ struct st_media *st_get_media (char *search_string)
     while (st_ptbls) {
       if ((!strcmp (st_ptbls->title, search_string)) || (!strcmp (st_ptbls->title, title_with_dot))) {
 	for (i = 0; i < 5; i++) {
-	  if (!media)
+	  if (!media) {
 	    media = malloc (sizeof (struct st_media));
-//	  media->video = NULL;
+            strcpy (media->video.file,""); }
 	  sprintf (temp_fnbase, "%s%d", st_ptbls->fnbase, i + 1);
 	  media->photos[i] = st_parse_captions (temp_fnbase);
 	  if (strlen(media->photos[i].file)) media_found = 1;
@@ -1421,13 +1427,11 @@ struct st_media *st_get_media (char *search_string)
   
   end_photo_search:
 
-    strcpy(media->video.file,"");
-
     while (st_vtbls) {
       if ((!strcmp (st_vtbls->title, search_string)) || (!strcmp (st_vtbls->title, title_with_dot))) {
-        if (!media)
+        if (!media) {
           media = malloc (sizeof (struct st_media));
-//        sprintf (temp_fnbase, "%s%d", st_vtbls->fnbase, 1);
+          strcpy (media->video.file,""); }
         media->video = st_parse_video_captions (st_vtbls->fnbase);
         media_found = 1;
         goto end_video_search;
@@ -1447,6 +1451,7 @@ struct st_media *st_get_media (char *search_string)
     st_ptbls = root_ptbl;
     st_pcpts = root_pcpt;
     st_vtbls = root_vtbl;
+    st_vcpts = root_vcpt;
 
     free (temp_fnbase);
     free (title_with_dot);
