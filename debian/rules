@@ -51,8 +51,8 @@ binary-arch:	checkroot build
 		prefix=`pwd`/debian/tmp/usr install-bin install-dev
 	$(MAKE) INSTALL_PROGRAM='install -c' \
 		prefix=`pwd`/debian/tmp/usr/share install-doc
-	$(MAKE) INSTALL_PROGRAM='install -c' \
-		prefix=`pwd`/debian/tmp/usr/etc install-data
+	$(MAKE) INSTALL_PROGRAM='install -c -m 0644' \
+		ETCDIR=`pwd`/debian/tmp/etc install-data
 	dpkg-shlibdeps findenc htmlenc scanenc
 	dpkg-gencontrol
 	chown -R root.root debian/tmp
