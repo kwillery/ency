@@ -38,7 +38,6 @@
 
 static char *ency_filename = NULL;
 
-int st_return_body = 1;
 int st_ignore_case = 0;
 static int st_file_type = 0;
 
@@ -1297,7 +1296,6 @@ static struct st_table *get_table_entry_by_title (struct st_table *tbl, char *ti
 
 static struct ency_titles *read_entry (FILE *inp, int options)
 {
-	int return_body_was;
 	char c;
 	char *temp_text = NULL;
 	struct ency_titles *root_title = NULL;
@@ -1306,8 +1304,6 @@ static struct ency_titles *read_entry (FILE *inp, int options)
 	long filepos;
 
 	root_title = NULL;
-	return_body_was = st_return_body;
-	st_return_body = 1;
 
 	filepos = ftell (inp);
 
@@ -1340,7 +1336,6 @@ static struct ency_titles *read_entry (FILE *inp, int options)
 	root_title->name = NULL;
 	root_title->fmt = text_fmt;
 	root_title->err = 0;
-	st_return_body = return_body_was;
 
 	return (root_title);
 }
@@ -1480,14 +1475,14 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 	if (!block_id || !id)
 		return NULL;
 
-	if ((st_return_body == 0) && (options & ST_OPT_NO_FILEPOS))
+	if ((options & ST_OPT_RETURN_BODY == 0) && (options & ST_OPT_NO_FILEPOS))
 		filepos = 1; /* can't be 0 'cos of the if() below */
 	else
 		filepos = get_block_pos_from_cache (block_id, id, 1);
 
 	if (filepos >= 0)
 	{
-		if (st_return_body)
+		if (options & ST_OPT_RETURN_BODY)
 		{
 			inp = curr_open (filepos);
 			if (!inp)
@@ -1941,11 +1936,6 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 		st_ignore_case = 0;
 	else
 		st_ignore_case = 1;
-
-	if (options & ST_OPT_RETURN_BODY)
-		st_return_body = 1;
-	else
-		st_return_body = 0;
 
 	if (options & ST_OPT_MATCH_SUBSTRING)
 		exact = 0;
