@@ -2052,6 +2052,10 @@ void load_block_cache (void)
 								add_to_block_cache (i, id, ftell (inp)-1);
 							}
 						}
+						/* So we can determine the size of the last entry */
+						/* in a block later. This is *not* a real entry,  */
+						/* and thus should never be read.                 */
+						add_to_block_cache (i, ++id, ftell (inp)-1);
 					}
 					fclose (inp);
 				}
@@ -2132,6 +2136,16 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 			ret->block_id = block_id;
 			ret->id = id;
 		}
+
+		/* Determine the length in bytes used by the entry */
+		/* (Formatting & all). This is used when scoring in*/
+		/* FT searches */
+		if (cache_quick && cache_quick->next)
+		{
+			ret->length = (cache_quick->next->filepos - cache_quick->filepos);
+		} else
+			ret->length = 1;
+
 		return (ret);
 	}
 
@@ -2576,9 +2590,9 @@ struct entry_scores *find_words (struct entry_scores *root, char *words, struct 
 	return scores;
 }
 
-struct entry_scores *sort_scores (struct entry_scores *scores)
+struct ency_titles  *sort_scores (struct ency_titles *scores)
 {
-	struct entry_scores *curr=NULL, *last=NULL, *last_last=NULL, *tmp=NULL;
+	struct ency_titles *curr=NULL, *last=NULL, *last_last=NULL, *tmp=NULL;
 	int needs_sorting=1;
 
 	if (!scores)
@@ -2622,6 +2636,7 @@ struct ency_titles *st_find_fulltext (char *search_string, int section, int opti
 	char *title;
 	char single_word[64];
 	int bad;
+	float mult;
 
 	if (!ft_list_has_section (section))
 		load_ft_list (section);
@@ -2650,8 +2665,6 @@ struct ency_titles *st_find_fulltext (char *search_string, int section, int opti
 			search_string++;
 		scores = find_words (scores, single_word, ftlist);
 	}
-
-	scores = sort_scores (scores);
 
 	while (scores)
 	{
@@ -2690,6 +2703,7 @@ struct ency_titles *st_find_fulltext (char *search_string, int section, int opti
 			if (curr && !bad)
 			{
 				curr->name = strdup (title);
+				curr->score = scores->score + ((float) scores->score / ((float)curr->length / (float)1000 + 1));
 				curr->next = NULL;
 			}
 		}
@@ -2698,6 +2712,17 @@ struct ency_titles *st_find_fulltext (char *search_string, int section, int opti
 		free (last_score);
 	}
 
+	root = sort_scores (root);
+
+	curr = root;
+	mult = (float) 100 / curr->score;
+	while (curr)
+	{
+		curr->score *= mult;
+		if (curr->score > 100)
+			curr->score = 100;
+		curr = curr->next;
+	}
 
 	return root;
 }

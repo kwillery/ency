@@ -88,6 +88,8 @@ struct ency_titles
 	int block_id;
 	int id;
 	long filepos;
+	int length; /* N.B. Not the real length! */
+	float score;
 };
 
 struct st_table
