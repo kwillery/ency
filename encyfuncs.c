@@ -73,6 +73,9 @@ static long int curr_starts_at, curr;
 #define ST_SECT_PCPT 12
 #define ST_SECT_VCPT 13
 
+/* the attribs table */
+static struct st_table *entrylist_head=NULL;
+
 /* for pictures */
 static struct st_table *st_ptbls = NULL;
 static struct st_caption *st_pcpts = NULL;
@@ -920,7 +923,7 @@ static struct st_table *st_get_video_table (int section)
 				while (curr_tbl->next)
 					curr_tbl = curr_tbl->next;
 
-				curr_tbl->next = read_attribs_table (inp, section, part->count);
+				curr_tbl->next = read_attribs_table (inp, part->section, part->count);
 			}
 			else
 				curr_tbl = root_tbl = read_attribs_table (inp, section, part->count);
@@ -942,7 +945,7 @@ int st_load_media (void)
 	if (!st_pcpts)
 		st_pcpts = st_get_captions (ST_SECT_PCPT);
 	if (!st_vtbls)
-		st_vtbls = st_get_video_table (ST_SECT_VTBL);
+		st_vtbls = entrylist_head;
 	if (!st_vcpts)
 		st_vcpts = st_get_captions (ST_SECT_VCPT);
 
@@ -1218,8 +1221,6 @@ static struct ency_titles *st_title_error (int error_no)
 }
 
 /* sorted episode list stuff */
-static struct st_table *entrylist_head=NULL;
-
 static int entry_list_has_section (section)
 {
 	struct st_table *lst;
@@ -1233,43 +1234,14 @@ static int entry_list_has_section (section)
 	return 0;
 }
 
-static int load_entry_list (int section)
-{
-	struct st_table *curr;
-
-	curr = entrylist_head;
-	if (!curr)
-	{
-		entrylist_head = st_get_video_table (section);
-		if (entry_list_has_section (section))
-			return 1;
-		else
-			return 0;
-	}
-
-	while (curr->next)
-		curr = curr->next;
-
-	if (!entry_list_has_section (section))
-	{
-		curr->next = st_get_video_table (section);
-		if (entry_list_has_section (section))
-			return 1;
-	} else
-		return 1;
-	return 0;
-}
-
 static int load_entry_lists (void)
 {
-	int i;
+	if (!entrylist_head)
+		entrylist_head = st_get_video_table (-1);
+	
+	st_vtbls = entrylist_head;
 
-	for (i=0;i<3;i++)
-	{
-		load_entry_list (i);
-	}
-
-	return (entrylist_head ? 1 : 0);
+	return 1;
 }
 
 static char *get_fnbase (struct st_table *tbl, char *title)
@@ -1576,7 +1548,6 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 	struct ency_titles *root = NULL, *curr = NULL;
 	struct st_table *tmp = NULL;
 	struct st_table *tbl=NULL;
-	int skip;
 
 	if (!entry_list_has_section (section))
 		if (!load_entry_lists ())
@@ -1590,21 +1561,7 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 	{
 		if (tmp->section == section)
 		{
-			skip = 0;
-			if (section == 1) /* Episodes */
-			{
-				if (isdigit(tmp->title[0]) || isblank (tmp->title[0]))
-				{
-					if (!(options & ST_OPT_SORTEPIS) && isdigit(tmp->title[0]))
-						skip = 1;
-				} else
-				{
-					if (options & ST_OPT_SORTEPIS)
-						skip = 1;
-				}
-			}
-
-			if (!skip && check_match (search_string, tmp->title, exact))
+			if (check_match (search_string, tmp->title, exact))
 			{
 				if (tbl)
 					if (strcmp (tmp->title, tbl->title) >= 0)
@@ -2006,11 +1963,15 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 	else
 		exact = 1;
 
+	if ((section == ST_SECT_EPIS) && (options & ST_OPT_SORTEPIS))
+		section = 3;
+
 	switch (section)
 	{
 	case ST_SECT_ENCY:
 	case ST_SECT_EPIS:
 	case ST_SECT_CHRO:
+	case ST_SECT_EPIS_SORTED:
 		if (options & ST_OPT_FT)
 			return (st_find_fulltext (search_string, section, options));
 

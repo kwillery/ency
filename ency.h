@@ -33,9 +33,13 @@
 #define ST_FILE_UNKNOWN 254
 
 /* Options to st_find() */
+/* NB. ST_SECT_EPIS_SORTED is equivalent to
+   ST_SECT_EPIS w/ ST_OPT_EPIS_SORTED as an
+   option */
 #define ST_SECT_ENCY 0
 #define ST_SECT_EPIS 1
 #define ST_SECT_CHRO 2
+#define ST_SECT_EPIS_SORTED 3
 #define ST_OPT_CASE_SENSITIVE 1
 #define ST_OPT_RETURN_BODY 2
 #define ST_OPT_MATCH_SUBSTRING 4

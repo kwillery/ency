@@ -84,24 +84,6 @@ struct block *get_block(FILE *inp, int reverse)
 	return b;
 }
 
-char *sections[]=
-{
-	"Unimportant",
-	"Attrib [Ency]",
-	"Attrib [Epis]",
-	"Attrib [Chro]",
-	"Lookup",
-	"Captions",
-	"FTList [Ency]",
-	"FTList [Epis]",
-	"FTList [Chro]",
-	"Text [Ency]",
-	"Text [Epis]",
-	"Text [Chro]",
-	"Captions [Vid]",
-	"List [Epis]",
-};
-
 void identify_section (struct st_part *part)
 {
 	char *temp;
@@ -123,10 +105,11 @@ void identify_section (struct st_part *part)
 			part->section = 1;
 		else if (strstr (temp, "_chro"))
 			part->section = 2;
-		else if (strstr (temp, "_epissub"))
-			part->section = 1; /* should do something else */
 		else
 			part->type = 0;
+
+		if (strstr (temp, "_epissub"))
+			part->section = 3;
 		return;
 	}
 
