@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <files>
   <file>
-    <name>Unknown encyclopedia</name>
+    <name>Encyclopedia 3.0</name>
     <mainfile>data99.cxt</mainfile>
-    <datadir>Please_fill_this_field_in</datadir>
-    <photodir>Please_fill_this_field_in</photodir>
-    <videodir>Please_fill_this_field_in</videodir>
+    <datadir>ENCYprogram/Pro</datadir>
+    <photodir>Media99</photodir>
+    <videodir>Video98</videodir>
     <append_char/>
     <fingerprint>58;46;49;52;12;a;bc;0;33;39;56;4d;70;61;6d;69;</fingerprint>
       <section name="Encyclopedia">
@@ -94,11 +94,11 @@
       <exception type="LU fnbase" from="EEntNG" to="EEntOS"/>
   </file>
   <file>
-    <name>Unknown encyclopedia</name>
+    <name>Encyclopedia</name>
     <mainfile>Data.cxt</mainfile>
-    <datadir>Please_fill_this_field_in</datadir>
-    <photodir>Please_fill_this_field_in</photodir>
-    <videodir>Please_fill_this_field_in</videodir>
+    <datadir>Ency98</datadir>
+    <photodir>media98</photodir>
+    <videodir>video98</videodir>
     <append_char/>
     <fingerprint>52;49;46;58;0;99;d7;6e;4d;43;39;35;69;6d;61;70;</fingerprint>
       <section name="Encyclopedia">
