@@ -70,3 +70,6 @@ ency-api.txt: ency-api.sgml
 	sgml2txt ency-api.sgml
 ency-api.html: ency-api.sgml
 	sgml2html ency-api.sgml
+
+gtkscan: gtkscan.c libency.a
+	$(CC) $(CFLAGS) -o gtkscan gtkscan.c libency.a `gtk-config --cflags` `gtk-config --libs`
