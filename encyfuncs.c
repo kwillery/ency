@@ -343,7 +343,7 @@ char *st_fileinfo_get_name (int file_type)
 		return (st_files[file_type].name);
 }
 
-const char *st_fileinfo_get_data (int file, st_filename_type type)
+static const char *st_fileinfo_get_data (int file, st_filename_type type)
 {
 	if ((file < 0) || (file >= ST_FILE_TYPES))
 		return NULL;
@@ -1499,7 +1499,7 @@ static struct ency_titles *st_find_in_cache (int section, char *search_string, i
 	return (r_r);
 }
 
-int st_guess_section (char *title, char *text, int last_section)
+static int st_guess_section (char *title, char *text, int last_section)
 {
 	char *episode_starts[5] =
 	{
