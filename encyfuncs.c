@@ -2675,6 +2675,9 @@ int st_get_thumbnail(char *name, char *file)
 	case 58*40:
 		w = 58;
 		break;
+	case 60*41:
+		h = 41;
+		break;
 	case 60*39:
 		h = 39;
 		break;
@@ -2697,6 +2700,9 @@ int st_get_thumbnail(char *name, char *file)
 			break;
 		case 58*40:
 			w = 58;
+			break;
+		case 60*41:
+			h = 41;
 			break;
 		case 60*39:
 			h = 39;
