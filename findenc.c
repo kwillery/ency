@@ -28,7 +28,6 @@
 #include <getopt.h>
 #include "ency.h"
 
-extern int st_ignore_case;
 extern int optind;
 
 void print_usage (void)
