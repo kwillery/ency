@@ -89,10 +89,30 @@ static void st_clear_entry_list (void);
 /* init/de-init stuff */
 int st_init (void)
 {
+	char *temp_fn = NULL;
+	int i;
+
 	if (count_files() == 0) /* If there isnt an RC file already loaded... */
 		load_rc_file_info(NULL);
 	if (!count_files())
 		fprintf (stderr, "ency: Warning - could not load RC file\n");
+
+	temp_fn = getenv ("ENCY_FILENAME");
+	if (temp_fn == NULL)
+	{
+		for (i=0;i<ST_FILE_TYPES;i++)
+		{
+			if ((temp_fn = st_autofind (i,".")))
+			{
+				st_set_filename (temp_fn);
+				free (temp_fn);
+				break;
+			}
+		}
+	}
+	else
+		st_set_filename (temp_fn);
+
 	st_file_type = st_fingerprint ();
 	return (st_file_type >= 254 ? 0 : 1);
 }
@@ -459,6 +479,7 @@ int st_set_filename (char *filename)
 		{
 			free (ency_filename);
 			ency_filename = NULL;
+			st_file_type = 255;
 			return (0);
 		}
 	}
@@ -497,57 +518,27 @@ FILE *curr_open (char *filename, long start)
 {
 	FILE *inp;
 	int i = 0;
-	char *temp_fn = NULL;
 
 	DBG ((stderr, "curr_open: %s, %ld (ency_filename = %s)\n", filename, start, ency_filename));
 
-	if (filename)
+	if (!filename && !ency_filename)
 	{
-		inp = fopen (filename, "rb");
-
-		i = 0;
-		if (inp)
-		{
-			i = fseek (inp, start, SEEK_SET);
-			if (i)
-			{
-				fclose (inp);
-				inp = 0;
-			}
-		}
-		return inp;
+		DBG ((stderr, "curr_open: no filenames available\n"));
+		return NULL;
 	}
 
-	if (ency_filename == NULL)
-	{
-		temp_fn = getenv ("ENCY_FILENAME");
-		if (temp_fn == NULL)
-		{
-			for (i=0;i<ST_FILE_TYPES;i++)
-			{
-				if ((temp_fn = st_autofind (i,".")))
-				{
-					st_set_filename (temp_fn);
-					free (temp_fn);
-					break;
-				}
-			}
-		}
-		else
-			st_set_filename (temp_fn);
+	if (!filename)
+		filename = ency_filename;
 
-		if (ency_filename == NULL) return (0);
-	}
-	inp = fopen (ency_filename, "rb");
+	inp = fopen (filename, "rb");
 
-	i = 0;
 	if (inp)
-       	{
+	{
 		i = fseek (inp, start, SEEK_SET);
 		if (i)
 		{
 			fclose (inp);
-			inp = 0;
+			inp = NULL;
 		}
 	}
 
