@@ -52,7 +52,9 @@ typedef enum
 	data,
 	picture,
 	video,
-	append_char
+	append_char,
+	prepend_year,
+	append_series
 } st_filename_type;
 
 struct st_ency_formatting

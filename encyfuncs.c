@@ -96,21 +96,23 @@ struct st_file_info
 	char *pic_dir;
 	char *vid_dir;
 	int append_char;
+	int prepend_year;
+	int append_series;
 	int fingerprint[16];
 	long int filesize;
 };
 
 const struct st_file_info st_files[] =
 {
-	{"Encyclopedia", "Data.cxt", "Ency98", "media98", "video98", 1,
+	{"Encyclopedia", "Data.cxt", "Ency98", "media98", "video98", 1, 1, 1,
 	 {0x52, 0x49, 0x46, 0x58, 0x0, 0x99, 0xD7, 0x6E, 0x4D, 0x43, 0x39, 0x35, 0x69, 0x6D, 0x61, 0x70}, 1},
-	{"Omnipedia", "OMNI1.DXR", "", "media", "media", 1,
+	{"Omnipedia", "OMNI1.DXR", "", "media", "media", 1, 1, 1,
 	 {0x58, 0x46, 0x49, 0x52, 0xBC, 0x42, 0xB7, 0x0, 0x33, 0x39, 0x56, 0x4D, 0x70, 0x61, 0x6D, 0x69}, 1},
-	{"Omnipedia (updated)", "omni_v2.dxr", "startrek", "media", "media", 1,
+	{"Omnipedia (updated)", "omni_v2.dxr", "startrek", "media", "media", 1, 1, 1,
 	 {0x52, 0x49, 0x46, 0x58, 0x0, 0xFa, 0x1C, 0x7A, 0x4D, 0x56, 0x39, 0x33, 0x69, 0x6D, 0x61, 0x70}, 1},
-	{"TNG Episode guide", "eg_tng.dxr", "source", "media", "media", 1,
+	{"TNG Episode guide", "eg_tng.dxr", "source", "media", "media", 1, 0, 0,
 	 {0x52, 0x49, 0x46, 0x58, 0x00, 0x51, 0x91, 0xF4, 0x4D, 0x56, 0x39, 0x33, 0x69, 0x6D, 0x61, 0x70}, 1},
-	{"DS9 Episode guide", "eg_ds9.dxr", "ds9", "media", "media", 1,
+	{"DS9 Episode guide", "eg_ds9.dxr", "ds9", "media", "media", 1, 0, 0,
 	 {0x52, 0x49, 0x46, 0x58, 0x0, 0x4C, 0xAE, 0xC4, 0x4D, 0x56, 0x39, 0x33, 0x69, 0x6D, 0x61, 0x70}, 1}
 };
 
@@ -356,6 +358,10 @@ const char *st_fileinfo_get_data (int file, st_filename_type type)
 			return st_files[file].vid_dir;
 		case append_char:
 			return st_files[file].append_char ? "yes" : NULL;
+		case prepend_year:
+			return st_files[file].prepend_year ? "yes" : NULL;
+		case append_series:
+			return st_files[file].append_series ? "yes" : NULL;
 		default:
 			return NULL;
 	}
@@ -1330,6 +1336,7 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
 	char *title = NULL, *temp_text = NULL, *new_title = NULL;
 	struct st_ency_formatting *text_fmt = NULL, *kill_fmt = NULL;
 	char last_year[5] = "";
+	int prepend_year=0, append_series=0;
 	root_cache = cache[curr - 1];
 
 	if (!st_open ())
@@ -1337,6 +1344,8 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
 		return (st_title_error (1));
 	};
 
+	prepend_year = (st_fileinfo_get_data (st_file_type, prepend_year) ? 1 : 0);
+	append_series = (st_fileinfo_get_data (st_file_type, append_series) ? 1 : 0);
 	do
 	{
 		no_so_far++;
@@ -1353,7 +1362,7 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
 			title = st_return_title ();
 
 			/* some chronology entries need years prepended */
-			if (curr == 3)
+			if ((curr == 3) && prepend_year)
 			{
 				/* if it's a year, save it */
 				if (strlen (title) == 4)
@@ -1371,7 +1380,7 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
 			}
 
 			/* and episode entries need (TOS) etc. appended */
-			if (curr == 2)
+			if ((curr == 2) && append_series)
 			{
 				getc (inp);
 				c = getc (inp);
