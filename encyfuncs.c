@@ -2410,7 +2410,7 @@ struct ency_titles *st_find_fulltext (char *search_string, int section, int opti
 	struct st_ftlist *fl;
 	struct st_wl *wl;
 	struct ency_titles *root=NULL, *curr=NULL;
-	char *last;
+	char *last, *title;
 
 	if (!ft_list_has_section (section))
 		load_ft_list (section);
@@ -2436,15 +2436,18 @@ struct ency_titles *st_find_fulltext (char *search_string, int section, int opti
 			last = fl->word;
 		if (!strcasecmp (last, search_string))
 		{
-			if (curr)
+			title = get_title (st_ptbls, fl->fnbase);
+			if (title)
 			{
-				curr->next = st_find (get_title (st_ptbls, fl->fnbase), section, options | ST_OPT_CASE_SENSITIVE);
-				curr = curr->next;
-			} else
-			{
-				curr = root = st_find (get_title (st_ptbls, fl->fnbase), section, options | ST_OPT_CASE_SENSITIVE);
+				if (curr)
+				{
+					curr->next = st_find (get_title (st_ptbls, fl->fnbase), section, options | ST_OPT_CASE_SENSITIVE);
+					curr = curr->next;
+				} else
+				{
+					curr = root = st_find (get_title (st_ptbls, fl->fnbase), section, options | ST_OPT_CASE_SENSITIVE);
+				}
 			}
-			
 		}
 		fl = fl->next;
 	}
