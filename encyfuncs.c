@@ -2369,7 +2369,7 @@ struct st_media *st_get_media (char *search_string)
 				if (strlen (media->photos[i].file))
 					media_found = 1;
 			}
-			sprintf (temp_fnbase, "%sf", ret_fnbase);
+			sprintf (temp_fnbase, "%sF", ret_fnbase);
 			media->swf = st_parse_captions (temp_fnbase);
 			if (strlen (media->swf.file))
 				media_found = 1;
@@ -2542,14 +2542,10 @@ int st_get_picture(char *name, char *file, int dfile_type, long width, long heig
 
 int st_get_thumbnail(char *name, char *file)
 {
-	char newname[7+6 + 100];
 	int ret;
 
 	if (!name || !file)
 		return 1;
 
-	strcpy (newname, name);
-	strcat (newname, "T");
-
-	return st_get_picture (newname, file, ST_DFILE_PICON, 60, 40);
+	return st_get_picture (name, file, ST_DFILE_PICON, 60, 40);
 }
