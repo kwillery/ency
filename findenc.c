@@ -171,6 +171,8 @@ int main (int argc, char *argv[])
 					printf ("%s: %s\n", temp_fn, media->audio.caption);
 					free (temp_fn);
 				}
+				if (media->resource)
+					printf ("There is an associated resource: %s\n", media->resource);
 				free (media);
 				media = NULL;
 			}
