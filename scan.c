@@ -73,6 +73,27 @@ static long get_4b_int (FILE *inp, int reverse)
 	return num;
 }
 
+#ifdef BLOCK_EXPORT
+char *blockname=NULL;
+
+static void export_block (FILE *inp, int reverse, char *block, long pos)
+{
+	FILE *out;
+	char name[5]="1234";
+	long size=-1;
+	int i;
+
+	fseek (inp, pos, SEEK_SET);
+	out = fopen (block, "w b");
+	if (!out)
+		printf ("Can't write to file '%s'.\n",block);
+	get_4b_string (inp, name, reverse);
+	size = get_4b_int (inp, reverse);
+	for (i=0;i<size;i++)
+		putc(getc(inp),out);
+}
+#endif
+
 static void identify_section (struct st_block *block)
 {
 	char *temp;
@@ -233,8 +254,14 @@ static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock
 	identify_section (tmp);
 	tmp->start_id = 0;
 	tmp->next = NULL;
-
-//	printf ("found '%s' block '%s' at %ld\n", btype, tmp->name, tmp->start);
+#ifdef PRINT_ALL
+	printf ("found '%s' block '%s' at %ld\n", btype, tmp->name, tmp->start);
+#endif
+#ifdef BLOCK_EXPORT
+        if (blockname)
+                if (!strcasecmp (blockname, tmp->name))
+                        export_block (inp, reverse, blockname, tmp->start-8);
+#endif
 
 	/* We don't want duplicate names being used */
 	/* so we set later ones to Unimportant      */
@@ -280,7 +307,9 @@ static void load_cast_table (FILE *inp)
 		{
 			if (!strcmp (b->name, name))
 			{
-//				printf ("Given id %d to '%s' (%ld).\n", id,p->name,p->start);
+#ifdef PRINT_ALL
+				printf ("Given id %d to '%s' (%ld).\n", id,b->name,b->start);
+#endif
 				b->start_id = id;
 				b=b->next;
 				break;
@@ -298,7 +327,9 @@ static void load_cast_table (FILE *inp)
 		{
 			if (!strcmp (b->name, name))
 			{
-				//printf ("Given id %d to '%s' (%ld) on a restarted search.\n", id,p->name,p->start);
+#ifdef PRINT_ALL
+				printf ("Given id %d to '%s' (%ld) on a restarted search.\n", id,b->name,b->start);
+#endif
 				b->start_id = id;
 				b=b->next;
 				break;
@@ -383,7 +414,9 @@ static void add_block (FILE *inp, int reverse, char *bname, long block_ind, long
 	get_4b_string (inp, name, reverse); /* get 'CASt' */
 	if (strcmp (name, "CASt")) /* It is 'CASt', right? */
 	{
-		//printf ("Not CASt at %d! (%ld). Refer block %d (%d)\n", cast_ind, 0x4C+20*cast_ind, block_ind, block_pos);
+#ifdef PRINT_ALL
+		printf ("Not CASt at %ld! (%ld). Refer block %ld (%ld)\n", cast_ind, 0x4C+20*cast_ind, block_ind, block_pos);
+#endif
 		fseek (inp, orig_pos, SEEK_SET);
 		return;
 	}
@@ -445,7 +478,9 @@ static void fill_block_ids()
 			curr_id = p->start_id;
 		else if (curr_id)
 		{
-//			printf ("Filled id %d to '%s' (%ld)\n",curr_id+1,p->name,p->start);
+#ifdef PRINT_ALL
+			printf ("Filled id %d to '%s' (%ld)\n",curr_id+1,p->name,p->start);
+#endif
 			p->start_id = ++curr_id;
 		}
 		p=p->next;
