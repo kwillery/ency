@@ -71,8 +71,11 @@ struct entry_scores
 /* the attribs table */
 static struct st_table *entrylist_head=NULL;
 
+/* Lookup lists */
+static struct es_list *st_LtoS = NULL;
+static struct es_list *st_StoL = NULL;
+
 /* for pictures */
-static struct st_table *st_ptbls = NULL;
 static struct es_list *st_pcpts = NULL;
 
 /* for videos */
@@ -268,9 +271,8 @@ char *st_lcase_in_place (char *mcase)
 
 	t = mcase;
 
-	/* Naughty! */
 	while (*t)
-		*t++ &= 0x7F;
+		*t++ = tolower(*t);
 
 	return mcase;
 }
@@ -747,98 +749,8 @@ static inline char *get_text_from_file_max_length (FILE *inp, int length)
 	return text;
 }
 
-/* Reads a LU table from 'inp' and appends
- * it to 'root' */
-static struct st_table *read_table (FILE *inp, struct st_table *root)
-{
-	struct st_table *root_tbl = NULL;
-	struct st_table *curr_tbl = NULL;
-	struct st_table *last_tbl = NULL;
-	char c;
-
-	c = getc (inp);
-
-	if (c == 0)
-		return root;
-
-	if (ungetc (getc (inp), inp) == ':')
-		return root;
-
-	if ((c != '[') && (c != '\"'))
-		return root;
-
-	if (c != '[')
-		ungetc (c, inp);
-
-	if (root)
-	{
-		root_tbl = root;
-		last_tbl = root;
-		while (last_tbl->next)
-			last_tbl = last_tbl->next;
-	}
-
-	while (!feof(inp))
-	{
-		curr_tbl = st_new_table ();
-
-		if (curr_tbl == NULL)
-			return NULL;
-
-		curr_tbl->fnbase = get_text_from_file_max_length (inp, 10);
-
-		do {
-			c = getc (inp);
-		} while ((c == ' ') || (c == ':'));
-		ungetc (c, inp);
-
-		curr_tbl->title = st_cleanstring(get_text_from_file (inp));
-
-		if (last_tbl)
-			last_tbl->next = curr_tbl;
-		else
-			root_tbl = curr_tbl;
-
-		last_tbl = curr_tbl;
-		curr_tbl = NULL;
-
-		do {
-			c = getc (inp);
-		} while ((c == ' ') || (c == ','));
-		ungetc (c, inp);
-		if (c == ']' || c == 0)
-			break;
-	}
-	return root_tbl;
-}
-
-/* Loads all of the photo/picture lookup tables
- * for the current file */
-static struct st_table *st_get_table ()
-{
-	FILE *inp;
-	int count = 0;
-	struct st_table *root_tbl = NULL;
-	struct st_block *block;
-
-	while ((block = get_block (st_file_type, ST_DFILE_DATA, ST_SECT_PTBL, 0, count, 0)))
-	{
-		if (!(inp = open_block (ST_DFILE_DATA, block)))
-			return (NULL);
-
-		fseek (inp, 12, SEEK_CUR);
-		root_tbl = read_table (inp, root_tbl);
-
-		fclose (inp);
-
-		count++;
-	}
-	return (root_tbl);
-}
-
-
-/* Reads a caption table from 'inp', appends to 'root' */
-void read_captions (FILE *inp, struct es_list *list)
+/* Reads a list/table from 'inp' */
+void read_list (FILE *inp, struct es_list *list)
 {
 	char c = 0;
 
@@ -851,7 +763,8 @@ void read_captions (FILE *inp, struct es_list *list)
 		return;
 
 	if (c != '[')
-		ungetc (c, inp);
+//HACK		ungetc (c, inp);
+		return;
 
 	while (!feof (inp))
 	{	/* main loop */
@@ -862,7 +775,7 @@ void read_captions (FILE *inp, struct es_list *list)
 		} while ((c == ' ') || (c == ','));
 		ungetc (c, inp);
 
-		index = st_lcase_in_place(get_text_from_file_max_length (inp, 10));
+		index = st_lcase_in_place(get_text_from_file (inp));
 
 		do {
 			c = getc (inp);
@@ -885,33 +798,57 @@ void read_captions (FILE *inp, struct es_list *list)
 	return;
 }
 
-/* Loads all of the media caption lookup tables
- * for the current file. 'section' is either
- * ST_SECT_PCPT or ST_SECT_VCPT for photo or video
- * captions respectively */
-static struct es_list *st_get_captions (int section)
+/* Create an es_list from a list on disk */
+struct es_list *st_get_list (int type)
 {
 	FILE *inp;
-	int count = 0;
-	struct es_list *root_cpt = NULL;
+	struct es_list *l;
 	struct st_block *block;
+	int count=0;
 
-	root_cpt = es_list_new();
+	l = es_list_new();
 
-	while ((block = get_block (st_file_type, ST_DFILE_DATA, section, 0, count, 0)))
+	while ((block = get_block (st_file_type, ST_DFILE_DATA, type, 0, count, 0)))
 	{
 		if (!(inp = open_block (ST_DFILE_DATA, block)))
-			return (NULL);
+			return (l);
 
 		fseek (inp, 12, SEEK_CUR);
-		read_captions (inp, root_cpt);
+
+		read_list (inp, l);
 
 		fclose (inp);
 
 		count++;
 	}
 
-	return (root_cpt);
+	return (l);
+}
+
+char *get_es_list_data_string (struct es_list *list, char *index)
+{
+	struct es_list_entry *e;
+	char *lc_index;
+
+	lc_index = st_lcase (index);
+
+	e = es_list_get (list, lc_index);
+	if (!e)
+	{
+		free (lc_index);
+		return NULL;
+	}
+
+	if (!e->data)
+	{
+		FILE *inp;
+		inp = open_file (get_filename (st_file_type, ST_DFILE_DATA), e->pos);
+		e->data = st_cleanstring(get_text_from_file (inp));
+		fclose (inp);
+	}
+
+	free (lc_index);
+	return e->data;
 }
 
 /* Loads 'count' attribs tables in 'inp'. The
@@ -1066,11 +1003,11 @@ int st_load_media (void)
 	/*
 	 * Get the table & captions (if we don't already have them)
 	 */
-	if (!st_ptbls)
-		st_ptbls = st_get_table ();
+	if (!st_LtoS)
+		st_LtoS = st_get_list (ST_BLOCK_LTOS);
 
 	if (!st_pcpts)
-		st_pcpts = st_get_captions (ST_SECT_PCPT);
+		st_pcpts = st_get_list (ST_SECT_PCPT);
 	/* Note we assume here that
 	 * - the entry list has been loaded
 	 * - that it contains all of the entries
@@ -1085,7 +1022,7 @@ int st_load_media (void)
 
 
 	if (!st_vcpts)
-		st_vcpts = st_get_captions (ST_SECT_VCPT);
+		st_vcpts = st_get_list (ST_SECT_VCPT);
 
 	return (1);
 }
@@ -1093,7 +1030,7 @@ int st_load_media (void)
 /* Have we already run st_load_media()? */
 int st_loaded_media (void)
 {
-	if (((st_pcpts) && (st_ptbls)) || ((st_vtbls) && (st_vcpts)))
+	if (((st_pcpts) && (st_LtoS)) || ((st_vtbls) && (st_vcpts)))
 		return (1);
 	else
 		return (0);
@@ -1104,32 +1041,17 @@ int st_loaded_media (void)
  * tables 'cos it's really just the entrylist */
 void st_unload_media (void)
 {
-	static struct st_table *st_oldptbls = NULL;
-
 /* Free the caption & table info for the pictures */
 
 	es_list_free_data (st_pcpts, 1, 1);
 
-	while (st_ptbls)
-	{
-		st_oldptbls = st_ptbls;
-		st_ptbls = st_ptbls->next;
-		if (st_oldptbls)
-		{
-			if (st_oldptbls->fnbase)
-				free (st_oldptbls->fnbase);
-			if (st_oldptbls->title)
-				free (st_oldptbls->title);
-			free (st_oldptbls);
-		}
-	}
+	es_list_free_data (st_LtoS, 1, 1);
 
 /* & for the videos */
 
 	es_list_free_data (st_vcpts, 1, 1);
 
 	/* clean up... */
-	st_ptbls = NULL;
 	st_pcpts = NULL;
 	st_vtbls = NULL;
 	st_vcpts = NULL;
@@ -1373,27 +1295,6 @@ static int load_entry_list (int section)
 
 
 	return 1;
-}
-
-
-/* Get the fnbase from a list when given
- * the entry's title. This checks the
- * exception list first, so it can be
- * overridden from the rcfile */
-static char *get_fnbase (struct st_table *tbl, char *title)
-{
-	char *exception;
-	if (!title)
-		return NULL;
-	if ((exception = get_exception (st_file_type, "LU title", title)))
-		title = exception;
-	while (tbl)
-	{
-		if ((!strcmp (tbl->title, title)))
-			return tbl->fnbase;
-		tbl = tbl->next;
-	}
-	return NULL;
 }
 
 /* Get the title from a list when given
@@ -2099,7 +2000,7 @@ static struct ency_titles  *sort_scores (struct ency_titles *scores)
 static struct ency_titles *st_find_fulltext (char *search_string, int section, int options)
 {
 	struct ency_titles *root=NULL, *curr=NULL;
-	struct st_table *tbl=NULL, *ctbl=NULL;
+	struct st_table *tbl=NULL;
 	struct entry_scores *scores=NULL, *last_score;
 	char *title;
 	char single_word[64];
@@ -2112,10 +2013,8 @@ static struct ency_titles *st_find_fulltext (char *search_string, int section, i
 	if (!ftlist)
 		return NULL;
 
-	if (!st_ptbls)
-		st_ptbls = st_get_table ();
-	if (!st_ptbls)
-		return NULL;
+	if (!st_StoL)
+		st_StoL = st_get_list (ST_BLOCK_STOL);
 
 	if (!entry_list_has_section (section))
 		if (!load_entry_list (section))
@@ -2136,27 +2035,12 @@ static struct ency_titles *st_find_fulltext (char *search_string, int section, i
 		/* do the search (find_words() appends BTW) */
 		scores = find_words (scores, single_word, ftlist);
 	}
-
+	es_list_dump(st_StoL);
 	while (scores)
 	{
-		/* Get the title from the fnbase. This is a kind-of
-		 * longish way of doing it, but is faster than a single
-		 * get_table_entry_by_fnbase() for asciiabetical lists */
-		if (ctbl)
-		{
-			if (strcasecmp (scores->fnbase, ctbl->fnbase) >= 0)
-				ctbl = get_table_entry_by_fnbase (ctbl, scores->fnbase);
-			else
-				ctbl = NULL;
-		}
-
-		if (!ctbl)
-			ctbl = get_table_entry_by_fnbase (st_ptbls, scores->fnbase);
-		if (ctbl)
-			title = ctbl->title;
-		else
-			title = NULL;
-
+		title = get_es_list_data_string (st_StoL, scores->fnbase);
+		if (!title)
+			printf ("No '%s'!\n", scores->fnbase);
 		if (title)
 		{
 			/* Get the table entry from the entry list, we want the
@@ -2249,23 +2133,17 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 static struct st_photo st_parse_captions (struct es_list *list, char *fnbasen)
 {
 	struct st_photo photo;
-	struct es_list_entry *e;
+	char *title;
 
 	strcpy (photo.file, "");
 	strcpy (photo.caption, "");
 
-	e = es_list_get (list, fnbasen);
-	if (e)
+	title = get_es_list_data_string (list, fnbasen);
+
+	if (title)
 	{
 		strcpy (photo.file, fnbasen);
-		if (!e->data)
-		{
-			FILE *inp;
-			inp = open_file (get_filename (st_file_type, ST_DFILE_DATA), e->pos);
-			e->data = st_cleanstring(get_text_from_file (inp));
-			fclose (inp);
-		}
-		strcpy (photo.caption, e->data);
+		strcpy (photo.caption, title);
 	}
 
 	return (photo);
@@ -2361,21 +2239,19 @@ struct st_media *st_get_media (char *search_string)
 	struct st_media *media = NULL;
 	char *temp_fnbase = NULL;
 	char *ret_fnbase = NULL;
-	struct st_table *temp_ptbls = NULL;
 	struct st_table *temp_vtbls = NULL;
 	struct st_table *ret_tbl = NULL;
 
 	if (st_loaded_media ())
 	{
 
-		temp_ptbls = st_ptbls;
 		temp_vtbls = st_vtbls;
 
 		temp_fnbase = malloc (9);
 
 		media = new_media (media);
 
-		if ((ret_fnbase = get_fnbase (st_ptbls, search_string)))
+		if ((ret_fnbase = get_es_list_data_string (st_LtoS, search_string)))
 		{
 			for (i = 0; i < 6; i++)
 			{

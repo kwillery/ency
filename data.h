@@ -10,16 +10,18 @@
 #define ST_BLOCK_ATTRIB 1
 /* Full-text work lookup table */
 #define ST_BLOCK_FTLIST 2
+/* Lookup table, 6 letter code to long entry name */
+#define ST_BLOCK_STOL 3
 /* Lookup table, long entry name to 6 letter code */
-#define ST_SECT_PTBL 3
+#define ST_BLOCK_LTOS 4
 /* Captions for photos & swfs */
-#define ST_SECT_PCPT 4
+#define ST_SECT_PCPT 5
 /* Captions for videos */
-#define ST_SECT_VCPT 5
+#define ST_SECT_VCPT 6
 /* A list of videos on a different CD */
-#define ST_SECT_VLST 6
+#define ST_SECT_VLST 7
 /* A list of swfs that have a numeric suffix (instead of the 'F') */
-#define ST_BLOCK_FLASHEXCEPT 7
+#define ST_BLOCK_FLASHEXCEPT 8
 /* Pseudo-blocks */
 #define ST_BLOCK_SCAN 254 /* If we should scan this file */
 #define ST_BLOCK_SCANNED 255 /* If we have scanned this file */

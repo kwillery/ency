@@ -136,9 +136,13 @@ static void identify_section (struct st_block *block)
 			block->section = 3;
 	}
 
-	/* Look Up - ptbl etc. */
+	/* Look Up - StoL */
 	if (strstr (temp, "_lu_") || !strncmp (temp, "lu_", 3))
-		block->type = ST_SECT_PTBL;
+		block->type = ST_BLOCK_STOL;
+
+	/* Look Up - LtoS */
+	if (strstr (temp, "ltos_"))
+		block->type = ST_BLOCK_LTOS;
 
 	/* Captions */
 	if (!strncmp (temp, "captxt", 6))
