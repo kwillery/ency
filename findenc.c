@@ -45,16 +45,16 @@ main ()
 
 
  thingy = ency_find_list (search_string, 0);
-// thingy = chro_find_list (search_string,0);
+//  thingy = chro_find_list (search_string, 0);
 //  thingy = epis_find_list (search_string, 0);
-// thingy = get_title_at (0x149310);
-// thingy = ency_find_titles (search_string);
+  // thingy = get_title_at (0x149310);
+  // thingy = ency_find_titles (search_string);
 
   if ((thingy != NULL) && (thingy->title != NULL))
     {
       do
 	{
-	  printf ("\n%d:%s\n\n%s\n\n", thingy->filepos, thingy->title, thingy->text);
+	  printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
 /*        thingyz = ency_get_title (thingy->title);
  *        printf ("%s\n\n", thingyz->text);
  *        free (thingyz->fmt);

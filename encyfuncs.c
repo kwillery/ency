@@ -153,6 +153,9 @@ ency_cleantext (unsigned char c)
   switch (c)
     {
 // FIXME: i need something not detected as a space/null by sscanf, but looks like one.
+    case 13:
+      return ('\n');
+      break;
     case 0xD1:
       return ('_');
       break;
@@ -177,20 +180,23 @@ ency_cleantext (unsigned char c)
     case 0x8F:
       return ('e');
       break;
+    case 0xA5:
+      return (' ');
+      break;
     default:
       return (c);
       break;
     }
 }
 
-char 
+char
 egetc (void)
 {
   file_pos_is++;
   return (getc (inp));
 }
 
-void 
+void
 eungetc (char c)
 {
   file_pos_is--;
@@ -352,23 +358,23 @@ curr_return_text (void)
       c = ency_cleantext (egetc ());
       if (c == 0)
 	bye = 1;
-      if ((old_c == 13) && (c == 13))
+      if ((old_c == 10) && (c == 0x7E))
 	bye = 1;
-      if (bye)
-	if (curr == 3)
-	  if (egetc () != 0x7E)
-	    {
-	      bye = 0;
-	      eungetc (c);
-	    }
-
-      if (curr == 2)
-	if ((done_once < 2) && (bye == 1))
-	  {
-	    done_once++;
-	    bye = 0;
-	  }
-
+/*      if (bye)
+ *    if (curr == 3)
+ *        if (egetc () != 0x7E)
+ *          {
+ *            bye = 0;
+ *            eungetc (c);
+ *          }
+ *
+ *     if (curr == 2)
+ *      if ((done_once < 2) && (bye == 1))
+ *        {
+ *          done_once++;
+ *          bye = 0;
+ *        }
+ */
       if (!bye)
 	{
 //              if (c == 0)
