@@ -231,7 +231,6 @@ int main (int argc, char *argv[])
 
 	fprintf (out, "</html>\n");
 
-	st_unload_media ();
 	st_finish ();
 
 	return (0);

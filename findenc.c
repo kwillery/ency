@@ -147,7 +147,6 @@ int main (int argc, char *argv[])
 	}
 	else
 		printf ("No matches\n");
-	st_unload_media ();
 	st_finish ();
 	return (0);
 }
