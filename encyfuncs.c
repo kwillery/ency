@@ -51,6 +51,7 @@ return(0);
 int ency_close (void)
 {
   fclose (inp);
+return(0);
 }
 
 char ency_cleantext (unsigned char c)
@@ -167,9 +168,20 @@ c=getc(inp);
 
 int ency_find_start (void)
 {
-int c = 0;
+/* int c = 0;
  while ((c = getc (inp)) != '~')
       ;
+*/
+int c = 0;
+int oldc = 0;
+while (c != '~') {
+ c=getc(inp);
+ if ((oldc == 0x16) && (c != 0x2E)) {
+  ungetc(c,inp); return (0); }
+ oldc=c;
+ }
+
+return(0);
 }
 
 char *ency_return_text (void)
@@ -236,7 +248,7 @@ struct ency_titles *ency_find_titles (char title[])
   char c;
   char *temp_text;
   int text_size = 0;
-  int title_size = 0;
+//  int title_size = 0;
   int i = 0;
   struct ency_titles *root_title, *curr_title, *last_title;
   int no_so_far = 0;
@@ -319,8 +331,6 @@ struct ency_titles *ency_get_title (char title[])
   int first_time = 1;
   char c;
   char *temp_text;
-  int text_size = 0;
-  int title_size = 0;
   int i = 0;
   struct ency_titles *root_title;
   int no_so_far = 0;

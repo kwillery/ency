@@ -31,7 +31,7 @@ int words = 0;
 char filename[100] = "stdout";
 int exact = 0;
 
-loopies(char *txt,struct st_ency_formatting *fmt,int size)
+int loopies(char *txt,struct st_ency_formatting *fmt,int size)
 {
  char fmtstring[10];
  struct st_ency_formatting *fmt2;
@@ -159,18 +159,14 @@ while ((txt[0] == 32) || (txt[0] == 13))
 txt++;
 }
 }
+return(0);
 }
 
-printoff(struct ency_titles *stuff)
+int printoff(struct ency_titles *stuff)
 {
- char fmtstring[10];
- int i = 0, z = 0;
- int first_time = 1;
  int size;
- char smeg[50];
  char *tmp;
- int print_br = 0;
- struct st_ency_formatting *fmt1, *fmt2;
+ struct st_ency_formatting *fmt1;
 printf("<hr>\n");
 tmp=stuff->title;
 size=strlen(stuff->title);
@@ -182,29 +178,28 @@ printf("<br>\n");
 
 tmp=stuff->text;
 size=strlen(stuff->text) - 10;
-first_time = 1;
 
 loopies(tmp,fmt1,size);
 
 printf("<br>\n");
 printf("<br>\n");
 
+return(0);
 }
  
-usage()
+int usage()
 {
 printf("usage: htmlenc [-e] \"search string\"\n");
 printf("-e: exact matches only");
 exit(0);
 }
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   int args_read = 0;
   char search_string[50];
   struct ency_titles *thingy;
   struct ency_titles *kill_me;
-  struct st_ency_formatting *fmt1, *fmt2;
   int i, fin_arg;
 // if (argc > 1)
 {
@@ -218,9 +213,11 @@ fin_arg = 0;
 // printf("%s, %c",argv[i],argv[i][1]);
 if (!fin_arg)
  if (argv[i][1] ==  'e')
-  { /* printf("exact\n"); */ if (exact = 1) fin_arg = 1; else usage;}
+//  { /* printf("exact\n"); */ if (exact == 1) fin_arg = 1; else usage;}
+  ;
 if (argv[i][1] == '-')
- {fin_arg = 1; usage;}
+// {fin_arg = 1; usage;}
+  ;
 if (fin_arg) args_read++;
 }
 }
@@ -262,4 +259,5 @@ printf("queries, comments, flames, to <a href=\"mailto:beemer@picknowl.com.au\">
   else
     printf ("No matches\n");
 printf("</html>\n");
+return(0);
 }
