@@ -354,7 +354,7 @@ This function converts a 6-letter filename to a full filename. <tt/fnbasen/ is t
 
 <sect1>st_get_table<label id="st_get_table">
 <p>
-This function is rarely used outside of ency itself.
+This function is not used outside of ency itself.
 <verb>
 struct st_table *st_get_table (void);
 </verb>
@@ -363,7 +363,7 @@ This function returns a linked list of <ref id="st_table" name="st_table"> struc
 
 <sect1>st_get_captions<label id="st_get_captions">
 <p>
-This function is rarely used outside of ency itself.
+This function is not used outside of ency itself.
 <verb>
 struct st_caption *st_get_captions(void);
 </verb>
