@@ -54,6 +54,7 @@ struct ency_titles *get_title_at (long);
 
 char *st_nice_error (int);
 int st_fingerprint (void);
+char *st_autofind (int, char *);
 
 struct st_media *st_get_media (char *);
 char *st_format_filename (char *, char *, int);

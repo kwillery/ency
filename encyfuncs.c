@@ -205,7 +205,7 @@ char st_cleantext (unsigned char c)
     return ('-');
     break;
   case 0xD1:
-    return ('_');
+    return ('-');
     break;
   case 0xD2:
     return (34);
@@ -293,7 +293,6 @@ int st_fingerprint (void)
     st_close_file ();
     return (254);
   } else {
-//    st_close_file ();
     return (255);
   }
 }
@@ -303,67 +302,75 @@ char *st_autofind (int st_file_version, char *base_dir)
   char *test_filename = NULL, *temp_string = NULL;
   char *ency_fn_backup = NULL;
 
-  ency_fn_backup = ency_filename;
-  test_filename = malloc (strlen (base_dir) + strlen (st_files[st_file_version].data_dir) + strlen (st_files[st_file_version].filename) + 3);
-  ency_filename = test_filename;
+  if (0 <= st_file_version < ST_FILE_TYPES) {
+    ency_fn_backup = ency_filename;
+    test_filename = malloc (strlen (base_dir) + strlen (st_files[st_file_version].data_dir) + strlen (st_files[st_file_version].filename) + 3);
+    ency_filename = test_filename;
 
-  strcpy (test_filename, base_dir);
-  strcat (test_filename, "/");
-  strcat (test_filename, st_files[st_file_version].filename);
-  if (st_fingerprint () == st_file_version) {
-    ency_filename = ency_fn_backup;
-    return (test_filename);
-  }
-  strcpy (test_filename, base_dir);
-  strcat (test_filename, "/");
-  strcat (test_filename, st_files[st_file_version].data_dir);
-  strcat (test_filename, "/");
-  strcat (test_filename, st_files[st_file_version].filename);
-  if (st_fingerprint () == st_file_version) {
-    ency_filename = ency_fn_backup;
-    return (test_filename);
-  }
-  strcpy (test_filename, base_dir);
-  strcat (test_filename, "/");
-  temp_string = st_lcase (st_files[st_file_version].filename);
-  strcat (test_filename, temp_string);
-  free (temp_string);
-  if (st_fingerprint () == st_file_version) {
-    ency_filename = ency_fn_backup;
-    return (test_filename);
-  }
-  strcpy (test_filename, base_dir);
-  strcat (test_filename, "/");
-  temp_string = st_lcase (st_files[st_file_version].data_dir);
-  strcat (test_filename, temp_string);
-  free (temp_string);
-  temp_string = st_lcase (st_files[st_file_version].filename);
-  strcat (test_filename, temp_string);
-  free (temp_string);
-  if (st_fingerprint () == st_file_version) {
-    ency_filename = ency_fn_backup;
-    return (test_filename);
-  }
-  strcpy (test_filename, base_dir);
-  strcat (test_filename, "/");
-  strcat (test_filename, st_files[st_file_version].data_dir);
-  temp_string = st_lcase (st_files[st_file_version].filename);
-  strcat (test_filename, temp_string);
-  free (temp_string);
-  if (st_fingerprint () == st_file_version) {
-    ency_filename = ency_fn_backup;
-    return (test_filename);
-  }
-  strcpy (test_filename, base_dir);
-  strcat (test_filename, "/");
-  temp_string = st_lcase (st_files[st_file_version].data_dir);
-  strcat (test_filename, temp_string);
-  free (temp_string);
-  strcat (test_filename, st_files[st_file_version].filename);
-  if (st_fingerprint () == st_file_version) {
-    ency_filename = ency_fn_backup;
-    return (test_filename);
-  }
+    strcpy (test_filename, base_dir);
+    if (st_fingerprint () == st_file_version) {
+      ency_filename = ency_fn_backup;
+      return (test_filename);
+    }
+  
+    strcpy (test_filename, base_dir);
+    strcat (test_filename, "/");
+    strcat (test_filename, st_files[st_file_version].filename);
+    if (st_fingerprint () == st_file_version) {
+      ency_filename = ency_fn_backup;
+      return (test_filename);
+	  }
+	  strcpy (test_filename, base_dir);
+	  strcat (test_filename, "/");
+	  strcat (test_filename, st_files[st_file_version].data_dir);
+	  strcat (test_filename, "/");
+	  strcat (test_filename, st_files[st_file_version].filename);
+	  if (st_fingerprint () == st_file_version) {
+	    ency_filename = ency_fn_backup;
+	    return (test_filename);
+	  }
+	  strcpy (test_filename, base_dir);
+	  strcat (test_filename, "/");
+	  temp_string = st_lcase (st_files[st_file_version].filename);
+	  strcat (test_filename, temp_string);
+	  free (temp_string);
+	  if (st_fingerprint () == st_file_version) {
+	    ency_filename = ency_fn_backup;
+	    return (test_filename);
+	  }
+	  strcpy (test_filename, base_dir);
+	  strcat (test_filename, "/");
+	  temp_string = st_lcase (st_files[st_file_version].data_dir);
+	  strcat (test_filename, temp_string);
+	  free (temp_string);
+	  temp_string = st_lcase (st_files[st_file_version].filename);
+	  strcat (test_filename, temp_string);
+	  free (temp_string);
+	  if (st_fingerprint () == st_file_version) {
+	    ency_filename = ency_fn_backup;
+	    return (test_filename);
+	  }
+	  strcpy (test_filename, base_dir);
+	  strcat (test_filename, "/");
+	  strcat (test_filename, st_files[st_file_version].data_dir);
+	  temp_string = st_lcase (st_files[st_file_version].filename);
+	  strcat (test_filename, temp_string);
+	  free (temp_string);
+	  if (st_fingerprint () == st_file_version) {
+	    ency_filename = ency_fn_backup;
+	    return (test_filename);
+	  }
+	  strcpy (test_filename, base_dir);
+	  strcat (test_filename, "/");
+	  temp_string = st_lcase (st_files[st_file_version].data_dir);
+	  strcat (test_filename, temp_string);
+	  free (temp_string);
+	  strcat (test_filename, st_files[st_file_version].filename);
+	  if (st_fingerprint () == st_file_version) {
+	    ency_filename = ency_fn_backup;
+	    return (test_filename);
+	  }
+	}
   return (NULL);
 }
 
@@ -847,9 +854,9 @@ struct st_table *
 	    while (!c);
 	    ungetc (c, inp);
 	    while ((c = getc (inp)) != '\"') {
-	      temp_text = realloc (temp_text, text_size + 2);
+          temp_text = realloc (temp_text, text_size + 2);
 	      if (temp_text == NULL) {
-		return (NULL);
+	        return (NULL);
 	      }
 	      temp_text[text_size++] = tolower (st_cleantext (c));
 	    }
@@ -860,11 +867,15 @@ struct st_table *
 
 	    while ((c = getc (inp)) != '\"');
 	    while ((c = getc (inp)) != '\"') {
-	      temp_text = realloc (temp_text, text_size + 2);
-	      if (temp_text == NULL) {
-		return (NULL);
+	      if (c == 0xA5) {
+	        getc(inp);
+	      } else {
+	        temp_text = realloc (temp_text, text_size + 2);
+	        if (temp_text == NULL) {
+		      return (NULL);
+	        }
+	        temp_text[text_size++] = st_cleantext (c);
 	      }
-	      temp_text[text_size++] = st_cleantext (c);
 	    }
 	    temp_text[text_size] = 0;
 	    curr_tbl->title = temp_text;
@@ -1032,10 +1043,8 @@ struct st_photo st_parse_captions (char *fnbasen)
   strcpy (photo.caption, "");
   while (st_cpts) {
     if (!strcmp (fnbasen, st_cpts->fnbasen)) {
-
       strcpy (photo.file, fnbasen);
       strcpy (photo.caption, st_cpts->caption);
-
     }
     st_cpts = st_cpts->next;
   }
@@ -1049,8 +1058,8 @@ struct st_media *
 {
   int i = 0;
   struct st_media *media = NULL;
-  char *temp_fnbase;
-  char *title_with_dot;
+  char *temp_fnbase = NULL;
+  char *title_with_dot = NULL;
   struct st_table *root_tbl = NULL;
   struct st_caption *root_cpt = NULL;
 
@@ -1061,11 +1070,11 @@ struct st_media *
   title_with_dot = malloc (strlen (search_string) + 2);
   snprintf (title_with_dot, strlen (search_string) + 2, "%s.", search_string);
 
-  media = malloc (sizeof (struct st_media));
 
   while (st_tbls) {
     if ((!strcmp (st_tbls->title, search_string)) || (!strcmp (st_tbls->title, title_with_dot))) {
       for (i = 0; i < 5; i++) {
+      if (!i) media = malloc (sizeof (struct st_media));
 	snprintf (temp_fnbase, 9, "%s%d", st_tbls->fnbase, i + 1);
 	media->photos[i] = st_parse_captions (temp_fnbase);
       }
