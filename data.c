@@ -142,6 +142,7 @@ struct st_part *new_part()
 		part->bcount = 1;
 		part->dir = NULL;
 		part->next = NULL;
+		strcpy (part->btype, "");
 	}
 
 	return part;

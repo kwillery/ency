@@ -744,7 +744,7 @@ static struct st_table *st_get_table ()
 			return (NULL);
 		else
 		{
-
+			fseek (inp, 12, SEEK_CUR);
 			for (i = 0; i < part->count; i++)
 			{
 				if (i)
@@ -841,9 +841,11 @@ static struct st_caption *st_get_captions (int section)
 		if ((inp = curr_open (part->start)) == 0)
 			return (NULL);
 		else
+		{
+			fseek (inp, 12, SEEK_CUR);
 			for (i = 0; i < part->count; i++)
 				root_cpt = read_captions (inp, root_cpt);
-
+		}
 		count++;
 		fclose (inp);
 	}
@@ -972,6 +974,7 @@ static struct st_table *st_get_video_table (int section)
 			return (root_tbl);
 		else
 		{
+			fseek (inp, 12, SEEK_CUR);
 			if (curr_tbl)
 			{
 				while (curr_tbl->next)
@@ -1542,6 +1545,7 @@ static void load_block_cache (int block_id)
 		return;
 
 	inp = curr_open (part->start);
+	fseek (inp, 12, SEEK_CUR);
 
 	if (inp)
 	{
@@ -1828,6 +1832,8 @@ static void load_ft_list (int section)
 		inp = curr_open (part->start);
 		if (!inp)
 			return;
+
+		fseek (inp, 12, SEEK_CUR);
 
 		for (i=0;i<part->count;i++)
 		{
@@ -2295,6 +2301,7 @@ static int in_simple_list (long filepos, int entrylen, char *match)
 	char entry[entrylen+1];
 
 	inp = curr_open (filepos);
+	fseek (inp, 12, SEEK_CUR);
 	while (getc (inp) != ']')
 	{
 		while (getc (inp) != '\"');

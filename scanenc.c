@@ -38,6 +38,7 @@ struct block
 
 struct st_part *parts=NULL;
 struct st_part *plast=NULL;
+char *blockname=NULL;
 
 static void get_4b_string (FILE *inp, char *string, int reverse)
 {
@@ -104,6 +105,10 @@ static void identify_section (struct st_part *part)
 	int i;
 
 	if (!part->name)
+		return;
+
+	/* We only want to identify STXT blocks */
+	if (strcmp (part->btype, "STXT"))
 		return;
 
 	temp = strdup (part->name);
@@ -176,7 +181,24 @@ static void identify_section (struct st_part *part)
 	return;
 }
 
-static void process_cast_block (FILE *inp, int reverse, long pblock_pos)
+static void export_block (FILE *inp, int reverse, char *block, long pos)
+{
+	FILE *out;
+	char name[5]="1234";
+	long size=-1;
+	int i;
+
+	fseek (inp, pos, SEEK_SET);
+	out = fopen (block, "w b");
+	if (!out)
+		printf ("Can't write to file '%s'.\n",block);
+	get_4b_string (inp, name, reverse);
+	size = get_4b_int (inp, reverse);
+	for (i=0;i<size;i++)
+		putc(getc(inp),out);
+}
+
+static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock_pos)
 {
 	struct st_part *tmp, *curr;
 	unsigned char *block;
@@ -277,18 +299,25 @@ static void process_cast_block (FILE *inp, int reverse, long pblock_pos)
 	} else
 		tmp->name = strdup ("???"); // Damn - can't get the name, Maybe it doesn't have one.
 
+	strcpy (tmp->btype, btype);
 	identify_section (tmp);
 	tmp->count = 1;
 	tmp->start_id = 0;
 	tmp->next = NULL;
+
 	printf ("found '%s' at %ld\n", tmp->name, tmp->start);
+
+	if (blockname)
+		if (!strcasecmp (blockname, tmp->name))
+			export_block (inp, reverse, blockname, tmp->start-8);
+
 	/* We don't want duplicate names being used */
 	/* so we set later ones to Unimportant      */
 	curr = parts;
 
 	while ((curr) && (curr != tmp))
 	{
-		if (!strcmp (curr->name, tmp->name))
+		if (!strcmp (curr->name, tmp->name) && curr->type)
 		{
 			tmp->section = 0;
 			tmp->type = 0;
@@ -385,7 +414,7 @@ static void sort_blocks ()
 	
 }
 
-static void add_block (FILE *inp, int reverse, long block_ind, long cast_ind)
+static void add_block (FILE *inp, int reverse, char *bname, long block_ind, long cast_ind)
 {
 	long orig_pos = ftell(inp);
 	long block_pos=-1;
@@ -393,7 +422,14 @@ static void add_block (FILE *inp, int reverse, long block_ind, long cast_ind)
 	char name[5]="1234";
 
 	fseek (inp, 0x4C+20*block_ind, SEEK_SET); /* Go to the block info */
-	fseek (inp, 8, SEEK_CUR); /* drop STXT/BITD/(etc.) and size */
+	get_4b_string (inp, name, reverse);
+	if (strcmp (bname, name)) /* Is it what it is supposed to be? */
+	{
+		printf ("Block type mismatch (%s != %s)! Block is #%ld (@ %ld), CASt #%ld. Was reading from %ld.\n", name, bname, block_ind, 0x4C+20*block_ind, cast_ind, orig_pos-8);
+		fseek (inp, orig_pos, SEEK_SET);
+		return;
+	}
+	fseek (inp, 4, SEEK_CUR); /* drop size */
 	block_pos = get_4b_int (inp, reverse);
 	fseek (inp, 0x4C+20*cast_ind, SEEK_SET); /* Go to the cast block info */
 	get_4b_string (inp, name, reverse); /* get 'CASt' */
@@ -406,7 +442,7 @@ static void add_block (FILE *inp, int reverse, long block_ind, long cast_ind)
 	fseek (inp, 4, SEEK_CUR); /* drop the size */
 	cast_pos = get_4b_int (inp, reverse);
 	fseek (inp, cast_pos, SEEK_SET); /* Go to the CASt */
-	process_cast_block (inp, reverse, block_pos+20); /* load the CASt */
+	process_cast_block (inp, reverse, bname, block_pos+8); /* load the CASt */
 	fseek (inp, orig_pos, SEEK_SET); /* Set it all back nicely */
 }
 
@@ -416,10 +452,10 @@ static void read_key(FILE *inp, int reverse)
 	long block_ind=-1;
 	long cast_ind=-1;
 
-	get_4b_string (inp, name, reverse);
 	block_ind = get_4b_int (inp, reverse);
 	cast_ind = get_4b_int (inp, reverse);
-	add_block (inp, reverse, block_ind, cast_ind);
+	get_4b_string (inp, name, reverse);
+	add_block (inp, reverse, name, block_ind, cast_ind);
 }
 
 static void process_key(FILE *inp, int reverse)
@@ -429,7 +465,6 @@ static void process_key(FILE *inp, int reverse)
 
 	fseek (inp, 8, SEEK_CUR);
 	count = get_4b_int (inp, reverse);
-	fseek(inp,8,SEEK_CUR);
 	for (i=0;i<count;i++)
 		read_key (inp, reverse);
 }
@@ -540,7 +575,7 @@ struct st_part *scan_file (FILE *inp)
 
 void usage()
 {
-	printf ("scanenc scanfile\n");
+	printf ("scanenc [-x blockname] scanfile\n");
 	exit (1);
 }
 
@@ -552,11 +587,15 @@ int main (int argc, char *argv[])
 	static struct option long_opts[] =
 	{
 		{"help", 0, 0, 'h'},
+		{"export", 0, 0, 'x'},
 		{0, 0, 0, 0}};
 
-	while ((i = getopt_long (argc, argv, "h", long_opts, 0)) != EOF)
+	while ((i = getopt_long (argc, argv, "x:h", long_opts, 0)) != EOF)
 		switch (i)
 		{
+		case 'x':
+			blockname = optarg;
+			break;
 		case 'h':
 		default:
 			usage ();

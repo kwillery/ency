@@ -21,6 +21,7 @@
 struct st_part
 {
 	char *name;
+	char btype[5];
 	int type;
 	int section;
 	long start;

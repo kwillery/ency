@@ -106,6 +106,10 @@ static void identify_section (struct st_part *part)
 	if (!part->name)
 		return;
 
+	/* We only want to identify STXT blocks */
+	if (strcmp (part->btype, "STXT"))
+		return;
+
 	temp = strdup (part->name);
 	for (i=0;(temp[i] = tolower (temp[i])); i++);
 
@@ -176,7 +180,7 @@ static void identify_section (struct st_part *part)
 	return;
 }
 
-static void process_cast_block (FILE *inp, int reverse, long pblock_pos)
+static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock_pos)
 {
 	struct st_part *tmp, *curr;
 	unsigned char *block;
@@ -277,18 +281,21 @@ static void process_cast_block (FILE *inp, int reverse, long pblock_pos)
 	} else
 		tmp->name = strdup ("???"); // Damn - can't get the name, Maybe it doesn't have one.
 
+	strcpy (tmp->btype, btype);
 	identify_section (tmp);
 	tmp->count = 1;
 	tmp->start_id = 0;
 	tmp->next = NULL;
+
 	//printf ("found '%s' at %ld\n", tmp->name, tmp->start);
+
 	/* We don't want duplicate names being used */
 	/* so we set later ones to Unimportant      */
 	curr = parts;
 
 	while ((curr) && (curr != tmp))
 	{
-		if (!strcmp (curr->name, tmp->name))
+		if (!strcmp (curr->name, tmp->name) && curr->type)
 		{
 			tmp->section = 0;
 			tmp->type = 0;
@@ -385,7 +392,7 @@ static void sort_blocks ()
 	
 }
 
-static void add_block (FILE *inp, int reverse, long block_ind, long cast_ind)
+static void add_block (FILE *inp, int reverse, char *bname, long block_ind, long cast_ind)
 {
 	long orig_pos = ftell(inp);
 	long block_pos=-1;
@@ -393,7 +400,14 @@ static void add_block (FILE *inp, int reverse, long block_ind, long cast_ind)
 	char name[5]="1234";
 
 	fseek (inp, 0x4C+20*block_ind, SEEK_SET); /* Go to the block info */
-	fseek (inp, 8, SEEK_CUR); /* drop STXT/BITD/(etc.) and size */
+	get_4b_string (inp, name, reverse);
+	if (strcmp (bname, name)) /* Is it what it is supposed to be? */
+	{
+		printf ("Block type mismatch (%s != %s)! Block is #%ld (@ %ld), CASt #%ld. Was reading from %ld.\n", name, bname, block_ind, 0x4C+20*block_ind, cast_ind, orig_pos-8);
+		fseek (inp, orig_pos, SEEK_SET);
+		return;
+	}
+	fseek (inp, 4, SEEK_CUR); /* drop size */
 	block_pos = get_4b_int (inp, reverse);
 	fseek (inp, 0x4C+20*cast_ind, SEEK_SET); /* Go to the cast block info */
 	get_4b_string (inp, name, reverse); /* get 'CASt' */
@@ -406,7 +420,7 @@ static void add_block (FILE *inp, int reverse, long block_ind, long cast_ind)
 	fseek (inp, 4, SEEK_CUR); /* drop the size */
 	cast_pos = get_4b_int (inp, reverse);
 	fseek (inp, cast_pos, SEEK_SET); /* Go to the CASt */
-	process_cast_block (inp, reverse, block_pos+20); /* load the CASt */
+	process_cast_block (inp, reverse, bname, block_pos+8); /* load the CASt */
 	fseek (inp, orig_pos, SEEK_SET); /* Set it all back nicely */
 }
 
@@ -416,10 +430,10 @@ static void read_key(FILE *inp, int reverse)
 	long block_ind=-1;
 	long cast_ind=-1;
 
-	get_4b_string (inp, name, reverse);
 	block_ind = get_4b_int (inp, reverse);
 	cast_ind = get_4b_int (inp, reverse);
-	add_block (inp, reverse, block_ind, cast_ind);
+	get_4b_string (inp, name, reverse);
+	add_block (inp, reverse, name, block_ind, cast_ind);
 }
 
 static void process_key(FILE *inp, int reverse)
@@ -429,7 +443,6 @@ static void process_key(FILE *inp, int reverse)
 
 	fseek (inp, 8, SEEK_CUR);
 	count = get_4b_int (inp, reverse);
-	fseek(inp,8,SEEK_CUR);
 	for (i=0;i<count;i++)
 		read_key (inp, reverse);
 }
