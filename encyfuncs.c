@@ -863,7 +863,7 @@ static struct st_caption *read_captions (FILE *inp, struct st_caption *root)
 		} while ((c == ' ') || (c == ':'));
 		ungetc (c, inp);
 
-		curr_cpt->caption = st_cleanstring (get_text_from_file (inp));
+		curr_cpt->caption = get_text_from_file (inp);
 
 		curr_cpt->next = NULL;
 		if (last_cpt)
@@ -976,21 +976,21 @@ static struct st_table *read_attribs_table (FILE *inp, int section)
 						if (c != '"')
 							break;
 						ungetc (c, inp);
-						curr_tbl->fnbase = st_cleanstring (get_text_from_file_max_length (inp, 20));
+						curr_tbl->fnbase = get_text_from_file_max_length (inp, 20);
 						c=0;
 						break;
 					case 5: // Audio
 						if (c != '"')
 							break;
 						ungetc (c, inp);
-						curr_tbl->audio = st_cleanstring (get_text_from_file_max_length (inp, 20));
+						curr_tbl->audio = get_text_from_file_max_length (inp, 20);
 						c=0;
 						break;
 					case 6: // 'Resource' link
 						if (c != '"')
 							break;
 						ungetc (c, inp);
-						curr_tbl->resource = st_cleanstring (get_text_from_file (inp));
+						curr_tbl->resource = get_text_from_file (inp);
 						c=0;
 						break;
 					case 8: // Block ID
@@ -1172,7 +1172,6 @@ static int check_match (char *search_string, char *title, int options)
 		title = st_lcase (title);
 		free (tmp); /* The strdup()'ed one */
 		search_string = st_lcase (search_string);
-
 	}
 
 	if (options & ST_OPT_MATCH_SUBSTRING)
@@ -1183,7 +1182,7 @@ static int check_match (char *search_string, char *title, int options)
 		if (!strcmp (title, search_string))
 			found = 1;
 
-	free (title); /* the strdup()'ed version */
+	free (title); /* the strdup()'ed version; or the st_lcase()'ed version */
 
 	if (!(options & ST_OPT_CASE_SENSITIVE))
 		free (search_string);
