@@ -2054,25 +2054,20 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 	else
 		exact = 1;
 
-	if (st_file_type != ST_FILE_UNKNOWN)
+	switch (section)
 	{
-		switch (section)
-		{
-		case ST_SECT_ENCY:
-		case ST_SECT_EPIS:
-		case ST_SECT_CHRO:
-			if ((cache[section]) && (!st_return_body))
-				return (st_find_in_cache (section, search_string, exact, 0));
+	case ST_SECT_ENCY:
+	case ST_SECT_EPIS:
+	case ST_SECT_CHRO:
+		if ((cache[section]) && (!st_return_body))
+			return (st_find_in_cache (section, search_string, exact, 0));
+		else
+			if (st_file_type == ST_FILE_UNKNOWN)
+				return (st_find_unknown (section, search_string, exact, options));
 			else
 				return (st_find_in_file (st_file_type, section, search_string, exact, options));
-		default:
-			return (NULL);
-		}
-		return (0);
-	}
-	else
-	{			/* unknown file type */
-		return (st_find_unknown (section, search_string, exact, options));
+	default:
+		return (NULL);
 	}
 }
 
