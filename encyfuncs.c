@@ -67,7 +67,7 @@ static long int set_starts_at = 0x0;
 
 /* hm. articles or sections or whatever to get */
 static const long int ency_lastone[] =
-{6814, 230, 68, 0, 4092, 491, 0, 3905, 476, 1353, 0, 181, 0, 89, 42, 0};
+{6814, 230, 68, 0, 4092, 491, 0, 3904, 476, 1347, 0, 181, 0, 89, 42, 0};
 
 static const long int epis_lastone[] =
 {402, 23, 3, 0, 261, 25, 0, 262, 93, 0, 0x1, 0, 0x1, 0};
