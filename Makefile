@@ -1,5 +1,5 @@
 SHELL = /bin/sh
-CFLAGS = -O3 -g
+CFLAGS = -O3 -g -Wall
 LDFLAGS=
 CC=gcc
 AR=ar
@@ -11,13 +11,13 @@ INCDIR=/usr/include
 
 .PHONY: all clean install uninstall
 
-all: libency.a(encyfuncs.o) htmlenc findenc
+all: libency.a(encyfuncs.o) htmlenc findenc scanenc
 
 libency.a: libency.a(encyfuncs.o)
 
 libency.a(encyfuncs.o): ency.h encyfuncs.c
 
-findenc htmlenc: libency.a
+findenc htmlenc scanenc: libency.a
 
 clean:
 	rm -f findenc htmlenc encyfuncs.o libency.a core
@@ -25,11 +25,12 @@ clean:
 install: findenc htmlenc
 	install -c findenc $(BINDIR)
 	install -c htmlenc $(BINDIR)
+	install -c scanenc $(BINDIR)
 	install -c libency.a $(LIBDIR)
 	install -c ency.h $(INCDIR)
 
 uninstall:
-	rm -f $(BINDIR)/findenc $(BINDIR)/htmlenc $(LIBDIR)/libency.a $(INCDIR)/ency.h
+	rm -f $(BINDIR)/findenc $(BINDIR)/htmlenc $(LIBDIR)/libency.a $(INCDIR)/ency.h $(BINDIR)/scanenc
 
 doc: ency-api.txt ency-api.html
 
