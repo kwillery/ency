@@ -30,6 +30,7 @@ int write_ppm (char *file, char *img, int width, int height);
 long get_decompressed_size (FILE *inp, int csize);
 char *decompress (FILE *inp, int csize, int size);
 int load_CLUT (FILE *inp);
+void reset_cmap ();
 void free_cmap ();
 int is_cmap_loaded ();
 

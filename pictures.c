@@ -23,6 +23,22 @@ void free_cmap ()
 	loaded_cmap = 0;
 }
 
+void reset_cmap ()
+{
+	int i;
+
+	free_cmap ();
+
+	for (i=0;i<256;i++)
+	{
+		char temp[256];
+		sprintf (temp, "%d %d %d", i, i, i);
+		matches[i] = (char*) strdup (temp);
+	}
+
+	loaded_cmap = 1;
+}
+
 void load_CLUT (FILE *inp)
 {
 	int i;
