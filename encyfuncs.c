@@ -58,6 +58,13 @@ struct st_ftlist
 
 struct st_ftlist *ftlist=NULL;
 
+struct entry_scores
+{
+	char fnbase[6];
+	int score;
+	struct entry_scores *next;
+};
+
 /* internal */
 #define ST_SECT_PTBL 10
 #define ST_SECT_VTBL 11
@@ -1674,6 +1681,9 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 		{
 			if (check_match (search_string, tmp->title, options))
 			{
+				/* This is longer than it need be, but that is
+				 * because we keep track of where we are. (As it is
+				 * generally much faster to keep going). */
 				if (tbl)
 				{
 					if (strcmp (tmp->title, tbl->title) >= 0)
@@ -1706,6 +1716,7 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 	return root;
 }
 
+/* Have we loaded the FT list for a given section yet? */
 static int ft_list_has_section (int section)
 {
 	struct st_ftlist *fl=NULL;
@@ -1720,6 +1731,7 @@ static int ft_list_has_section (int section)
 	return 0;
 }
 
+/* Load the list of entries for a word in the FT list. */
 static struct st_wl *load_ft_word (FILE *inp)
 {
 	struct st_wl *wl_curr=NULL, *wl_last=NULL, *ret=NULL;
@@ -1742,10 +1754,17 @@ static struct st_wl *load_ft_word (FILE *inp)
 		wl_curr->next = NULL;
 		if (ret == NULL)
 			ret = wl_curr;
+
+		/* Get the fnbase */
 		wl_curr->fnbase = get_text_from_file_max_length (inp, 10);
 
+		/* get rid of the bits we don't want... */
 		while ((getc (inp) != ':'));
 		while ((c = getc (inp)) == ' ');
+
+		/* If the list starts with a '"', it is a
+		 * comma-seperated list of numbers. Otherwise,
+		 * there's just the one. */
 		if (c == '"')
 		{
 			multi = 1;
@@ -1761,7 +1780,7 @@ static struct st_wl *load_ft_word (FILE *inp)
 			wl_last->next = wl_curr;
 		wl_curr->next = NULL;
 
-		if (multi)
+		if (multi) /* If there are more... */
 		{
 			while (getc (inp) == ',')
 			{
@@ -1782,6 +1801,10 @@ static struct st_wl *load_ft_word (FILE *inp)
 	return ret;
 }
 
+/* Loads the words out of the big FT list. We don't
+ * load the entries listed to save time. Instead we
+ * save the filepos, and can get them later with
+ * get_ft_word_at(). */
 static void load_ft_list (int section)
 {
 	struct st_part *part;
@@ -1811,6 +1834,11 @@ static void load_ft_list (int section)
 			c=0;
 			while (c != ']')
 			{
+				/* Go to the beginning '"'. This may not
+				 * immediately seem necessary, but when we
+				 * come around in the loop again we are right
+				 * after the ',', which usually doesn't have
+				 * the '"' after it. */
 				do {
 					c = getc (inp);
 				} while (c != '\"');
@@ -1822,13 +1850,16 @@ static void load_ft_list (int section)
 			
 				if (!root)
 					root = curr;
-			
+
+				/* Get the word */
 				curr->word = get_text_from_file (inp);
 				while (c != '[')
 					c = getc (inp);
 
+				/* Save the position of the '[' for later */
 				curr->filepos = ftell (inp) - 1;
 
+				/* Go to the end of the list of entries */
 				do {
 					c = getc (inp);
 				} while (c != ']');
@@ -1848,13 +1879,8 @@ static void load_ft_list (int section)
 	ftlist = root;
 }
 
-struct entry_scores
-{
-	char fnbase[6];
-	int score;
-	struct entry_scores *next;
-};
-
+/* Loads the list of entries that a word is in. The
+ * 'filepos' is for the '[' at the start. */
 static struct st_wl *get_ft_word_at (long filepos)
 {
 	struct st_wl *wl;
@@ -1869,8 +1895,8 @@ static struct st_wl *get_ft_word_at (long filepos)
 	return (wl);
 }
 
-
-
+/* Find a word in the FT list, and add all entries' info to
+ * 'root'. If the entry is in 'root' already, increase the score. */
 static struct entry_scores *find_words (struct entry_scores *root, char *words, struct st_ftlist *fl)
 {
 	struct entry_scores *scores=NULL, *curr=NULL, *last=NULL;
@@ -1972,6 +1998,7 @@ static struct entry_scores *find_words (struct entry_scores *root, char *words, 
 	return scores;
 }
 
+/* Sorts the scores. */
 static struct ency_titles  *sort_scores (struct ency_titles *scores)
 {
 	struct ency_titles *curr=NULL, *last=NULL, *last_last=NULL, *tmp=NULL;
@@ -2010,6 +2037,8 @@ static struct ency_titles  *sort_scores (struct ency_titles *scores)
 	return scores;
 }
 
+/* The main fulltext search function. Loads plenty of
+ * stuff, and is probably waaaay too long. :) */
 static struct ency_titles *st_find_fulltext (char *search_string, int section, int options)
 {
 	struct ency_titles *root=NULL, *curr=NULL;
@@ -2020,6 +2049,7 @@ static struct ency_titles *st_find_fulltext (char *search_string, int section, i
 	int bad;
 	float mult;
 
+	/* Load the bits we need */
 	if (!ft_list_has_section (section))
 		load_ft_list (section);
 	if (!ftlist)
@@ -2038,17 +2068,23 @@ static struct ency_titles *st_find_fulltext (char *search_string, int section, i
 		options -= ST_OPT_MATCH_SUBSTRING;
 	options -= ST_OPT_FT;
 
+	/* get the search results */
 	while (strlen (search_string))
 	{
+		/* get the next word */
 		sscanf (search_string, "%[a-zA-Z0-9.\"\'()-]", single_word);
 		search_string += strlen (single_word);
 		while (isblank (*search_string))
 			search_string++;
+		/* do the search (find_words() appends BTW) */
 		scores = find_words (scores, single_word, ftlist);
 	}
 
 	while (scores)
 	{
+		/* Get the title from the fnbase. This is a kind-of
+		 * longish way of doing it, but is faster than a single
+		 * get_table_entry_by_fnbase() for asciiabetical lists */
 		if (ctbl)
 		{
 			if (strcasecmp (scores->fnbase, ctbl->fnbase) >= 0)
@@ -2066,12 +2102,15 @@ static struct ency_titles *st_find_fulltext (char *search_string, int section, i
 
 		if (title)
 		{
+			/* Get the table entry from the entry list, we want the
+			 * block & entry IDs from it. */
 			tbl = get_table_entry_by_title (tbl, title);
 			if (!tbl)
 				tbl = get_table_entry_by_title (entrylist_head, title);
 			if (tbl)
 			{
 				bad = 0;
+				/* Try to get the entry from the file */
 				if (curr)
 				{
 					curr->next = get_entry_by_id (tbl->block_id, tbl->id, options);
@@ -2085,6 +2124,7 @@ static struct ency_titles *st_find_fulltext (char *search_string, int section, i
 
 				if (curr && !bad)
 				{
+					/* Copy the entry's name, calculate the score */
 					curr->name = strdup (title);
 					curr->score = scores->score + ((float) scores->score / ((float)curr->length / (float)1000 + 1));
 					curr->next = NULL;
@@ -2103,6 +2143,8 @@ static struct ency_titles *st_find_fulltext (char *search_string, int section, i
 
 	curr = root;
 	mult = (float) 100 / curr->score;
+	/* This makes the scores out of 100 - it's not really a
+	 * percentage as far as I'm concerned though... */
 	while (curr)
 	{
 		curr->score *= mult;
@@ -2114,6 +2156,7 @@ static struct ency_titles *st_find_fulltext (char *search_string, int section, i
 	return root;
 }
 
+/* The main find function. It should be simple enough. */
 struct ency_titles *st_find (char *search_string, int section, int options)
 {
 	if (!((st_file_type >= 0) && (st_file_type < ST_FILE_TYPES)))
@@ -2138,6 +2181,8 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 
 }
 
+/* Looks through all of the video caption list for a given
+ * fnbase. Returns the fnbasen & caption. */
 static struct st_photo st_parse_captions (char *fnbasen)
 {
 	struct st_photo photo;
@@ -2177,6 +2222,8 @@ static struct st_photo st_parse_captions (char *fnbasen)
 	return (photo);
 }
 
+/* Looks through all of the video caption list for a given
+ * fnbase. Returns the fnbasen & caption. */
 static struct st_photo st_parse_video_captions (char *fnbasen)
 {
 	struct st_photo photo;
@@ -2201,6 +2248,8 @@ static struct st_photo st_parse_video_captions (char *fnbasen)
 	return (photo);
 }
 
+/* A wrapper to simplify the malloc'ing & clearing
+ * of the st_media struct */
 static struct st_media *new_media (struct st_media *old_media)
 {
 	struct st_media *media;
@@ -2227,6 +2276,8 @@ static struct st_media *new_media (struct st_media *old_media)
 	return media;
 }
 
+/* A (very) simple list reader. Used for reading quick
+ * lists of single items. */
 static int in_simple_list (long filepos, int entrylen, char *match)
 {
 	FILE *inp;
@@ -2249,6 +2300,10 @@ static int in_simple_list (long filepos, int entrylen, char *match)
 	return 0;
 }
 
+/* flash excepts are flash fnbases that have a
+ * number suffix instead of the normal 'F'. We
+ * need this so we don't mis-detect an swf as a
+ * photo. */
 static int is_flash_except (char *fnbase)
 {
 	struct st_part *part;
@@ -2260,6 +2315,9 @@ static int is_flash_except (char *fnbase)
 	return 0;
 }
 
+/* This goes through all of the various media lists for a
+ * given entry name, returning a struct with all associated
+ * media (photos, videos, audio, etc.).  */
 struct st_media *st_get_media (char *search_string)
 {
 	int i = 0;
@@ -2333,6 +2391,9 @@ struct st_media *st_get_media (char *search_string)
 	return (media);
 }
 
+/* This checks to see if a given fnbasen should be
+ * in a special video directory.
+ * (eg. Video99/ instead of Video98/ */
 static char *get_video_dir (char *fnbasen)
 {
 	struct st_part *part=NULL;
@@ -2350,6 +2411,8 @@ static char *get_video_dir (char *fnbasen)
 
 }
 
+/* This function takes the icky six letter/one number code,
+ * and turns it into a 'proper' filename. */
 char *st_format_filename (char *fnbasen, char *base_path, media_type media)
 {
 	char *filename = NULL;
