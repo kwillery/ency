@@ -418,11 +418,6 @@ struct st_part *get_part (int file, int type, int section, int number, int optio
 
 	part = file_node->parts;
 
-	if (options & ST_PART_OPT_EPISLIST)
-		type = ST_BLOCK_ATTRIB;
-	else if (options & ST_PART_OPT_FTLIST)
-		type = ST_BLOCK_FTLIST;
-
 	while (part)
 	{
 		if ((part->type == type) && ((part->section == section) || (section == -1)))
@@ -437,7 +432,12 @@ struct st_part *get_part (int file, int type, int section, int number, int optio
 			inp = (FILE *) curr_open (0);
 			tmp = scan_file (inp);
 			fclose (inp);
-//			tmp->next = part->next;
+			/* NB. we don't do 
+				tmp->next = part->next;
+			   so <needscan/> should be the last
+			   parts tag for that file
+			   (not that you need others when using it
+			   :-) */
 			part->next = tmp;
 			part->type = ST_BLOCK_SCANNED;
 		}

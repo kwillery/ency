@@ -898,7 +898,7 @@ static struct st_table *read_attribs_table (FILE *inp, int section, int count)
 	return root_tbl;
 }
 
-static struct st_table *st_get_video_table (int section, int reverse)
+static struct st_table *st_get_video_table (int section)
 {
 	struct st_table *root_tbl = NULL, *curr_tbl=NULL;
 	struct st_part *part;
@@ -906,7 +906,7 @@ static struct st_table *st_get_video_table (int section, int reverse)
 
 	curr = 7;
 
-	while ((part = get_part (st_file_type, ST_SECT_VTBL, section == ST_SECT_VTBL ? 0 : section, count, (reverse) ? ST_PART_OPT_EPISLIST : 0)))
+	while ((part = get_part (st_file_type, ST_BLOCK_ATTRIB, section == ST_SECT_VTBL ? 0 : section, count, 0)))
 	{
 		curr_starts_at = part->start;
 		if (!st_open ())
@@ -942,7 +942,7 @@ int st_load_media (void)
 	if (!st_pcpts)
 		st_pcpts = st_get_captions (ST_SECT_PCPT);
 	if (!st_vtbls)
-		st_vtbls = st_get_video_table (ST_SECT_VTBL, 0);
+		st_vtbls = st_get_video_table (ST_SECT_VTBL);
 	if (!st_vcpts)
 		st_vcpts = st_get_captions (ST_SECT_VCPT);
 
@@ -1240,7 +1240,7 @@ static int load_entry_list (int section)
 	curr = entrylist_head;
 	if (!curr)
 	{
-		entrylist_head = st_get_video_table (section, 1);
+		entrylist_head = st_get_video_table (section);
 		if (entry_list_has_section (section))
 			return 1;
 		else
@@ -1252,7 +1252,7 @@ static int load_entry_list (int section)
 
 	if (!entry_list_has_section (section))
 	{
-		curr->next = st_get_video_table (section, 1);
+		curr->next = st_get_video_table (section);
 		if (entry_list_has_section (section))
 			return 1;
 	} else
@@ -1657,7 +1657,7 @@ static void load_ft_list (int section)
 	FILE *inp=NULL;
 	int count=0, multi, i;
 
-	while ((part = get_part (st_file_type, ST_BLOCK_FTLIST, section, count++, ST_PART_OPT_FTLIST)))
+	while ((part = get_part (st_file_type, ST_BLOCK_FTLIST, section, count++, 0)))
 	{
 		inp = (FILE *) curr_open (part->start);
 		if (!inp)

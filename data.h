@@ -17,9 +17,6 @@
 #define ST_SECT_VLST 14
 #define ST_SECT_BLK  15
 
-#define ST_PART_OPT_EPISLIST 1
-#define ST_PART_OPT_FTLIST 2
-
 struct st_part
 {
 	char *name;
