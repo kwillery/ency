@@ -33,12 +33,13 @@
 #include "ency.h"
 #include "encyfuncs.h"
 #include "data.h"
+#include "pictures.h"
 
 #define free(A) {if (A) free (A); A=NULL;}
 #ifdef DEBUG
-#define DBG(...) printf(...);
+#define DBG(a) fprintf a;
 #else
-#define DBG(...) ;
+#define DBG(a) ;
 #endif
 
 static char *ency_filename = NULL;
@@ -1643,7 +1644,7 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 		{
 			inp = curr_open (filepos);
 			if (!inp)
-				DBG (stderr, "Oh damn! curr_open() failed for %ld (entry %d:%d)\n(%s)\n", filepos, block_id, id, strerror (errno));
+				DBG ((stderr, "Oh damn! curr_open() failed for %ld (entry %d:%d)\n(%s)\n", filepos, block_id, id, strerror (errno)));
 			if (!inp)
 				return NULL;
 
@@ -1719,7 +1720,7 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 					curr->next = get_entry_by_id (tbl->block_id, tbl->id, options);
 					if (!curr->next)
 					{
-						DBG (stderr, "Can't find entry \"%s\" in %d:%d\n", tmp->title, tbl->block_id, tbl->id);
+						DBG ((stderr, "Can't find entry \"%s\" in %d:%d\n", tmp->title, tbl->block_id, tbl->id));
 						tmp = tmp->next;
 						continue;
 					} else
@@ -1729,7 +1730,7 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 				{
 					root = curr = get_entry_by_id (tbl->block_id, tbl->id, options);
 					if (!curr)
-						DBG (stderr, "Can't find entry \"%s\" in %d:%d\n", tmp->title, tbl->block_id, tbl->id);
+						DBG ((stderr, "Can't find entry \"%s\" in %d:%d\n", tmp->title, tbl->block_id, tbl->id));
 				}
 				if (curr)
 					curr->name = strdup (tmp->title);
@@ -2155,7 +2156,7 @@ static struct ency_titles *st_find_fulltext (char *search_string, int section, i
 					curr->score = scores->score + ((float) scores->score / ((float)curr->length / (float)1000 + 1));
 					curr->next = NULL;
 				} else
-					DBG (stderr, "Can't find entry \"%s\" in %d:%d\n", title, tbl->block_id, tbl->id);
+					DBG ((stderr, "Can't find entry \"%s\" in %d:%d\n", title, tbl->block_id, tbl->id));
 			}
 		}
 		last_score = scores;
@@ -2523,6 +2524,8 @@ char *st_format_filename (char *fnbasen, char *base_path, media_type media)
 int st_get_picture(char *name, char *file, long width, long height)
 {
 	struct st_part *part=NULL;
+	FILE *inp=NULL;
+
 	if (!name)
 		return 1;
 
@@ -2531,7 +2534,11 @@ int st_get_picture(char *name, char *file, long width, long height)
 	if (!part)
 		return 1;
 
-	printf ("Got part '%s' @ %ld, %ld bytes long.\n", name, part->start, part->size);
+	DBG ((stderr, "Got part '%s' @ %ld, %ld bytes long.\n", name, part->start, part->size));
+
+	inp = open_part (part);
+
+	DBG ((stderr, "Ret: %d\n", create_ppm_from_image (file, inp, width, height, part->size)));
 
 	return 1;
 }

@@ -2,13 +2,9 @@
  * see http://www.gnu.org/copyleft/gpl.html
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include "ency.h"
 #include "data.h"
-
-/* these 3 for stat() */
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
 char *decompressed=NULL;
 char *d=NULL;
@@ -276,42 +272,12 @@ char *matches[256]=
 "0 0 0"
 };
 
-char *get_colour (unsigned char c)
+static char *get_colour (unsigned char c)
 {
 	return matches[c];
 }
 
-char *getline (FILE *inp)
-{
-	char s[128];
-	char *t;
-
-	t = s;
-	while ((*t++ = getc (inp)) != '\n')
-		;
-	*--t=0;
-	if (strcmp (s, "(null)"))
-		return (char *) (strdup (s));
-	else
-		return (char *) (strdup ("000 000 000"));
-}
-
-void get_cmap(FILE *inp)
-{
-	int i;
-	for (i=0;i<256;i++)
-		matches[i] = getline (inp);
-}
-
-int is_repeating_command (unsigned char c)
-{
-	if (c & 0x80)
-		return 1;
-	else
-		return 0;
-}
-
-void repeat (unsigned char c, int n)
+static void repeat (unsigned char c, int n)
 {
 	int i;
 	for (i=0;i<n;i++)
@@ -322,7 +288,7 @@ void repeat (unsigned char c, int n)
 		size += n;
 }
 
-void write_n_bytes (FILE *inp, int n)
+static void write_n_bytes (FILE *inp, int n)
 {
 	int i;
 	unsigned char c;
@@ -340,13 +306,13 @@ void write_n_bytes (FILE *inp, int n)
 		size += n;
 }
 
-void process_bytes (FILE *inp, int write)
+void process_bytes (FILE *inp)
 {
 	unsigned char c;
 
 	c = getc (inp);
 
-	if (is_repeating_command (c))
+	if (c & 0x80) /* Repeating */
 	{
 		if (!feof (inp))
 			repeat (getc (inp), 0xFF-c+2);
@@ -354,93 +320,44 @@ void process_bytes (FILE *inp, int write)
 		write_n_bytes (inp, c+1);
 }
 
-void write_final_image ()
+void write_final_image (FILE *out, long width, long height)
 {
-	int i;
+	fprintf (out, "P3\n%ld %ld\n255\n", width, height);
 
 	d = decompressed;
-
 	for (d=decompressed;d<decompressed+size;d++)
-		printf ("%s\n", get_colour (*d));
+		fprintf (out, "%s\n", get_colour (*d));
 }
 
-void process_thumbnail (char *fn)
-{
-	FILE *inp;
-	struct stat buf;
-	unsigned char c;
-
-	if (stat (fn, &buf))
-	{
-		printf ("Could not open file '%s'\n", fn);
-		exit (1);
-	}
-
-	inp = fopen (fn, "r b");
-
-	if (buf.st_size == 2400) /* Its complete */
-	{
-		fprintf (stderr, "reading %s...\n", fn);
-		decompressed = (char *) malloc (2400);
-		fread (decompressed, 2400, 1, inp);
-		size = 2400;
-	}
-	else
-	{
-		fprintf (stderr, "decompressing %s...\n", fn);
-		while (!feof (inp))
-			process_bytes (inp, 0);
-		rewind (inp);
-		d = decompressed = (char *) malloc (size);
-		while (!feof (inp))
-			process_bytes (inp, 1);
-	}
-
-	fclose (inp);
-
-	write_final_image ();
-	fprintf (stderr, "done.\n");
-}
-
-int create_ppm_from_image (char *file, FILE *inp, long width, long height, long size)
+int create_ppm_from_image (char *file, FILE *inp, long width, long height, long csize)
 {
 	FILE *out;
-	
+	int i;
+
 	if (!file || !inp || width<=0 || height <=0)
 		return 1;
 
-	
-}
-/*
-main(int argc, char *argv[])
-{
-	FILE *inp;
-	unsigned char c, old_c=0;
-	int i, col=0, j=0;
-	int width = 60;
-	int left=0, first=1;
-	char runme[60];
+	out = fopen (file, "w b");
+	if (!out)
+		return 1;
 
-	inp = fopen ("cmap.raw", "r b");
-	get_cmap (inp);
-	fclose (inp);
+	/* Decompressed size */
+	size = width*height;
 
-	printf ("P3\n60 40\n255\n");
-
-	for (i=1;i<argc;i++)
+	if (csize == size) /* Its complete */
 	{
-		if (!strcmp (argv[i], "-v"))
-			verbose++;
-		else if (!strcmp (argv[i], "-n"))
-			allow_compression = 0;
-		else
-		{
-			process_thumbnail (argv[i]);
-			break;
-		}
+		decompressed = (char *) malloc (size);
+		fread (decompressed, size, 1, inp);
+	}
+	else
+	{
+		d = decompressed = (char *) malloc (size);
+		for (i=0;i<csize;i++)
+			process_bytes (inp);
 	}
 
+	fclose (inp);
 
-	fflush (NULL);
+	write_final_image (out, width, height);
+	return 0;
 }
-*/
