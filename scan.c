@@ -96,6 +96,16 @@ static void identify_section (struct st_part *part)
 	temp = strdup (part->name);
 	for (i=0;(temp[i] = tolower (temp[i])); i++);
 
+	/* drop -URGH ones */
+	if (strlen (temp) > 5)
+	{
+		if (strcmp (temp+(strlen(temp))-5,"-urgh") == 0)
+		{
+			free (temp);
+			return;
+		}
+	}
+
 	/* Attrib */
 	if (!strncmp (temp, "attrib_", 7))
 	{
