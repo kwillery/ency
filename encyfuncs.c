@@ -48,7 +48,7 @@ long int st_table_starts_at[] =
 {0x410c4, 0, 0x388f2e, 0, 0x3CD470, 0, 0x2BBA98, 0, 0x322996, 0};
 
 long int st_caption_starts_at[] =
-{0x4e5064, 0, 0x615552, 0};
+{0x4e5064, 0, 0x615552, 0, 0x646D0A, 0, 1, 0, 1, 0};
 
 long int ency_starts_at[] =
 {0x7bc28, 0x576574, 0, 0x3A9ED8, 0x56BB62, 0, 0x3FC3BE, 0x58B51E, 0x72E89C, 0, 0x1, 0, 0x1, 0};
@@ -76,7 +76,7 @@ long int st_table_lastone[] =
 {26, 0, 26, 0, 26, 0, 23, 0, 15, 0};
 
 long int st_caption_lastone[] =
-{5, 0, 4, 0, 1, 0, 1, 0, 1, 0};
+{5, 0, 4, 0, 4, 0, 1, 0, 1, 0};
 
 long int curr_starts_at, curr_lastone, curr;
 
