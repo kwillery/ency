@@ -214,6 +214,7 @@ static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock
 
 	tmp->start = pblock_pos;
 	tmp->size = pblock_size;
+	strcpy (tmp->btype, btype);
 
 	if (block[39] > 1) /* The 1 is arbitrary - it works in my tests! */
 		t = block + 37 + block[39];
@@ -254,7 +255,6 @@ static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock
 	} else
 		tmp->name = strdup ("???"); // Damn - can't get the name, Maybe it doesn't have one.
 
-	strcpy (tmp->btype, btype);
 	identify_section (tmp);
 	tmp->start_id = 0;
 	tmp->next = NULL;
