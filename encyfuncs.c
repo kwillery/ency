@@ -35,7 +35,6 @@ char *ency_filename;
 
 int st_return_body = 1;
 int st_ignore_case = 0;
-long int file_pos_is = 0;
 int upto = 0;
 int st_file_type = 0;
 
@@ -118,7 +117,6 @@ curr_open (void)
   if (inp)
     {
       i = fseek (inp, curr_starts_at, SEEK_SET);
-      file_pos_is = curr_starts_at;
     }
   if (i == 0)
     return ((int) inp);
@@ -130,7 +128,6 @@ int
 curr_close (void)
 {
   fclose (inp);
-  file_pos_is = 0;
   return (0);
 }
 
@@ -197,21 +194,6 @@ ency_cleantext (unsigned char c)
     }
 }
 
-char
-egetc (void)
-{
-  file_pos_is++;
-  return (getc (inp));
-}
-
-void
-eungetc (char c)
-{
-  file_pos_is--;
-  ungetc (c, inp);
-}
-
-
 struct st_ency_formatting *
 curr_return_fmt (void)
 {
@@ -234,7 +216,7 @@ curr_return_fmt (void)
       curr_fmt = root_fmt;
     }
 
-  c = egetc ();
+  c = getc (inp);
   while (c != '@')
     {
       if (!first_time)
@@ -257,17 +239,17 @@ curr_return_fmt (void)
 	{
 	  if ((c != 20) && (c != ','))
 	    tmp_txt[i++] = c;
-	  c = egetc ();
+	  c = getc (inp);
 	}
       tmp_txt[i] = 0;
       if (st_return_body)
 	curr_fmt->firstword = atoi (tmp_txt);	// starts at
 
-      c = egetc ();
+      c = getc (inp);
       if (c != '[')
-	c = egetc ();
+	c = getc (inp);
       i = 0;
-      while ((c = egetc ()) != ',')
+      while ((c = getc (inp)) != ',')
 	{
 	  tmp_txt[i++] = c;
 	}
@@ -275,14 +257,14 @@ curr_return_fmt (void)
       if (st_return_body)
 	curr_fmt->words = atoi (tmp_txt);	// words
 
-      c = egetc ();
+      c = getc (inp);
       if (c != 35)
-	c = egetc ();
+	c = getc (inp);
 
       if (st_return_body)
 	curr_fmt->bi = 0;
 
-      while ((c = egetc ()) != ']')
+      while ((c = getc (inp)) != ']')
 	{
 	  if (st_return_body)
 	    switch (c)
@@ -300,7 +282,7 @@ curr_return_fmt (void)
 		break;
 	      }
 	}
-      c = egetc ();
+      c = getc (inp);
       if (st_return_body)
 	{
 	  curr_fmt->next = NULL;
@@ -310,7 +292,7 @@ curr_return_fmt (void)
 	  curr_fmt = NULL;
 	}
     }
-  c = egetc ();
+  c = getc (inp);
   return (root_fmt);
 }
 
@@ -338,11 +320,11 @@ curr_find_start (void)
   int oldc = 0;
   while (c != '~')
     {
-      c = egetc ();
+      c = getc (inp);
 //      if ((oldc == 0x16) && (c != 0x2E))
       if ((oldc == 0x16) && (c != 0x7E))
 	{
-	  eungetc (c);
+	  ungetc (c, inp);
 	  return (0);
 	}
       oldc = c;
@@ -380,12 +362,12 @@ curr_return_text (void)
   temp_text = malloc (1);
   while (!bye)
     {
-      c = ency_cleantext (egetc ());
+      c = ency_cleantext (getc (inp));
       if (c == 0)
 	bye = 1;
       if ((old_c == '\n') && (c == 0x7E))
 	{
-	  eungetc (c);
+	  ungetc (c, inp);
 	  bye = 1;
 	}
 
@@ -432,7 +414,7 @@ curr_return_title (void)
 
 // malloc & realloc calls keep crashing, no idea why.
 
-  while ((c = ency_cleantext (egetc ())) != '@')
+  while ((c = ency_cleantext (getc (inp))) != '@')
     {
 
 // /* should be on! */ titl = realloc(titl,title_size+1);
@@ -545,7 +527,7 @@ curr_find_list (char title[], int exact)
 
       if (!first_time)
 	ency_find_start ();
-      this_one_starts_at = file_pos_is;
+      this_one_starts_at = ftell (inp);
       first_time = 0;
       text_fmt = ency_return_fmt ();
 
@@ -554,8 +536,7 @@ curr_find_list (char title[], int exact)
 
       ttl = ency_return_title ();
 /**Title & number: printf("%d:%s\n",no_so_far,ttl); **/
-      printf ("%d:%s\n", no_so_far, ttl);
-      c = egetc ();
+      c = getc (inp);
 
 // lowerise ttl > ttl2, title > title2
       while (ttl2[i++] = tolower (ttl[i]));
@@ -794,7 +775,7 @@ curr_find_titles (char title[])
 
       if (!first_time)
 	ency_find_start ();
-      this_one_starts_at = file_pos_is;
+      this_one_starts_at = ftell (inp);
       first_time = 0;
       text_fmt = ency_return_fmt ();
 
@@ -806,7 +787,7 @@ curr_find_titles (char title[])
       ttl = ency_return_title ();
 
 // printf("dbg1 %s %d\n",ttl,strlen(ttl));
-      c = egetc ();
+      c = getc (inp);
 // printf ("%d: %s\n", no_so_far, ttl);
       // if (screwy){screwy=0;printf("%s\n",ttl);}
       // printf("%s=%s:%d",ttl,title,strstr(ttl,title));
@@ -943,7 +924,7 @@ curr_get_title (char title[])
 
       ttl = ency_return_title ();
 
-      c = egetc ();
+      c = getc (inp);
 
       if (!strcmp (ttl, title))
 	{
@@ -1025,7 +1006,7 @@ st_get_table (void)
 
 	      for (i = 0; i < st_table_lastone[upto]; i++)
 		{
-		  while ((c = egetc ()) != ']')
+		  while ((c = getc (inp)) != ']')
 		    {		// main loop
 
 		      temp_text = malloc (1);
@@ -1041,12 +1022,12 @@ st_get_table (void)
 		      first_time = 0;
 		      do
 			{
-			  while ((c = egetc ()) != '\"');
-			  c = egetc ();
+			  while ((c = getc (inp)) != '\"');
+			  c = getc (inp);
 			}
 		      while (!c);
-		      eungetc (c);
-		      while ((c = egetc ()) != '\"')
+		      ungetc (c, inp);
+		      while ((c = getc (inp)) != '\"')
 			{
 			  temp_text = realloc (temp_text, text_size + 2);
 			  if (temp_text == NULL)
@@ -1060,8 +1041,8 @@ st_get_table (void)
 		      temp_text = malloc (1);
 		      text_size = 0;
 
-		      while ((c = egetc ()) != '\"');
-		      while ((c = egetc ()) != '\"')
+		      while ((c = getc (inp)) != '\"');
+		      while ((c = getc (inp)) != '\"')
 			{
 			  temp_text = realloc (temp_text, text_size + 2);
 			  if (temp_text == NULL)
@@ -1110,7 +1091,7 @@ st_get_captions (void)
 
       for (i = 0; i < 5; i++)
 	{
-	  while ((c = egetc ()) != ']')
+	  while ((c = getc (inp)) != ']')
 	    {			// main loop
 
 	      temp_text = malloc (1);
@@ -1127,12 +1108,12 @@ st_get_captions (void)
 	      first_time = 0;
 	      do
 		{
-		  while ((c = egetc ()) != '\"');
-		  c = egetc ();
+		  while ((c = getc (inp)) != '\"');
+		  c = getc (inp);
 		}
 	      while (!c);
-	      eungetc (c);
-	      while ((c = egetc ()) != '\"')
+	      ungetc (c, inp);
+	      while ((c = getc (inp)) != '\"')
 		{
 		  temp_text = realloc (temp_text, text_size + 2);
 		  if (temp_text == NULL)
@@ -1146,8 +1127,8 @@ st_get_captions (void)
 	      temp_text = malloc (1);
 	      text_size = 0;
 
-	      while ((c = egetc ()) != '\"');
-	      while ((c = egetc ()) != '\"')
+	      while ((c = getc (inp)) != '\"');
+	      while ((c = getc (inp)) != '\"')
 		{
 		  temp_text = realloc (temp_text, text_size + 2);
 		  if (temp_text == NULL)
@@ -1205,7 +1186,7 @@ get_title_at (long filepos)
 
   ttl = ency_return_title ();
 
-  c = egetc ();
+  c = getc (inp);
 
 
   temp_text = ency_return_text ();
