@@ -170,7 +170,6 @@ void st_free_fmt_and_advance (struct st_ency_formatting **);
 void st_copy_part_entry (struct ency_titles **, struct ency_titles *);
 
 /* lower-level functions */
-int st_find_start (FILE * input);
 char st_cleantext (unsigned char c);
 void st_cleanstring (char *string);
 
