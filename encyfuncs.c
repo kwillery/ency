@@ -316,19 +316,19 @@ void st_free_entry_and_advance (struct ency_titles **entry)
 
 void st_copy_part_entry (struct ency_titles **to, struct ency_titles *from)
 {
-	if (from)
-	{
-		*to = malloc (sizeof (struct ency_titles));
-		if (*to)
-		{
-			(*to)->title = strdup (from->title);
-			(*to)->filepos = from->filepos;
-			(*to)->fmt = NULL;
-			(*to)->text = NULL;
-			(*to)->next = NULL;
-			(*to)->err = 0;
-		}
-	}
+	if (!from)
+		return;
+
+	*to = malloc (sizeof (struct ency_titles));
+	if (!*to)
+		return;
+
+	(*to)->title = strdup (from->title);
+	(*to)->filepos = from->filepos;
+	(*to)->fmt = NULL;
+	(*to)->text = NULL;
+	(*to)->next = NULL;
+	(*to)->err = 0;
 }
 
 static struct st_table *st_new_table ()
@@ -1301,7 +1301,7 @@ char *st_nice_error (int error_no)
 
 /* This creates an empty (bogus) entry, and
  * puts an error number into it.
- * (This also sucks, and should also disappear */
+ * (This also sucks, and should also disappear) */
 static struct ency_titles *st_title_error (int error_no)
 {
 
@@ -1319,8 +1319,9 @@ static struct ency_titles *st_title_error (int error_no)
 
 /* Check to see if we have loaded a given
  * section into the entry list.
- * NB. if the section isn't present, it will
- * return 0, but that shouldn't matter */
+ * NB. if the section isn't present
+ * (eg. ST_SECT_ENCY in the episode guides), it
+ * will return 0, but that shouldn't matter */
 static int entry_list_has_section (section)
 {
 	struct st_table *lst;
@@ -1589,16 +1590,12 @@ static void load_block_cache (int block_id)
 			}
 			add_to_block_cache (i, id=1, ftell (inp));
 			while ((c = getc (inp)))
-			{
 				if (c == '~')
-				{
-					id++;
-					add_to_block_cache (i, id, ftell (inp));
-				}
-			}
-				/* So we can determine the size of the last entry */
-				/* in a block later. This is *not* a real entry,  */
-				/* and thus should never be read.                 */
+					add_to_block_cache (i, ++id, ftell (inp));
+
+			/* So we can determine the size of the last entry */
+			/* in a block later. This is *not* a real entry,  */
+			/* and thus should never be read.                 */
 			add_to_block_cache (i, ++id, ftell (inp)-1);
 		}
 		fclose (inp);
@@ -1701,7 +1698,7 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 /* Search a file for entrys matching 'search_string'.
  * This will load the entry lists if they aren't already
  * loaded */
-static struct ency_titles *st_find_in_file (int file, int section, char *search_string, int options)
+static struct ency_titles *st_find_in_file (int section, char *search_string, int options)
 {
 	struct ency_titles *root = NULL, *curr = NULL;
 	struct st_table *tmp = NULL;
@@ -2220,8 +2217,8 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 	case ST_SECT_EPIS_SORTED:
 		if (options & ST_OPT_FT)
 			return (st_find_fulltext (search_string, section, options));
-
-		return (st_find_in_file (st_file_type, section, search_string, options));
+		else
+			return (st_find_in_file (section, search_string, options));
 	default:
 		return (NULL);
 	}
