@@ -24,7 +24,7 @@ INSTALL_BIN=$(INSTALL_PROGRAM) $(INSTALL_BINOPTS)
 
 all: libency.a htmlenc findenc scanenc
 
-libency.a: libency.a(encyfuncs.o) libency.a(data.o) libency.a(scan.o) libency.a(rcfile.o) libency.a(pictures.o)
+libency.a: libency.a(encyfuncs.o) libency.a(data.o) libency.a(scan.o) libency.a(rcfile.o) libency.a(pictures.o) libency.a(esdata.o)
 
 libency.a(encyfuncs.o): ency.h encyfuncs.c data.h
 
@@ -36,10 +36,12 @@ libency.a(rcfile.o): rcfile.c rcfile.h
 
 libency.a(pictures.o): pictures.c pictures.h
 
+libency.a(esdata.o): esdata.c esdata.h
+
 findenc htmlenc scanenc: libency.a
 
 clean:
-	rm -f findenc htmlenc scanenc encyfuncs.o data.o scan.o rcfile.o pictures.o libency.a core
+	rm -f findenc htmlenc scanenc encyfuncs.o data.o scan.o rcfile.o pictures.o esdata.o libency.a core
 
 distclean: clean
 

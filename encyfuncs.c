@@ -32,6 +32,7 @@
 #include "encyfuncs.h"
 #include "data.h"
 #include "pictures.h"
+#include "esdata.h"
 
 /* For MSVC etc. without 'inline' */
 #ifndef __GNUC__
@@ -72,12 +73,11 @@ static struct st_table *entrylist_head=NULL;
 
 /* for pictures */
 static struct st_table *st_ptbls = NULL;
-static struct st_caption *st_pcpts = NULL;
-static struct st_caption *st_pcpts_quick = NULL;
+static struct es_list *st_pcpts = NULL;
 
 /* for videos */
 static struct st_table *st_vtbls = NULL;
-static struct st_caption *st_vcpts = NULL;
+static struct es_list *st_vcpts = NULL;
 
 /* cache */
 static struct ency_titles *cache = NULL;
@@ -260,6 +260,19 @@ char *st_lcase (char *mcase)
 		lcase[i] = tolower (mcase[i]);
 
 	return (lcase);
+}
+
+char *st_lcase_in_place (char *mcase)
+{
+	char *t;
+
+	t = mcase;
+
+	/* Naughty! */
+	while (*t)
+		*t++ &= 0x7F;
+
+	return mcase;
 }
 
 int st_count_filetypes(void)
@@ -825,76 +838,65 @@ static struct st_table *st_get_table ()
 
 
 /* Reads a caption table from 'inp', appends to 'root' */
-static struct st_caption *read_captions (FILE *inp, struct st_caption *root)
+void read_captions (FILE *inp, struct es_list *list)
 {
-	struct st_caption *root_cpt = NULL, *curr_cpt = NULL, *last_cpt = NULL;
 	char c = 0;
 
 	c = getc (inp);
 
 	if (c == 0)
-		return root;
+		return;
 
 	if (ungetc (getc (inp), inp) == ':')
-		return root;
+		return;
 
 	if (c != '[')
 		ungetc (c, inp);
 
-	if (root)
-	{
-		root_cpt = root;
-		last_cpt = root;
-		while (last_cpt->next)
-			last_cpt = last_cpt->next;
-	}
-
 	while (!feof (inp))
 	{	/* main loop */
-		curr_cpt = (struct st_caption *) malloc (sizeof (struct st_caption));
-
-		if (curr_cpt == NULL)
-			return (NULL);
-
-		curr_cpt->fnbasen = get_text_from_file_max_length (inp, 10);
-
-		do {
-			c = getc (inp);
-		} while ((c == ' ') || (c == ':'));
-		ungetc (c, inp);
-
-		curr_cpt->caption = get_text_from_file (inp);
-
-		curr_cpt->next = NULL;
-		if (last_cpt)
-			last_cpt->next = curr_cpt;
-		else
-			root_cpt = curr_cpt;
-		last_cpt = curr_cpt;
-		curr_cpt = NULL;
+		char *index;
 
 		do {
 			c = getc (inp);
 		} while ((c == ' ') || (c == ','));
 		ungetc (c, inp);
 
+		index = st_lcase_in_place(get_text_from_file_max_length (inp, 10));
+
+		do {
+			c = getc (inp);
+		} while ((c == ' ') || (c == ':'));
+		ungetc (c, inp);
+
+		es_list_add (list, index, NULL, ftell (inp));
+		c = getc (inp);
+		if (c == '"')
+			while (getc (inp) != '"')
+				;
+		else
+			while (getc (inp) != ',')
+				;
+
 		if (ungetc (getc (inp), inp) == ']')
 			break;
 
 	}	/* end main loop */
-	return (root_cpt);
+	return;
 }
 
 /* Loads all of the media caption lookup tables
  * for the current file. 'section' is either
  * ST_SECT_PCPT or ST_SECT_VCPT for photo or video
  * captions respectively */
-static struct st_caption *st_get_captions (int section)
+static struct es_list *st_get_captions (int section)
 {
 	FILE *inp;
 	int count = 0;
-	struct st_caption *root_cpt = NULL;
+	struct es_list *root_cpt = NULL;
 	struct st_block *block;
+
+	root_cpt = es_list_new();
 
 	while ((block = get_block (st_file_type, ST_DFILE_DATA, section, 0, count, 0)))
 	{
@@ -902,12 +904,13 @@ static struct st_caption *st_get_captions (int section)
 			return (NULL);
 
 		fseek (inp, 12, SEEK_CUR);
-		root_cpt = read_captions (inp, root_cpt);
+		read_captions (inp, root_cpt);
 
 		fclose (inp);
 
 		count++;
 	}
+
 	return (root_cpt);
 }
 
@@ -1065,6 +1068,7 @@ int st_load_media (void)
 	 */
 	if (!st_ptbls)
 		st_ptbls = st_get_table ();
+
 	if (!st_pcpts)
 		st_pcpts = st_get_captions (ST_SECT_PCPT);
 	/* Note we assume here that
@@ -1078,6 +1082,7 @@ int st_load_media (void)
 	 * will be no videos in the media list.
 	 * (10 lines of comments for one of code! :-) */
 	st_vtbls = entrylist_head;
+
 
 	if (!st_vcpts)
 		st_vcpts = st_get_captions (ST_SECT_VCPT);
@@ -1100,23 +1105,10 @@ int st_loaded_media (void)
 void st_unload_media (void)
 {
 	static struct st_table *st_oldptbls = NULL;
-	static struct st_caption *st_oldpcpts = NULL;
-	static struct st_caption *st_oldvcpts = NULL;
 
 /* Free the caption & table info for the pictures */
-	while (st_pcpts)
-	{
-		st_oldpcpts = st_pcpts;
-		st_pcpts = st_pcpts->next;
-		if (st_oldpcpts)
-		{
-			if (st_oldpcpts->fnbasen)
-				free (st_oldpcpts->fnbasen);
-			if (st_oldpcpts->caption)
-				free (st_oldpcpts->caption);
-			free (st_oldpcpts);
-		}
-	}
+
+	es_list_free_data (st_pcpts, 1, 1);
 
 	while (st_ptbls)
 	{
@@ -1133,24 +1125,12 @@ void st_unload_media (void)
 	}
 
 /* & for the videos */
-	while (st_vcpts)
-	{
-		st_oldvcpts = st_vcpts;
-		st_vcpts = st_vcpts->next;
-		if (st_oldvcpts)
-		{
-			if (st_oldvcpts->fnbasen)
-				free (st_oldvcpts->fnbasen);
-			if (st_oldvcpts->caption)
-				free (st_oldvcpts->caption);
-			free (st_oldvcpts);
-		}
-	}
+
+	es_list_free_data (st_vcpts, 1, 1);
 
 	/* clean up... */
 	st_ptbls = NULL;
 	st_pcpts = NULL;
-	st_pcpts_quick = NULL;
 	st_vtbls = NULL;
 	st_vcpts = NULL;
 }
@@ -2264,68 +2244,28 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 
 }
 
-/* Looks through all of the video caption list for a given
+/* Looks through all of the picture caption list for a given
  * fnbase. Returns the fnbasen & caption. */
-static struct st_photo st_parse_captions (char *fnbasen)
+static struct st_photo st_parse_captions (struct es_list *list, char *fnbasen)
 {
 	struct st_photo photo;
-	struct st_caption *temp_pcpts = NULL;
-	int used_quick = 0;
-
-	temp_pcpts = st_pcpts;
-
-	/* can we start later in the list? */
-	/* (this assumes asciiabetical order :) */
-	if (st_pcpts_quick)
-		if (strcmp (fnbasen, st_pcpts_quick->fnbasen) >= 0)
-		{
-			temp_pcpts = st_pcpts_quick;
-			used_quick = 1;
-		}
-
-	strcpy (photo.file, "");
-	strcpy (photo.caption, "");
-	while (temp_pcpts && (!strlen (photo.file)))
-	{
-		if (!strcmp (fnbasen, temp_pcpts->fnbasen))
-		{
-			strcpy (photo.file, fnbasen);
-			strcpy (photo.caption, temp_pcpts->caption);
-			break;
-		}
-		temp_pcpts = temp_pcpts->next;
-	}
-
-	st_pcpts_quick = temp_pcpts;
-
-	/* just in case the list isnt asciiabetical */
-	if (!strlen (photo.file) && used_quick)
-		return (st_parse_captions (fnbasen));
-
-	return (photo);
-}
-
-/* Looks through all of the video caption list for a given
- * fnbase. Returns the fnbasen & caption. */
-static struct st_photo st_parse_video_captions (char *fnbasen)
-{
-	struct st_photo photo;
-	struct st_caption *temp_vcpts = NULL;
-
-	temp_vcpts = st_vcpts;
+	struct es_list_entry *e;
 
 	strcpy (photo.file, "");
 	strcpy (photo.caption, "");
 
-	while (temp_vcpts && (!strlen (photo.file)))
+	e = es_list_get (list, fnbasen);
+	if (e)
 	{
-		if (!strcasecmp (fnbasen, temp_vcpts->fnbasen))
+		strcpy (photo.file, fnbasen);
+		if (!e->data)
 		{
-			strcpy (photo.file, fnbasen);
-			strcat (photo.file, "1");
-			strcpy (photo.caption, temp_vcpts->caption);
+			FILE *inp;
+			inp = open_file (get_filename (st_file_type, ST_DFILE_DATA), e->pos);
+			e->data = st_cleanstring(get_text_from_file (inp));
+			fclose (inp);
 		}
-		temp_vcpts = temp_vcpts->next;
+		strcpy (photo.caption, e->data);
 	}
 
 	return (photo);
@@ -2440,12 +2380,12 @@ struct st_media *st_get_media (char *search_string)
 			for (i = 0; i < 6; i++)
 			{
 				sprintf (temp_fnbase, "%s%d", ret_fnbase, i + 1);
-				media->photos[i] = st_parse_captions (temp_fnbase);
+				media->photos[i] = st_parse_captions (st_pcpts, temp_fnbase);
 				if (strlen (media->photos[i].file))
 					media_found = 1;
 			}
 			sprintf (temp_fnbase, "%sF", ret_fnbase);
-			media->swf = st_parse_captions (temp_fnbase);
+			media->swf = st_parse_captions (st_pcpts, temp_fnbase);
 			if (strlen (media->swf.file))
 				media_found = 1;
 
@@ -2466,7 +2406,7 @@ struct st_media *st_get_media (char *search_string)
 		if ((ret_tbl = get_table_entry_by_title (st_vtbls, search_string)))
 		{
 			if (ret_tbl->fnbase)
-				media->video = st_parse_video_captions (ret_tbl->fnbase);
+				media->video = st_parse_captions (st_vcpts, ret_tbl->fnbase);
 			if (ret_tbl->audio)
 			{
 				strcpy (media->audio.file, ret_tbl->audio);

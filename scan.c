@@ -181,7 +181,6 @@ static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock
 	struct st_block *tmp, *curr;
 	unsigned char *block;
 	unsigned char *t=NULL;
-	int i,j;
 	int size;
 	char name[5]="1234";
 	long starts_at=-1;

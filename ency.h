@@ -116,13 +116,6 @@ struct st_table
 	struct st_table *next;
 };
 
-struct st_caption
-{
-	char *fnbasen;
-	char *caption;
-	struct st_caption *next;
-};
-
 struct st_photo
 {
 	char file[13];
