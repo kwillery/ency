@@ -1,13 +1,12 @@
 Authors, things they did, email, web page.
 ------------------------------------------------------
 Robert Mibus
- the core api (encyfuncs.c,ency.h)
- command line programs (findenc.c, htmlenc.c)
+ the core api and command line programs (*.[ch])
  mibus@bigpond.com
  http://users.bigpond.com/mibus/
 
 Lee Mallabone
- various bug patches, many bug reports etc..
+ various patches, many bug reports etc..
  lee0@callnetuk.com
  http://atlas.cs.york.ac.uk/~lrpm100/
 
