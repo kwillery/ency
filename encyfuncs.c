@@ -79,7 +79,7 @@ static const long int st_table_lastone[] =
 {26, 0, 26, 0, 26, 0, 2, 22, 0, 15, 0};
 
 static const long int st_caption_lastone[] =
-{5, 0, 4, 0, 4, 0, 5, 0, 4, 0};
+{5, 0, 4, 0, 4, 0, 4, 0, 4, 0};
 
 static const long st_video_table_lastone[] = {26,0,26,0,26,0,26,0,26,0};
 static const long st_video_caption_lastone[] = {1,0,1,0,1,0,24,0,15,0};
@@ -674,38 +674,41 @@ static struct st_caption *st_get_captions (int section)
               c = ungetc (c, inp);
             if ((c = getc (inp)) != '\"')
               c = ungetc (c, inp);
-            c = 0;
+            if ((c = getc (inp)) != ':')
+            {
+              ungetc (c,inp);
+              c = 0;
 
-            temp_text = malloc (8);
+              temp_text = malloc (8);
 
-            text_size = (section == ST_SECT_PCPT) ? 7 : 6;
+              text_size = (section == ST_SECT_PCPT) ? 7 : 6;
 
-            fread (temp_text, 1, text_size, inp);
-            temp_text[text_size] = 0;
+              fread (temp_text, 1, text_size, inp);
+              temp_text[text_size] = 0;
 
-            z=0;while ((temp_text[z] = tolower(temp_text[z]))) z++;
+              z=0;while ((temp_text[z] = tolower(temp_text[z]))) z++;
 
-            c = getc(inp);
+              c = getc(inp);
 
-            curr_cpt->fnbasen = temp_text;
+              curr_cpt->fnbasen = temp_text;
 
-            temp_text = malloc (70);
-            text_size = 0;
+              temp_text = malloc (70);
+              text_size = 0;
 
-            while ((c = getc (inp)) != '\"');
-            while ((c = getc (inp)) != '\"') {
-              temp_text[text_size++] = st_cleantext (c);
+              while ((c = getc (inp)) != '\"');
+              while ((c = getc (inp)) != '\"')
+                temp_text[text_size++] = st_cleantext (c);
+              temp_text[text_size] = 0;
+
+              curr_cpt->caption = temp_text;
+              c=getc(inp);
+
+              curr_cpt->next = NULL;
+              if (last_cpt)
+                last_cpt->next = curr_cpt;
+              last_cpt = curr_cpt;
+              curr_cpt = NULL;
             }
-            temp_text[text_size] = 0;
-
-            curr_cpt->caption = temp_text;
-            c=getc(inp);
-
-            curr_cpt->next = NULL;
-            if (last_cpt)
-              last_cpt->next = curr_cpt;
-            last_cpt = curr_cpt;
-            curr_cpt = NULL;
           }                     /* end main loop */
 
         }
