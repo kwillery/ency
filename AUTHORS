@@ -1,9 +1,10 @@
 Authors, things they did, email, web page.
 ------------------------------------------------------
 Robert Mibus
- the core api (encyfuncs.c,ency.h,findenc.c)
+ the core api (encyfuncs.c,ency.h)
+ command line programs (findenc.c, htmlenc.c, showm.c)
  mibus@bigpond.com
- http://www.picknowl.com.au/homepages/beemer/
+ http://users.bigpond.com/mibus/
 
 Lee Mallabone
  various bug patches, many bug reports etc..

@@ -1,6 +1,7 @@
 /******************************************************************************/
 /* Mibus's Ency 98 Reader: Reads the Star Trek Encyclopedia (1998 version)    */
 /* Copyright (C) 1998 Robert Mibus                                            */
+/* Also reads the various Omnipedias & Episode guides                         */
 /*                                                                            */
 /* This program is free software; you can redistribute it and/or              */
 /* modify it under the terms of the GNU General Public License                */
@@ -17,9 +18,8 @@
 /* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. */
 /*                                                                            */
 /* Author:                                                                    */
-/*      Email   mibus@hallett-cove.schools.sa.edu.au                          */
-/*              mibus@bigpond.com                                             */
-/*      webpage www.picknowl.com.au/homepages/beemer/                         */
+/*      Email   mibus@bigpond.com                                             */
+/*      Webpage http://users.bigpond.com/mibus/                               */
 /******************************************************************************/
 
 #include <stdio.h>
@@ -213,7 +213,7 @@ int main (int argc, char *argv[])
 
   while ((i = getopt (argc, argv, "ech")) != EOF) {
     if (i == 'h') {
-      printf ("htmlenc - Searches Star Trek encyclopedia\nhttp://www.picknowl.com.au/homepages/beemer/ency.html\nUsage: htmlenc -[c|e]\n-c: searches chronology\n-e: searches episodes\ndefault: search encyclopedia\n");
+      printf ("htmlenc - Searches Star Trek encyclopedia\nhttp://users.bigpond.com/mibus/ency.html\nUsage: htmlenc -[c|e]\n-c: searches chronology\n-e: searches episodes\ndefault: search encyclopedia\n");
       exit (0);
     }
     search_what = i;
@@ -256,7 +256,7 @@ int main (int argc, char *argv[])
     printf ("No matches<br>\n");
 
   printf ("<hr>\nMibus' ency reader<br>\n");
-  printf ("<a href=\"http://www.picknowl.com.au/homepages/beemer/ency.html\">http://www.picknowl.com.au/homepages/beemer/ency.html</a><br>\n");
+  printf ("<a href=\"http://users.bigpond.com/mibus/ency.html\">http://users.bigpond.com/mibus/ency.html</a><br>\n");
   printf ("queries, comments, flames, to <a href=\"mailto:mibus@bigpond.com\">Robert Mibus (mibus@bigpond.com)</a>");
 
   printf ("</html>\n");

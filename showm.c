@@ -1,6 +1,7 @@
 /******************************************************************************/
 /* Mibus's Ency 98 Reader: Reads the Star Trek Encyclopedia (1998 version)    */
 /* Copyright (C) 1998 Robert Mibus                                            */
+/* Also reads the various Omnipedias & Episode guides                         */
 /*                                                                            */
 /* This program is free software; you can redistribute it and/or              */
 /* modify it under the terms of the GNU General Public License                */
@@ -17,9 +18,8 @@
 /* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. */
 /*                                                                            */
 /* Author:                                                                    */
-/*      Email   mibus@hallett-cove.schools.sa.edu.au                          */
-/*              mibus@bigpond.com                                             */
-/*      webpage www.picknowl.com.au/homepages/beemer/                         */
+/*      Email   mibus@bigpond.com                                             */
+/*      Webpage http://users.bigpond.com/mibus/                               */
 /******************************************************************************/
 
 #include <stdio.h>

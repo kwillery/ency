@@ -1,5 +1,6 @@
 /******************************************************************************/
 /* Mibus's Ency 98 Reader: Reads the Star Trek Encyclopedia (1998 version)    */
+/* Also reads the various Omnipedias & Episode guides                         */
 /* Copyright (C) 1998 Robert Mibus                                            */
 /*                                                                            */
 /* This program is free software; you can redistribute it and/or              */
@@ -17,9 +18,8 @@
 /* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. */
 /*                                                                            */
 /* Author:                                                                    */
-/*      Email   mibus@hallett-cove.schools.sa.edu.au                          */
-/*              mibus@bigpond.com                                             */
-/*      webpage www.picknowl.com.au/homepages/beemer/                         */
+/*      Email   mibus@bigpond.com                                             */
+/*      Webpage http://users.bigpond.com/mibus/                               */
 /******************************************************************************/
 
 #include <stdio.h>
@@ -43,7 +43,7 @@ int main (int argc, char *argv[])
   i = getopt (argc, argv, "ech");
 
   if (i == 'h') {
-    printf ("findenc - Searches Star Trek encyclopedia\nhttp://www.picknowl.com.au/homepages/beemer/ency.html\nUsage: findenc -[c|e]\n-c: searches chronology\n-e: searches episodes\ndefault: search encyclopedia\n");
+    printf ("findenc - Searches Star Trek encyclopedia\nhttp://users.bigpond.com/mibus/ency.html\nUsage: findenc -[c|e]\n-c: searches chronology\n-e: searches episodes\ndefault: search encyclopedia\n");
     exit (0);
   }
 /* get the search string, one way or another */
