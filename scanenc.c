@@ -271,6 +271,7 @@ int identify_section (char *section)
 void process_cast_block (FILE *inp, long size)
 {
 	struct part *tmp;
+	struct part *curr;
 	char *block;
 	char *t;
 
@@ -321,7 +322,21 @@ void process_cast_block (FILE *inp, long size)
 	printf (" (%s)", tmp->name);
 
 	tmp->section = identify_section (tmp->name);
+	/* We don't want duplicate names being used */
+	/* so we set later ones to Unimportant      */
+	curr = parts;
 	printf (" [%d]", tmp->section);
+
+	while ((curr) && (curr != tmp))
+	{
+		if (!strcmp (curr->name, tmp->name))
+		{
+			tmp->section = 0;
+			printf (" [Dupe - ignored]");
+		}
+		curr = curr->next;
+	}
+
 	tmp->count = 1;
 	tmp->start_id = 0;
 	tmp->next = NULL;
