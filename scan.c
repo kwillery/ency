@@ -217,15 +217,14 @@ static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock
 	else
 		t = block + 13 + block[15];
 	
-	while (*t == 0)
-	{
+	while (t - block < size && *t == 0)
 		t++;
-		if (t - block >= size)
-		{
-			tmp->name = strdup ("???");
-			free (block);
-			return;
-		}
+
+	if (t - block >= size)
+	{
+		tmp->name = strdup ("???");
+		free (block);
+		return;
 	}
 
 	if (*t > 0x80) /* The 0x80 is arbitrary - it works in my tests */
