@@ -38,7 +38,6 @@
 
 static char *ency_filename = NULL;
 
-int st_ignore_case = 0;
 static int st_file_type = 0;
 
 struct st_wl
@@ -1008,30 +1007,28 @@ void st_unload_media (void)
 
 
 /* unsorted, mostly file/data stuff */
-static int check_match (char *search_string, char *title, int exact)
+static int check_match (char *search_string, char *title, int options)
 {
 	int found = 0;
-	char *lc_title = NULL;
-	char *lc_search_string = NULL;
 
-	/* Is this the one we want?? */
-	if ((!exact) && strstr (title, search_string))
-		found = 1;
-	if ((exact == 1) && (!strcmp (title, search_string)))
-		found = 1;
-	if (exact == 2)
-		found = 1;
-	if (st_ignore_case)
+	if (!(options & ST_OPT_CASE_SENSITIVE))
 	{
-		lc_title = st_lcase (title);
-		lc_search_string = st_lcase (search_string);
-		if ((!exact) && (strstr (lc_title, lc_search_string)))
-			found = 1;
-		if ((exact == 1) && (!strcasecmp (title, search_string)))
-			found = 1;
-		free (lc_title);
-		free (lc_search_string);
+		title = st_lcase (title);
+		search_string = st_lcase (search_string);
+
 	}
+
+	if ((options & ST_OPT_MATCH_SUBSTRING) && strstr (title, search_string))
+		found = 1;
+	else if (!strcmp (title, search_string))
+		found = 1;
+
+	if (!(options & ST_OPT_CASE_SENSITIVE))
+	{
+		free (title);
+		free (search_string);
+	}
+
 	return found;
 }
 
@@ -1475,7 +1472,7 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 	if (!block_id || !id)
 		return NULL;
 
-	if ((options & ST_OPT_RETURN_BODY == 0) && (options & ST_OPT_NO_FILEPOS))
+	if (((options & ST_OPT_RETURN_BODY) == 0) && (options & ST_OPT_NO_FILEPOS))
 		filepos = 1; /* can't be 0 'cos of the if() below */
 	else
 		filepos = get_block_pos_from_cache (block_id, id, 1);
@@ -1523,7 +1520,7 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 	return NULL;
 }
 
-static struct ency_titles *st_find_in_file (int file, int section, char *search_string, int exact, int options)
+static struct ency_titles *st_find_in_file (int file, int section, char *search_string, int options)
 {
 	struct ency_titles *root = NULL, *curr = NULL;
 	struct st_table *tmp = NULL;
@@ -1541,7 +1538,7 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 	{
 		if (tmp->section == section)
 		{
-			if (check_match (search_string, tmp->title, exact))
+			if (check_match (search_string, tmp->title, options))
 			{
 				if (tbl)
 					if (strcmp (tmp->title, tbl->title) >= 0)
@@ -1927,23 +1924,11 @@ static struct ency_titles *st_find_fulltext (char *search_string, int section, i
 
 struct ency_titles *st_find (char *search_string, int section, int options)
 {
-	int exact = 0;
-
 	if (!((st_file_type >= 0) && (st_file_type < ST_FILE_TYPES)))
 		return NULL;
 
-	if (options & ST_OPT_CASE_SENSITIVE)
-		st_ignore_case = 0;
-	else
-		st_ignore_case = 1;
-
-	if (options & ST_OPT_MATCH_SUBSTRING)
-		exact = 0;
-	else
-		exact = 1;
-
 	if ((section == ST_SECT_EPIS) && (options & ST_OPT_SORTEPIS))
-		section = 3;
+		section = ST_SECT_EPIS_SORTED;
 
 	switch (section)
 	{
@@ -1954,7 +1939,7 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 		if (options & ST_OPT_FT)
 			return (st_find_fulltext (search_string, section, options));
 
-		return (st_find_in_file (st_file_type, section, search_string, exact, options));
+		return (st_find_in_file (st_file_type, section, search_string, options));
 	default:
 		return (NULL);
 	}
