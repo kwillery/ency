@@ -29,6 +29,7 @@
 #include <ctype.h>
 #include <string.h>
 #include "ency.h"
+#include "encyfuncs.h"
 
 #ifndef DONT_USE_XML
 #include "data.h"
@@ -231,6 +232,10 @@ char st_cleantext (unsigned char c)
 		return ('\'');
 	case 0xD5:
 		return ('\'');
+	case 0xE0:
+		return ('a');
+	case 0xE9:
+		return ('e');
 	default:
 		return (c);
 	}
@@ -597,6 +602,9 @@ static struct st_part *get_part (int file, int section, int number)
 	struct st_part *ret;
 	long *starts;
 	long *counts;
+
+	if (number < 0)
+		return NULL;
 
 	switch (section)
 	{
@@ -1123,7 +1131,7 @@ static struct st_caption *st_get_captions (int section)
 	return (root_cpt);
 }
 
-static struct st_table *st_get_video_table (void)
+static struct st_table *st_get_video_table (int section, int reverse)
 {
 	int i = 0;
 	struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
@@ -1135,7 +1143,10 @@ static struct st_table *st_get_video_table (void)
 
 	curr = 7;
 
-	while ((part = get_part (st_file_type, ST_SECT_VTBL, count)))
+	if (reverse)
+		count = -1;
+
+	while ((part = get_part (st_file_type, section, count)))
 	{
 		curr_starts_at = part->start;
 		if (!st_open ())
@@ -1213,6 +1224,8 @@ static struct st_table *st_get_video_table (void)
 
 						if (curr_tbl->fnbase)
 						{
+							st_cleanstring (curr_tbl->fnbase);
+							st_cleanstring (curr_tbl->title);
 							if (!root_tbl)
 								root_tbl = curr_tbl;
 							curr_tbl->next = NULL;
@@ -1232,7 +1245,10 @@ static struct st_table *st_get_video_table (void)
 
 			}
 			st_close_file ();
-			count++;
+			if (reverse)
+				count--;
+			else
+				count++;
 			free (part);
 		}
 	}
@@ -1393,7 +1409,7 @@ int st_load_media (void)
 		if (!st_pcpts)
 			st_pcpts = st_get_captions (ST_SECT_PCPT);
 		if (!st_vtbls)
-			st_vtbls = st_get_video_table ();
+			st_vtbls = st_get_video_table (ST_SECT_VTBL, 0);
 		if (!st_vcpts)
 			st_vcpts = st_get_captions (ST_SECT_VCPT);
 	} else
@@ -1516,6 +1532,22 @@ static int check_match (char *search_string, char *title, int exact)
 		free (lc_search_string);
 	}
 	return found;
+}
+
+static void find_next_stxt_block (FILE *input)
+{
+	char d[5]="    ";
+	
+	while (!feof (inp))
+	{
+		d[3] = getc (input);
+
+		if ((!strcmp (d, "STXT")) || (!strcmp (d, "TXTS")))
+			return;
+		d[0] = d[1];
+		d[1] = d[2];
+		d[2] = d[3];
+	}
 }
 
 inline int st_find_start (FILE * input)
@@ -1740,6 +1772,122 @@ static struct ency_titles *st_title_error (int error_no)
 	return (return_error);
 }
 
+/* sorted episode list stuff */
+static struct st_table *epislist_head=NULL;
+
+char *get_fnbase (struct st_table *tbl, char *title)
+{
+	char *title_with_dot;
+
+	title_with_dot = (char *) malloc (strlen (title) + 2);
+	sprintf (title_with_dot, "%s.", title);
+	while (tbl)
+	{
+		if ((!strcmp (tbl->title, title)) || (!strcmp (tbl->title, title_with_dot)))
+			return tbl->fnbase;
+		tbl = tbl->next;
+	}
+	return NULL;
+}
+
+char *get_title (struct st_table *tbl, char *fnbase)
+{
+	while (tbl)
+	{
+		if (!strcmp (tbl->fnbase, fnbase))
+			return tbl->title;
+		tbl = tbl->next;
+	}
+
+	return NULL;
+}
+
+static struct ency_titles *sort_by_epis (struct ency_titles *root, int section)
+{
+	struct ency_titles *curr, *last;
+	struct ency_titles *new_root = NULL, *new_curr = NULL;
+	struct st_table *tbl, *atbl;
+	char fnbase[8];
+	char *title;
+
+	if (!epislist_head)
+		if (!(epislist_head = st_get_video_table (section, 1)))
+			return root;
+
+	tbl = epislist_head;
+	while ((tbl) && (isdigit (tbl->title[0]) || (isblank (tbl->title[0]))))
+	{
+		curr = root;
+		last = NULL;
+
+		atbl = tbl->next;
+		title = get_title (atbl, tbl->fnbase);
+		/* Special case */
+		if (!strcmp (tbl->fnbase, "oneong"))
+			title = "\"11001001\" (TNG)";
+		/* Strange cases */
+		if (!title)
+		{
+			sprintf (fnbase, "e%c%c%c%c%c", tbl->fnbase[0], tbl->fnbase[1], tbl->fnbase[2], tbl->fnbase[4], tbl->fnbase[5]);
+			title = get_title (atbl, fnbase);
+		}
+		if (!title)
+		{
+			sprintf (fnbase, "e%c%c%c%c%c", tbl->fnbase[0], tbl->fnbase[2], tbl->fnbase[3], tbl->fnbase[4], tbl->fnbase[5]);
+			title = get_title (atbl, fnbase);
+		}
+
+		if (title)
+			while (curr)
+			{
+				if (!strcasecmp (curr->title, title)
+				 || !strcasecmp (curr->title, tbl->title+3)
+				 || !strcasecmp (curr->title, tbl->title+4))
+				{
+					if (new_curr)
+					{
+						new_curr->next = curr;
+						new_curr = curr;
+					}
+					else
+						new_root = new_curr = curr;
+					if (last)
+						last->next = curr->next;
+					if (curr == root)
+						root = root->next;
+					curr->next = NULL;
+
+					free (curr->title);
+					curr->title = strdup (tbl->title);
+					
+					curr = NULL;
+				} else
+				{
+					last = curr;
+					curr = curr->next;
+				}
+			}
+		tbl = tbl->next;
+	}
+
+	/* Add whats left on to the end, just in case */
+	curr = new_root;
+	if (curr)
+	{
+		while (curr->next)
+			curr = curr->next;
+		curr->next = root;
+	}
+	return (new_root);
+}
+
+static struct ency_titles *sort_entries (struct ency_titles *root, int section, int options)
+{
+	if (options & ST_OPT_SORTEPIS)
+		return (sort_by_epis (root, section));
+	else
+		return (root);
+}
 
 static struct ency_titles *curr_find_list (int section, char *search_string, int exact, int options)
 {
@@ -2090,7 +2238,7 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 		count++;
 		free (part);
 	}
-	return (root);
+	return (sort_entries (root, section, options));
 }
 
 struct ency_titles *st_find (char *search_string, int section, int options)
@@ -2275,7 +2423,7 @@ struct st_media *st_get_media (char *search_string)
 	int media_found = 0;
 	struct st_media *media = NULL;
 	char *temp_fnbase = NULL;
-	char *title_with_dot = NULL;
+	char *ret_fnbase = NULL;
 	struct st_table *temp_ptbls = NULL;
 	struct st_table *temp_vtbls = NULL;
 
@@ -2287,46 +2435,28 @@ struct st_media *st_get_media (char *search_string)
 
 		temp_fnbase = malloc (9);
 
-		title_with_dot = malloc (strlen (search_string) + 2);
-		sprintf (title_with_dot, "%s.", search_string);
-
 		media = new_media (media);
 
-		while (temp_ptbls)
+		if ((ret_fnbase = get_fnbase (st_ptbls, search_string)))
 		{
-			if ((!strcmp (temp_ptbls->title, search_string)) || (!strcmp (temp_ptbls->title, title_with_dot)))
+			for (i = 0; i < 5; i++)
 			{
-				for (i = 0; i < 5; i++)
-				{
-					sprintf (temp_fnbase, "%s%d", temp_ptbls->fnbase, i + 1);
-					media->photos[i] = st_parse_captions (temp_fnbase);
-					if (strlen (media->photos[i].file))
-						media_found = 1;
-				}
-				sprintf (temp_fnbase, "%sf", temp_ptbls->fnbase);
-				media->swf = st_parse_captions (temp_fnbase);
-				if (strlen (media->swf.file))
+				sprintf (temp_fnbase, "%s%d", ret_fnbase, i + 1);
+				media->photos[i] = st_parse_captions (temp_fnbase);
+				if (strlen (media->photos[i].file))
 					media_found = 1;
-				
-				goto end_photo_search;
 			}
-			temp_ptbls = temp_ptbls->next;
-		}
-
-	      end_photo_search:
-
-		while (temp_vtbls)
-		{
-			if ((!strcmp (temp_vtbls->title, search_string)) || (!strcmp (temp_vtbls->title, title_with_dot)))
-			{
-				media->video = st_parse_video_captions (temp_vtbls->fnbase);
+			sprintf (temp_fnbase, "%sf", ret_fnbase);
+			media->swf = st_parse_captions (temp_fnbase);
+			if (strlen (media->swf.file))
 				media_found = 1;
-				goto end_video_search;
-			}
-			temp_vtbls = temp_vtbls->next;
 		}
 
-	      end_video_search:
+		if ((ret_fnbase = get_fnbase (st_vtbls, search_string)))
+		{
+			media->video = st_parse_video_captions (temp_vtbls->fnbase);
+			media_found = 1;
+		}
 
 		if (!media_found)
 		{
@@ -2335,7 +2465,6 @@ struct st_media *st_get_media (char *search_string)
 		}
 
 		free (temp_fnbase);
-		free (title_with_dot);
 	}
 	return (media);
 }

@@ -319,7 +319,6 @@ struct st_part *get_part (int file, int section, int number)
 	struct st_part *part=NULL;
 	char *start=NULL,*count=NULL;
 	xmlNode *node=NULL;
-	int i;
 
 	node = get_file_info(file);
 
@@ -342,9 +341,11 @@ struct st_part *get_part (int file, int section, int number)
 
 		node = node->childs;
 
-		for (i=0;i<number;i++)
-			if (node)
-				node = node->next;
+		if (number < 0)
+			node = get_nth_xml_node (node, "list", -1-number);
+		else
+			node = get_nth_xml_node (node, "part", number);
+
 		break;
 	case ST_SECT_PTBL:
 		node = get_nth_xml_node (node, "ptable", number);

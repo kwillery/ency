@@ -51,6 +51,7 @@
 #define ST_OPT_NO_CACHE 8
 #define ST_OPT_NO_FMT 16
 #define ST_OPT_TEXTLEN_MAX32 32
+#define ST_OPT_SORTEPIS 64
 
 /* enums/structs */
 typedef enum

@@ -17,6 +17,8 @@
       <part start="0x70d05e" count="6"/>
     </section>
     <section name="Episodes">
+      <list start="5449634" count="5"/>
+      <list start="0x5aa126" count="25"/>
       <part start="0x3dc854" count="23"/>
       <part start="0x3fe352" count="400"/>
       <part start="0x531c14" count="3"/>
@@ -35,6 +37,7 @@
     <pcaption start="0x72e08" count="1"/>
     <ptable start="0x7cf70" count="1"/>
     <ptable start="0x80658" count="1"/>
+    <ptable start="0x8408f" count="1"/>
     <ptable start="0x87f44" count="1"/>
     <ptable start="0x8cbc4" count="1"/>
     <ptable start="0x8fd72" count="1"/>
