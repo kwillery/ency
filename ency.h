@@ -41,40 +41,7 @@
 #define ST_OPT_RETURN_BODY 2
 #define ST_OPT_MATCH_SUBSTRING 4
 
-/* Initialisation & De-init*/
-int st_init (void);
-int st_finish (void);
-
-/* For controlling what file is opened */
-int st_set_filename (char *);
-char *st_get_filename (void);
-
-/* For checking a directory to see if a data file is there */
-char *st_autofind (int, char *);
-
-/* For getting a description of a file type */
-char *st_fileinfo_get_name (int);
-
-/* For media handling */
-int st_load_media (void);
-int st_loaded_media (void);
-int st_unload_media (void);
-
-struct st_media *st_get_media (char *);
-char *st_format_filename (char *, char *, int);
-
-/* For the actual searches */
-struct ency_titles *st_find (char *, int, int);
-struct ency_titles *ency_find_list (char[], int);
-struct ency_titles *epis_find_list (char[], int);
-struct ency_titles *chro_find_list (char[], int);
-struct ency_titles *get_title_at (long);
-
-/* Takes an error # & returns a string */
-char *st_nice_error (int);
-int st_fingerprint (void);
-char *st_autofind (int, char *);
-
+/* structs */
 struct st_ency_formatting {
   int firstword;
   int words;
@@ -125,5 +92,47 @@ struct st_media {
   struct st_photo photos[5];
   struct st_photo video;
 };
+
+/* Initialisation & De-init*/
+int st_init (void);
+int st_finish (void);
+
+/* For controlling what file is opened */
+int st_set_filename (char *);
+char *st_get_filename (void);
+
+/* For checking a directory to see if a data file is there */
+char *st_autofind (int, char *);
+
+/* For getting a description of a file type */
+char *st_fileinfo_get_name (int);
+
+/* For media handling */
+int st_load_media (void);
+int st_loaded_media (void);
+int st_unload_media (void);
+
+struct st_media *st_get_media (char *);
+char *st_format_filename (char *, char *, int);
+
+/* For the actual searches */
+struct ency_titles *st_find (char *, int, int);
+struct ency_titles *ency_find_list (char[], int);
+struct ency_titles *epis_find_list (char[], int);
+struct ency_titles *chro_find_list (char[], int);
+struct ency_titles *get_title_at (long);
+
+/* Takes an error # & returns a string */
+char *st_nice_error (int);
+int st_fingerprint (void);
+char *st_autofind (int, char *);
+
+/* dealing w/ structs */
+int st_free_entry (struct ency_titles *);
+int st_free_entry_tree (struct ency_titles *);
+int st_free_entry_and_advance (struct ency_titles **);
+int st_free_fmt (struct st_ency_formatting *);
+int st_free_fmt_tree (struct st_ency_formatting *);
+int st_free_fmt_and_advance (struct st_ency_formatting **);
 
 #endif
