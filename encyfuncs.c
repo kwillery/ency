@@ -294,7 +294,7 @@ int st_set_filename (char *filename)
   ency_filename = strdup (filename);
   if (ency_filename) {
     type = st_fingerprint ();
-    if ((force_unknown) || ((type > 0) && ( type < ST_FILE_TYPES))) {
+    if ((force_unknown) || ((type >= 0) && ( type < ST_FILE_TYPES))) {
       st_file_type = type;
       st_clear_cache();
       return (1);
@@ -483,7 +483,7 @@ char *st_autofind (int st_file_version, char *base_dir)
 
 /* media stuff */
 
-struct st_table *st_get_table (void)
+static struct st_table *st_get_table (void)
 {
   int i,z;
   struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
@@ -573,7 +573,7 @@ struct st_table *st_get_table (void)
   return (root_tbl);
 }
 
-struct st_caption *st_get_captions (void)
+static struct st_caption *st_get_captions (void)
 {
   int i, z;
   struct st_caption *root_cpt = NULL, *curr_cpt = NULL, *last_cpt = NULL;
@@ -661,7 +661,7 @@ struct st_caption *st_get_captions (void)
   return (root_cpt);
 }
 
-struct st_table *st_get_video_table (void)
+static struct st_table *st_get_video_table (void)
 {
   int i = 0;
   struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
@@ -770,7 +770,7 @@ struct st_table *st_get_video_table (void)
   return (root_tbl);
 }
 
-struct st_caption *st_get_video_captions (void)
+static struct st_caption *st_get_video_captions (void)
 {
   int i, z;
   struct st_caption *root_cpt = NULL, *curr_cpt = NULL, *last_cpt = NULL;
@@ -1228,13 +1228,12 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
   int first_time = 1;
   char c;
   int i = 0;
-  char *lc_title = NULL, *lc_search_string = NULL;
   struct ency_titles *root_title = NULL, *curr_title = NULL, *last_title = NULL;
   struct ency_titles *root_cache=NULL, *curr_cache=NULL, *temp_cache=NULL, *old_cache=NULL;
   int no_so_far = 0;
-  char *title = NULL, *temp_text = NULL;
+  char *title = NULL, *temp_text = NULL, *new_title=NULL;
   struct st_ency_formatting *text_fmt = NULL, *kill_fmt = NULL;
-
+  char last_year[5]="";
   root_cache = cache[curr-1];
 
   if (!st_open ()) {
@@ -1252,6 +1251,24 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
     no_so_far++;
 
     title = st_return_title ();
+
+    /* some chronology entries need years prepended */
+    if (curr == 3) {
+
+      /* if it's a year, save it */
+      if (strlen (title) == 4) {
+        strcpy (last_year, title);
+      }
+      /* if it's an episode or a movie, add the year */
+      if ((*title == '\"') || (!strncmp (title, "Star Trek", 9))) {
+        new_title = (char *) malloc (strlen (title) + 6);
+        sprintf (new_title, "%s %s", last_year, title);
+        free (title);
+        title = new_title;
+      }
+    }
+    
+    
     /* Title & number:  printf ("%d:%s\n", no_so_far, title); */
 
     /* build the cached version of this entry */
@@ -1313,7 +1330,6 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
   }
   while (no_so_far != curr_lastone);
   st_close_file ();
-  free (lc_search_string);
 
   cache[curr-1] = root_cache;
 
@@ -1461,7 +1477,7 @@ static struct ency_titles *st_find_in_cache (int section, char *search_string, i
 return (r_r);
 }
 
-struct ency_titles *st_find_unknown (char *search_string, int exact)
+static struct ency_titles *st_find_unknown (char *search_string, int exact)
 {
     long this_one_starts_at=0;
     struct ency_titles *root_title = NULL, *curr_title=NULL, *last_title=NULL;
@@ -1572,7 +1588,7 @@ struct ency_titles *get_title_at (long filepos)
   char c;
   char *temp_text = NULL;
   int i = 0;
-  struct ency_titles *root_title = NULL;
+  struct ency_titles *root_title = NULL, *curr_title=NULL;
   char *ttl = NULL;
   struct st_ency_formatting *text_fmt = NULL;
 
@@ -1591,7 +1607,6 @@ struct ency_titles *get_title_at (long filepos)
     return (st_title_error (2));
   }
   text_fmt = st_return_fmt ();
-  i = 0;
 
   ttl = st_return_title ();
 
@@ -1606,6 +1621,24 @@ struct ency_titles *get_title_at (long filepos)
   root_title->fmt = text_fmt;
   st_return_body = return_body_was;
   st_close_file ();
+
+  /* but of course, the title is often mangled :( */
+  /* thus, we check the cache for an entry w/ the same */
+  /* filepos, and use its title*/
+  for (i=0;i<3;i++) {
+    curr_title = cache[i];
+    while (curr_title) {
+      if (curr_title->filepos == filepos) {
+        free (root_title->title);
+        root_title->title = strdup (curr_title->title);
+        /* make sure we break out of the loop */
+        curr_title=NULL;
+        i=3;
+      }
+      if (curr_title) curr_title = curr_title->next;
+    }
+  }
+
   return (root_title);
 }
 
