@@ -546,6 +546,37 @@ static inline char *get_text_from_file (FILE *inp)
 	return text;
 }
 
+static inline char *get_text_from_file_max_length (FILE *inp, int length)
+{
+	char c, text[length+1];
+	char *t;
+	int quotes=0;
+
+	t = text;
+	if ((c = getc(inp)) == '\"')
+		quotes = 1;
+	else
+		ungetc (c, inp);
+
+	while (1)
+	{
+		c = getc (inp);
+
+		if (c == '\"')
+		{
+			if (quotes)
+				break;
+		} else if (((c == ':') || (c == ',') || (c == ']')) && !quotes)
+			break;
+
+		*t++ = c;
+	}
+
+	*t = 0;
+
+	return strdup (text);
+}
+
 static struct st_table *read_table (FILE *inp, struct st_table *root)
 {
 	struct st_table *root_tbl = NULL;
@@ -584,7 +615,7 @@ static struct st_table *read_table (FILE *inp, struct st_table *root)
 			return NULL;
 		}
 
-		curr_tbl->fnbase = get_text_from_file (inp);
+		curr_tbl->fnbase = get_text_from_file_max_length (inp, 10);
 
 		do {
 			c = getc (inp);
@@ -607,8 +638,7 @@ static struct st_table *read_table (FILE *inp, struct st_table *root)
 			c = getc (inp);
 		} while ((c == ' ') || (c == ','));
 		ungetc (c, inp);
-
-		if (ungetc (getc (inp), inp) == ']')
+		if (c == ']' || c == 0)
 			break;
 	}
 	return root_tbl;
@@ -676,7 +706,7 @@ static struct st_caption *read_captions (FILE *inp, struct st_caption *root, int
 		if (curr_cpt == NULL)
 			return (NULL);
 
-		curr_cpt->fnbasen = get_text_from_file (inp);
+		curr_cpt->fnbasen = get_text_from_file_max_length (inp, 10);
 
 		do {
 			c = getc (inp);
@@ -806,9 +836,9 @@ static struct st_table *read_attribs_table (FILE *inp, int section, int count)
 						{
 							ungetc (c, inp);
 							if (commas == 4)
-								curr_tbl->fnbase = get_text_from_file (inp);
+								curr_tbl->fnbase = get_text_from_file_max_length (inp, 20);
 							else
-								curr_tbl->audio = get_text_from_file (inp);
+								curr_tbl->audio = get_text_from_file_max_length (inp, 20);
 							c=0;
 						}
 						if (commas == 8) /* Block ID */
@@ -1535,9 +1565,7 @@ static void load_ft_list (int section)
 	struct st_part *part;
 	struct st_ftlist *root=NULL, *curr=NULL, *last=NULL;
 	struct st_wl *wl_curr=NULL, *wl_last=NULL;
-	char word[70]="", c=0;
-	int first=0;
-	char fnbase[8], *t;
+	char *word, c=0;
 	int found_word;
 	FILE *inp=NULL;
 	int count=0, multi, i;
@@ -1572,15 +1600,11 @@ static void load_ft_list (int section)
 			{
 
 				while (getc (inp) != '\"');
+				ungetc ('\"', inp);
 
-				t = word;
-				while ((*t++ = getc (inp)) != '\"')
-					;
-				*--t = 0;
+				word = get_text_from_file (inp);
 
 				while ((getc (inp)) != '[');
-
-				first = 1;
 
 				while (c != ']')
 				{
@@ -1590,19 +1614,16 @@ static void load_ft_list (int section)
 
 					if (!root)
 						root = curr;
-					if (first)
-					{
-						curr->word = strdup (word);
-						first = 0;
-					} else
-						curr->word = NULL;
+
+					curr->word = word;
+					/* we only want the 1st one to have the word stored
+					   so we can save memory */
+					word = NULL;
 
 					while ((getc (inp)) != '\"');
-					t = fnbase;
-					while ((*t++ = getc (inp)) != '\"')
-						;
-					*--t = 0;
-					curr->fnbase = strdup (fnbase);
+					ungetc ('\"', inp);
+
+					curr->fnbase = get_text_from_file_max_length (inp, 10);
 
 					while ((getc (inp) != ':'));
 					getc (inp);
@@ -1857,6 +1878,9 @@ static struct ency_titles *st_find_fulltext (char *search_string, int section, i
 		scores = scores->next;
 		free (last_score);
 	}
+
+	if (!root)
+		return NULL;
 
 	root = sort_scores (root);
 
