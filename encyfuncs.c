@@ -47,8 +47,10 @@ static const long int st_caption_starts_at[] =
 {0x4e5064, 0, 0x615552, 0, 0x646D0A, 0, 0x2C5F2C, 0, 0x37CB82, 0};
 
 /* for videos */
-static const long st_video_table_starts_at[] = {0x50e690, 0,1,0,1,0,1,0,1,0};
-static const long st_video_caption_starts_at[] = {0x4FCED6, 0,1,0,1,0,1,0,1,0};
+static const long st_video_table_starts_at[] =
+{0x50e690, 0,0x59baaa,0,1,0,1,0,1,0};
+static const long st_video_caption_starts_at[] =
+{0x4FCED6, 0,0x621174,0,1,0,1,0,1,0};
 
 /* the actual encyclopedia entries */
 static const long int ency_starts_at[] =
@@ -79,15 +81,16 @@ static const long int st_table_lastone[] =
 static const long int st_caption_lastone[] =
 {5, 0, 4, 0, 4, 0, 5, 0, 4, 0};
 
-static const long st_video_table_lastone[] = {26,0,1,0,1,0,1,0,1,0};
+static const long st_video_table_lastone[] = {26,0,26,0,1,0,1,0,1,0};
 static const long st_video_caption_lastone[] = {1,0,1,0,1,0,1,0,1,0};
+
 static long int curr_starts_at, curr_lastone, curr;
 
 const struct st_file_info st_files[] =
 {
   {"Encyclopedia", "Data.cxt", "Ency98", "media98", "video98", 1,
    {0x52, 0x49, 0x46, 0x58, 0x0, 0x99, 0xD7, 0x6E, 0x4D, 0x43, 0x39, 0x35, 0x69, 0x6D, 0x61, 0x70}, 1},
-  {"Omnipedia", "omni1.dxr", "", "", "", 1,
+  {"Omnipedia", "OMNI1.DXR", "", "media", "media", 1,
    {0x58, 0x46, 0x49, 0x52, 0xBC, 0x42, 0xB7, 0x0, 0x33, 0x39, 0x56, 0x4D, 0x70, 0x61, 0x6D, 0x69}, 1},
   {"Omnipedia (updated)", "omni_v2.dxr", "startrek", "media", "media", 1,
    {0x52, 0x49, 0x46, 0x58, 0x0, 0xFa, 0x1C, 0x7A, 0x4D, 0x56, 0x39, 0x33, 0x69, 0x6D, 0x61, 0x70}, 1},
@@ -387,7 +390,8 @@ struct st_table *st_get_table (void)
 {
   int i,z;
   struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
-  int c = 0, text_size = 0;
+  int text_size = 0;
+  char c=0;
   char *temp_text = NULL, *str_text = NULL;
 
   upto = 0;
@@ -476,7 +480,8 @@ struct st_caption *st_get_captions (void)
 {
   int i, z;
   struct st_caption *root_cpt = NULL, *curr_cpt = NULL, *last_cpt = NULL;
-  int c = 0, text_size = 0;
+  char c = 0;
+  int text_size = 0;
   char *temp_text = NULL;
 
   curr = 6;
@@ -672,7 +677,8 @@ struct st_caption *st_get_video_captions (void)
 {
   int i, z;
   struct st_caption *root_cpt = NULL, *curr_cpt = NULL, *last_cpt = NULL;
-  int c = 0, text_size = 0;
+  int text_size = 0; 
+  char c=0;
   char *temp_text = NULL;
 
   curr = 8;
@@ -708,7 +714,7 @@ struct st_caption *st_get_video_captions (void)
               c = getc (inp);
             }
             while (!c);
-            ungetc (c, inp);
+            c = ungetc (c, inp);
             if ((c = getc (inp)) != ' ')
               c = ungetc (c, inp);
             if ((c = getc (inp)) != '\"')
