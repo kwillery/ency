@@ -34,7 +34,7 @@ libency.a(data.o): data.h data.c ency.h
 findenc htmlenc scanenc: libency.a
 
 clean:
-	rm -f findenc htmlenc scanenc encyfuncs.o libency.a core
+	rm -f findenc htmlenc scanenc encyfuncs.o data.o libency.a core
 
 distclean: clean
 
