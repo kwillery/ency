@@ -561,6 +561,9 @@ static struct st_table *read_table (FILE *inp, struct st_table *root)
 	if (ungetc (getc (inp), inp) == ':')
 		return root;
 
+	if ((c != '[') && (c != '\"'))
+		return root;
+
 	if (c != '[')
 		ungetc (c, inp);
 
@@ -949,6 +952,7 @@ void st_unload_media (void)
 
 	st_ptbls = NULL;
 	st_pcpts = NULL;
+	st_pcpts_quick = NULL;
 	st_vcpts = NULL;
 }
 
@@ -1914,7 +1918,7 @@ static struct st_photo st_parse_captions (char *fnbasen)
 	strcpy (photo.caption, "");
 	while (temp_pcpts && (!strlen (photo.file)))
 	{
-		if (!strcasecmp (fnbasen, temp_pcpts->fnbasen))
+		if (!strcmp (fnbasen, temp_pcpts->fnbasen))
 		{
 			strcpy (photo.file, fnbasen);
 			strcpy (photo.caption, temp_pcpts->caption);
