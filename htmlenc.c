@@ -235,7 +235,7 @@ if (exact)
  thingy = ency_get_title (search_string);
 else
  thingy = ency_find_titles (search_string);
-
+// thingy = chro_find_titles (search_string);
 
 printf("<html>\n");
 printf("<head><title>Search results for: %s</title></head>",search_string);

@@ -8,16 +8,19 @@ BINDIR=/usr/local/bin
 MANDIR=/usr/local/man/man1
 LIBS = `gtk-config --libs`
  
-all: htmlenc findenc
+all: findenc htmlenc gtkency
+
 
 findenc : findenc.c encyfuncs.c ency.h
+	$(CC) encyfuncs.c $< -o $@
+gtkency : findenc.c encyfuncs.c ency.h
 	$(CC) $(GTKCFLAGS)  encyfuncs.c $(LIBS) $< -o $@
 
 htmlenc : htmlenc.c encyfuncs.c ency.h
 	$(CC) encyfuncs.c $< -o $@
 
 clean :
-	rm -f findenc htmlenc core
+	rm -f findenc htmlenc gtkency core
 
 install: findenc
 	install -c findenc $(BINDIR)

@@ -34,9 +34,9 @@ long int ency_starts_at = 0x7bc28; // Bytes into file info starts at - 1
 long int epis_starts_at = 0x3b8e20;
 long int chro_starts_at = 0x41e32c;
 
-long int ency_lastone = 7067; // should be +1, Zytchin (last) dumps core. damn.
+long int ency_lastone = 7068;
 long int epis_lastone = 402;
-long int chro_lastone = 10000;
+long int chro_lastone = 582;
 
 long int curr_starts_at,curr_lastone,curr;
 int screwy = 0;
@@ -290,6 +290,10 @@ temp_text = malloc(1);
 c=ency_cleantext(getc(inp));
 if (c == 0) bye = 1;
 if ((old_c == 13) && (c == 13)) bye = 1;
+if (curr == 3)
+ if (getc(inp) != 0x7E)
+  { bye = 0; ungetc(c,inp); }
+
 if (curr == 2)
  if ((done_once < 2) && (bye == 1))
   {
@@ -333,7 +337,7 @@ char c;
 char *titl = NULL;
 int title_size = 0;
 
-titl = malloc(50); // should be 1, not 50.
+titl = malloc(70); // should be 1, not 70.
 
 // malloc & realloc calls keep crashing, no idea why.
 
@@ -371,6 +375,100 @@ char *chro_return_title(void)
 return(curr_return_title());
 }
 
+struct ency_titles *curr_find_list (char title[],int exact)
+{
+  int first_time = 1;
+  char c;
+  int i = 0;
+  struct ency_titles *root_title, *curr_title, *last_title;
+  int no_so_far = 0;
+  char *ttl;
+  struct st_ency_formatting *text_fmt;
+
+  root_title = curr_title = last_title = NULL;
+
+  if (st_open () == 1)
+{
+printf("Error opening file.\n");
+}
+
+  root_title = (struct ency_titles *) malloc (sizeof (struct ency_titles));
+  if (root_title == NULL)
+    {
+      printf ("Memory allocation failed\n");
+    }
+
+  curr_title = root_title;
+
+  do
+    {
+
+if (!first_time)
+  ency_find_start();
+first_time = 0;
+text_fmt = ency_return_fmt();
+
+i=0;
+no_so_far++;
+
+ ttl = ency_return_title();
+
+      c = getc (inp);
+// printf ("%d: %s\n", no_so_far, ttl);
+// if (screwy){screwy=0;printf("%s\n",ttl);}
+// printf("%s=%s:%d",ttl,title,strstr(ttl,title));
+     if (((!exact) && (strstr (ttl, title))) || (exact == 1) && (!strcmp(ttl,title)) || (exact == 2))
+// if (!strcmp(ttl,title))
+        {
+
+// printf("dbg2\n");
+// define the pointer
+          if (curr_title != root_title)
+            {
+              curr_title = (struct ency_titles *) malloc (sizeof (struct ency_titles));
+              if (curr_title == NULL)
+                {
+                  printf ("Memory allocation failed\n");
+//                exit (1);
+                }
+            }
+// copy pointer stuff over
+// printf("dbg3\n");
+          curr_title->title = ttl;
+          curr_title->next = NULL;
+//          curr_title->text = NULL;
+          if (last_title != NULL)
+          last_title->next = curr_title;
+          last_title = curr_title;
+          curr_title = NULL;
+          ttl = NULL;
+// printf("dbg4\n");
+        } else free(ttl);
+// printf("dbg5\n");
+    }
+  while (no_so_far != curr_lastone);
+// printf("dbg6\n");
+return(root_title);
+}
+
+struct ency_titles *ency_find_list (char title[], int exact)
+{
+curr=1;
+curr_lastone = ency_lastone;
+return(curr_find_list(title,exact));
+}
+struct ency_titles *epis_find_list (char title[], int exact)
+{
+curr=2;
+curr_lastone = epis_lastone;
+return(curr_find_list(title,exact));
+}
+struct ency_titles *chro_find_list (char title[], int exact)
+{
+curr=3;
+curr_lastone = chro_lastone;
+return(curr_find_list(title,exact));
+}
 
 struct ency_titles *curr_find_titles (char title[])
 {
@@ -417,7 +515,7 @@ no_so_far++;
 
 // printf("dbg1 %s %d\n",ttl,strlen(ttl));
       c = getc (inp);
- printf ("%d: %s\n", no_so_far, ttl);
+// printf ("%d: %s\n", no_so_far, ttl);
 // if (screwy){screwy=0;printf("%s\n",ttl);}
 // printf("%s=%s:%d",ttl,title,strstr(ttl,title));
       if (strstr (ttl, title))
