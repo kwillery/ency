@@ -196,6 +196,11 @@ int st_count_filetypes(void)
 	return count_files();
 }
 
+void st_unload_data(void)
+{
+	st_data_clear();
+}
+
 /* struct manipulation */
 void st_free_fmt (struct st_ency_formatting *fmt)
 {
