@@ -261,7 +261,6 @@ void process_cast_block (FILE *inp, long size)
 	struct part *tmp;
 	char *block;
 	char *t;
-	int skip;
 
 	printf ("\tFound CASt block");
 
@@ -305,9 +304,9 @@ void process_cast_block (FILE *inp, long size)
 
 	tmp->name = (char *) malloc (sizeof (char) * *t + 1);
 	strncpy (tmp->name, t+1, *t);
-	tmp->name[*t] = 0;
+	tmp->name[(int) *t] = 0;
 
-	printf (" (%s)", tmp->name, t - block);
+	printf (" (%s)", tmp->name);
 
 	tmp->section = identify_section (tmp->name);
 	tmp->count = 1;
@@ -349,17 +348,7 @@ int ignore_block (char *name, long size)
 void search_file (FILE *inp, int reverse, FILE *outp, FILE *data)
 {
 	struct block *b=NULL;
-	char cast_header[16];
-	char d[5]="";
-	int i;
-	long found_at=-1;
-	char temp[64];
-	char text[512];
-	char *t;
 	char c;
-	int count=0, dudsinarow=0;
-	int section;
-	struct part *curr=NULL, *last=NULL;
 
 	/* Jump to the first useful block    */
 	/* this seems to always be 'imap'    */
@@ -388,7 +377,7 @@ void write_useful_information (FILE *inp, FILE *outp, FILE *data)
 {
 	struct part *part=NULL;
 	int i;
-	int count, z;
+	int count, z=1;
 	char *sect[] = 
 	{
 		"Encyclopedia",
