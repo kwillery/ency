@@ -131,6 +131,30 @@ static char st_cleantext (unsigned char c)
   case 13:
     return ('\n');
     break;
+  case 0x88:
+    return ('a');
+    break;
+  case 0x8E:
+    return ('e');
+    break;
+  case 0x8F:
+    return ('e');
+    break;
+  case 0x92:
+    return ('\'');
+    break;
+  case 0x93:
+    return ('\"');
+    break;
+  case 0x94:
+    return ('\"');
+    break;
+  case 0x97:
+    return (':');
+    break;
+  case 0xA5:
+    return ('*');
+    break;
   case 0xD0:
     return ('-');
     break;
@@ -148,27 +172,6 @@ static char st_cleantext (unsigned char c)
     break;
   case 0xD5:
     return (39);
-    break;
-  case 0x88:
-    return ('a');
-    break;
-  case 0x8E:
-    return ('e');
-    break;
-  case 0x8F:
-    return ('e');
-    break;
-  case 0xA5:
-    return ('*');
-    break;
-  case 0x93:
-    return ('\"');
-    break;
-  case 0x94:
-    return ('\"');
-    break;
-  case 0x92:
-    return ('\'');
     break;
   default:
     return (c);
@@ -391,7 +394,7 @@ struct st_table *st_get_table (void)
   int i,z;
   struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
   int text_size = 0;
-  char c=0;
+  unsigned char c=0;
   char *temp_text = NULL, *str_text = NULL;
 
   upto = 0;
