@@ -986,6 +986,16 @@ int st_load_media (void)
 		st_ptbls = st_get_table ();
 	if (!st_pcpts)
 		st_pcpts = st_get_captions (ST_SECT_PCPT);
+	/* Note we assume here that
+	 * - the entry list has been loaded
+	 * - that it contains all of the entries
+	 *   that we want.
+	 * This *should* be OK as long as a search has loaded
+	 * the relevant part of the entry list. (As it would
+	 * have needed to to search it). But if the entry list
+	 * is free()'d in between the search and now, there
+	 * will be no videos in the media list.
+	 * (10 lines of comments for two of code! :-) */
 	if (!st_vtbls)
 		st_vtbls = entrylist_head;
 	if (!st_vcpts)
@@ -1282,13 +1292,39 @@ static int entry_list_has_section (section)
  * sections (-1 == ST_SECT_ALL) */
 static int load_entry_lists (void)
 {
+	/* Note we don't clean out the old entry
+	 * lists here - potential memory leak if
+	 * it is called > 1 time. */
 	if (!entrylist_head)
 		entrylist_head = st_get_video_table (-1);
-	
+
 	st_vtbls = entrylist_head;
 
 	return 1;
 }
+
+/* Load just one section's entry list */
+static int load_entry_list (int section)
+{
+	struct st_table *lst=entrylist_head;
+
+	if (!entrylist_head)
+	{
+		entrylist_head = st_get_video_table (section);
+		st_vtbls = entrylist_head;
+	}
+	else
+	{
+		while (lst->next)
+			lst = lst->next;
+
+		lst->next = st_get_video_table (section);
+	}
+
+
+	return 1;
+}
+
 
 /* Get the fnbase from a list when given
  * the entry's title. This checks the
@@ -1640,7 +1676,7 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 	struct st_table *tbl=NULL;
 
 	if (!entry_list_has_section (section))
-		if (!load_entry_lists ())
+		if (!st_get_video_table (section))
 			return NULL;
 
 	tmp = entrylist_head;
