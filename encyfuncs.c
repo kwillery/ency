@@ -959,20 +959,35 @@ static struct st_table *read_attribs_table (FILE *inp, int section)
 										level--;
 									if ((level == 1) && (c == ','))
 										commas++;
-									/* commas == 4 is video fnbase, 5 is aif FN */
-									if ((c == '\"') && ((commas == 4) || (commas == 5)))
-										{
-											ungetc (c, inp);
-											if (commas == 4)
-												curr_tbl->fnbase = st_cleanstring (get_text_from_file_max_length (inp, 20));
-											else
-												curr_tbl->audio = st_cleanstring (get_text_from_file_max_length (inp, 20));
-											c=0;
-										}
-									if (commas == 8) /* Block ID */
+									switch (commas)
+									{
+									case 1: // # of thumbnails
+										break;
+									case 2: // List of thumbnail pointers
+										break;
+									case 4: // Video
+										if (c != '"')
+											break;
+										ungetc (c, inp);
+										curr_tbl->fnbase = st_cleanstring (get_text_from_file_max_length (inp, 20));
+										c=0;
+										break;
+									case 5: // Audio
+										if (c != '"')
+											break;
+										ungetc (c, inp);
+										curr_tbl->audio = st_cleanstring (get_text_from_file_max_length (inp, 20));
+										c=0;
+										break;
+									case 6: // 'Resource' link
+										break;
+									case 8: // Block ID
 										fscanf (inp, "%d", &(curr_tbl->block_id));
-									if (commas == 9) /* Entry ID in block*/
+										break;
+									case 9: // Entry ID (in block)
 										fscanf (inp, "%d", &(curr_tbl->id));
+										break;
+									}
 								}
 							if (c == '\"')
 								in_quote = !in_quote;
