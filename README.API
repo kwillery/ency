@@ -6,8 +6,12 @@ ency API
 ----------------
 global variables
 ----------------
+extern char *ency_filename;
+ sets the Data.cxt filename explicitely (eg "/dose/ency98/Data.cxt")
 extern int st_ignore_case;
  sets for most functions to ignore case when searching
+extern int st_return_body;
+ sets whether a function returns formatting & text. (in applicable functions that is :-)
 
 ----------
 structures
@@ -39,25 +43,26 @@ filepos = used soon, i promise!!! (very alpha now, will be used for post search 
 ---------
 functions
 ---------
+
 struct ency_titles *ency_find_list (char title[], int exact)
 returns - struct containing encyclopedia titles & text
 title: a string to search for.
 exact: 0 = match a substring
        1 = match *full* string only
-       2 = return *every* result, ie ignore search string
+       2 = return *every* entry, ie ignore search string
 st_ignore_case = global variable
+st_return_body = global variable
 (same for epis_find_list & chro_find_list)
 
-
 struct ency_titles *ency_find_titles (char title[])
-returns - struct containing encyclopedia titles & text
+returns - struct containing encyclopedia titles & text. matches a substring.
 title: a string to search for.
 st_ignore_case = global variable
 (same for epis_find_titles & chro_find_titles)
 
 struct ency_titles *ency_get_title (char title[])
-returns - struct containing encyclopedia titles only. matches a substring.
-title: a string to search for.
+returns - struct containing encyclopedia title and text. matches exactly.
+title: title to retrieve.
 case *sensitive*
 (same for epis_get_title & chro_get_title)
 

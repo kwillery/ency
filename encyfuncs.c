@@ -32,6 +32,8 @@
 
 FILE *inp;
 char *ency_filename;
+
+int st_return_body = 1;
 int st_ignore_case = 0;
 long int file_pos_is = 0;
 
@@ -44,7 +46,7 @@ long int set_starts_at = 0x0;
 
 long int ency_lastone = 7068;
 long int epis_lastone = 402;
-long int chro_lastone = 582;
+long int chro_lastone = 581;
 
 long int curr_starts_at, curr_lastone, curr;
 int screwy = 0;
@@ -67,8 +69,9 @@ st_open (void)
   if (curr == 4)		// table
 
     curr_starts_at = st_table_starts_at;
-if (curr == 5) // Set value
-curr_starts_at = set_starts_at;
+  if (curr == 5)		// Set value
+
+    curr_starts_at = set_starts_at;
 
   return (curr_open ());
 }
@@ -85,13 +88,13 @@ curr_open (void)
     }
   inp = fopen (ency_filename, "r");
 
-    if (inp)
+  if (inp)
 //    for (i = 0; i < curr_starts_at; i++)
-//      c = egetc ();
-{
-fseek(inp,curr_starts_at,SEEK_CUR);
-file_pos_is+=curr_starts_at;
-}
+    //      c = egetc ();
+    {
+      fseek (inp, curr_starts_at, SEEK_CUR);
+      file_pos_is += curr_starts_at;
+    }
   return ((int) inp);
 }
 
@@ -180,16 +183,18 @@ ency_cleantext (unsigned char c)
     }
 }
 
-char egetc(void)
+char 
+egetc (void)
 {
-file_pos_is++;
-return(getc(inp));
+  file_pos_is++;
+  return (getc (inp));
 }
 
-void eungetc(char c)
+void 
+eungetc (char c)
 {
-file_pos_is--;
-ungetc(c,inp);
+  file_pos_is--;
+  ungetc (c, inp);
 }
 
 
@@ -211,7 +216,7 @@ curr_return_fmt (void)
     }
   memset (root_fmt, 0, sizeof (struct st_ency_formatting));
   curr_fmt = root_fmt;
-  c = egetc();
+  c = egetc ();
   while (c != '@')
     {
       if (!first_time)
@@ -269,7 +274,6 @@ curr_return_fmt (void)
 	    }
 	}
       c = egetc ();
-
       curr_fmt->next = NULL;
       if (last_fmt != NULL)
 	last_fmt->next = curr_fmt;
@@ -277,7 +281,6 @@ curr_return_fmt (void)
       curr_fmt = NULL;
     }
   c = egetc ();
-
   return (root_fmt);
 }
 
@@ -482,7 +485,7 @@ curr_find_list (char title[], int exact)
   char ttl2[70], title2[70];
   struct ency_titles *root_title, *curr_title, *last_title;
   int no_so_far = 0;
-  char *ttl;
+  char *ttl, *temp_text;
   struct st_ency_formatting *text_fmt;
 
   root_title = curr_title = last_title = NULL;
@@ -505,7 +508,7 @@ curr_find_list (char title[], int exact)
 
       if (!first_time)
 	ency_find_start ();
-this_one_starts_at = file_pos_is;
+      this_one_starts_at = file_pos_is;
       first_time = 0;
       text_fmt = ency_return_fmt ();
 
@@ -513,7 +516,7 @@ this_one_starts_at = file_pos_is;
       no_so_far++;
 
       ttl = ency_return_title ();
-
+/* printf("%d:%s\n",no_so_far,ttl); */
       c = egetc ();
 
 // printf ("%d: %s\n", no_so_far, ttl);
@@ -547,6 +550,8 @@ this_one_starts_at = file_pos_is;
       if (found)
 	{
 	  found_any_yet = 1;
+	  if (st_return_body)
+	    temp_text = ency_return_text ();
 // printf("dbg2\n");
 	  // define the pointer
 	  if (curr_title != root_title)
@@ -560,15 +565,19 @@ this_one_starts_at = file_pos_is;
 	    }
 // copy pointer stuff over
 	  // printf("dbg3\n");
-curr_title->filepos = this_one_starts_at;
+	  curr_title->filepos = this_one_starts_at;
 	  curr_title->title = ttl;
 	  curr_title->next = NULL;
-//          curr_title->text = NULL;
+	  if (st_return_body)
+	    {
+	      curr_title->text = temp_text;
+	      curr_title->fmt = text_fmt;
+	    }
 	  if (last_title != NULL)
 	    last_title->next = curr_title;
 	  last_title = curr_title;
 	  curr_title = NULL;
-	  ttl = NULL;
+	  ttl = temp_text = text_fmt = NULL;
 // printf("dbg4\n");
 	}
       else
@@ -641,7 +650,7 @@ curr_find_titles (char title[])
 
       if (!first_time)
 	ency_find_start ();
-this_one_starts_at = file_pos_is;
+      this_one_starts_at = file_pos_is;
       first_time = 0;
       text_fmt = ency_return_fmt ();
 
@@ -696,7 +705,7 @@ this_one_starts_at = file_pos_is;
 	    }
 // copy pointer stuff over
 	  // printf("dbg3\n");
-curr_title->filepos =  this_one_starts_at;
+	  curr_title->filepos = this_one_starts_at;
 	  curr_title->title = ttl;
 	  curr_title->text = temp_text;
 	  curr_title->next = NULL;
@@ -841,7 +850,7 @@ st_get_table (void)
   if (!st_open ())
     {
 //      return (st_title_error (1));
-return(NULL);
+      return (NULL);
     }
   else
     {
@@ -866,7 +875,7 @@ return(NULL);
 	      if (curr_tbl == NULL)
 		{
 		  // return (st_title_error (2));
-return(NULL);
+		  return (NULL);
 		}
 	      if (first_time)
 		root_tbl = curr_tbl;
@@ -883,8 +892,8 @@ return(NULL);
 		  temp_text = realloc (temp_text, text_size + 2);
 		  if (temp_text == NULL)
 		    {
-//		      return (st_title_error (1));
-return(NULL);
+//                    return (st_title_error (1));
+		      return (NULL);
 		    }
 		  temp_text[text_size++] = tolower (ency_cleantext (c));
 		  // printf("%c",c);
@@ -901,8 +910,8 @@ return(NULL);
 		  temp_text = realloc (temp_text, text_size + 2);
 		  if (temp_text == NULL)
 		    {
-	//	      return (st_title_error (1));
-return(NULL);
+		      //            return (st_title_error (1));
+		      return (NULL);
 		    }
 		  temp_text[text_size++] = ency_cleantext (c);
 // printf("%c",c);
@@ -946,8 +955,8 @@ get_title_at (long filepos)
 
   root_title = NULL;
 
-set_starts_at=filepos;
-curr = 5;
+  set_starts_at = filepos;
+  curr = 5;
 
   if (!st_open ())
     {
@@ -960,22 +969,21 @@ curr = 5;
       return (st_title_error (2));
     }
 
-      text_fmt = ency_return_fmt ();
+  text_fmt = ency_return_fmt ();
 
-      i = 0;
+  i = 0;
 
-      ttl = ency_return_title ();
+  ttl = ency_return_title ();
 
-      c = egetc ();
+  c = egetc ();
 
 
-          temp_text = ency_return_text ();
+  temp_text = ency_return_text ();
 // copy pointer stuff over
-          root_title->filepos = filepos;
-          root_title->title = ttl;
-          root_title->text = temp_text;
-          root_title->next = NULL;
-          root_title->fmt = text_fmt;
+  root_title->filepos = filepos;
+  root_title->title = ttl;
+  root_title->text = temp_text;
+  root_title->next = NULL;
+  root_title->fmt = text_fmt;
   return (root_title);
 }
-
