@@ -21,7 +21,7 @@
 /*      Email   mibus@bigpond.com                                            */
 /*      Webpage http://users.bigpond.com/mibus/                              */
 /*****************************************************************************/
-
+#define free(A) {if (A) free (A); A=NULL;}
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -804,6 +804,7 @@ static struct st_caption *st_get_captions (int section)
 							z++;
 
 						c = getc (inp);
+						if (c == ' ') c = getc (inp);
 
 						curr_cpt->fnbasen = temp_text;
 
@@ -874,9 +875,6 @@ static struct st_table *st_get_video_table (void)
 							return (NULL);
 						}
 
-						if (!root_tbl)
-							root_tbl = curr_tbl;
-
 						/* TODO: Make this '70' an autodetected size */
 						temp_text = malloc (sizeof (char) * 70);
 						text_size = 0;
@@ -893,6 +891,7 @@ static struct st_table *st_get_video_table (void)
 
 						curr_tbl->title = temp_text;
 						temp_text = NULL;
+						curr_tbl->fnbase = NULL;
 
 						c = getc (inp);
 						if (c == ':')
@@ -927,6 +926,8 @@ static struct st_table *st_get_video_table (void)
 
 						if (curr_tbl->fnbase)
 						{
+							if (!root_tbl)
+								root_tbl = curr_tbl;
 							curr_tbl->next = NULL;
 							if (last_tbl)
 								last_tbl->next = curr_tbl;
@@ -943,9 +944,9 @@ static struct st_table *st_get_video_table (void)
 				}	/* end main loop */
 
 			}
-
 			st_close_file ();
 			count++;
+			free (part);
 		}
 	}
 	return (root_tbl);
@@ -956,6 +957,7 @@ int st_load_media (void)
 	/*
 	 * Get the table & captions (if we don't already have them)
 	 */
+
 	if (!st_ptbls)
 		st_ptbls = st_get_table ();
 	if (!st_pcpts)
@@ -976,7 +978,7 @@ int st_loaded_media (void)
 		return (0);
 }
 
-int st_unload_media (void)
+void st_unload_media (void)
 {
 /* Free the caption & table info for the pictures */
 	while (st_pcpts)
@@ -1036,7 +1038,10 @@ int st_unload_media (void)
 		}
 	}
 
-	return (1);
+	st_ptbls = NULL;
+	st_pcpts = NULL;
+	st_vtbls = NULL;
+	st_vcpts = NULL;
 }
 
 
@@ -1442,8 +1447,10 @@ static struct ency_titles *curr_find_list (int section, char *search_string, int
 				if (last_title != NULL)
 					last_title->next = curr_title;
 				last_title = curr_title;
-				curr_title = (struct ency_titles *) NULL;
-				title = temp_text = (char *) text_fmt = (struct st_ency_formatting *) NULL;
+				curr_title = NULL;
+				title = NULL;
+				temp_text = NULL;
+				text_fmt = NULL;
 /* */
 			}
 			else
@@ -1556,7 +1563,7 @@ static struct ency_titles *st_find_unknown (int section, char *search_string, in
 	return (st_find_in_cache (section, search_string, exact, 1));
 }
 
-struct ency_titles *st_find_in_file (int file, int section, char *search_string, int exact, int options)
+static struct ency_titles *st_find_in_file (int file, int section, char *search_string, int exact, int options)
 {
 	struct ency_titles *root = NULL, *current = NULL, *temp = NULL;
 	struct st_part *part = NULL;
@@ -1815,7 +1822,6 @@ struct st_media *st_get_media (char *search_string)
 		if (!media_found)
 		{
 			free (media);
-/* FIXME: should i be free'ing media->photos[*]->* ???? find out. */
 			media = NULL;
 		}
 

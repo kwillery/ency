@@ -131,7 +131,7 @@ char *st_fileinfo_get_name (int);
 /* For media handling */
 int st_load_media (void);
 int st_loaded_media (void);
-int st_unload_media (void);
+void st_unload_media (void);
 
 struct st_media *st_get_media (char *);
 char *st_format_filename (char *, char *, int);
