@@ -39,6 +39,7 @@ binary-arch:	checkroot build
 	$(checkdir)
 	rm -rf debian/tmp
 	install -d debian/tmp/DEBIAN\
+		-d debian/tmp/etc \
 		-d debian/tmp/usr/share/doc/$(package)\
 		-d debian/tmp/usr/share/man \
 		-d debian/tmp/usr/share/man/man1 \
@@ -50,6 +51,8 @@ binary-arch:	checkroot build
 		prefix=`pwd`/debian/tmp/usr install-bin install-dev
 	$(MAKE) INSTALL_PROGRAM='install -c' \
 		prefix=`pwd`/debian/tmp/usr/share install-doc
+	$(MAKE) INSTALL_PROGRAM='install -c' \
+		prefix=`pwd`/debian/tmp/usr/etc install-data
 	dpkg-shlibdeps findenc htmlenc scanenc
 	dpkg-gencontrol
 	chown -R root.root debian/tmp
