@@ -479,6 +479,7 @@ int st_open_ency (char *directory)
                             st_clear_cache(); \
                             st_clear_entry_list(); \
                             st_unload_media(); \
+                            free (test_filename); \
                             return i; \
                            }
 
@@ -2167,7 +2168,7 @@ static struct st_media *new_media (struct st_media *old_media)
 		strcpy (media->audio.caption, "");
 		strcpy (media->swf.file, "");
 		strcpy (media->swf.caption, "");
-		media->resource = NULL;
+		strcpy (media->resource, "");
 	}
 	return media;
 }
@@ -2283,7 +2284,7 @@ struct st_media *st_get_media (char *search_string)
 				strcpy (media->audio.caption, search_string);
 			}
 			if (ret_tbl->resource)
-				media->resource = strdup (ret_tbl->resource);
+				strcpy(media->resource, ret_tbl->resource);
 			if (strlen (media->video.file) || strlen (media->audio.file) || media->resource)
 				media_found = 1;
 		}

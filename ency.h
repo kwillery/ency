@@ -128,7 +128,7 @@ struct st_media
 	struct st_photo video;
 	struct st_photo audio;
 	struct st_photo swf;
-	char *resource;
+	char resource[70];
 };
 
 /* Initialisation & De-init */

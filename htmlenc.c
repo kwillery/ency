@@ -137,7 +137,7 @@ void print_media(struct st_media *media, char *base_path, FILE *out)
 
 	print_one_media (media->audio, base_path, audio, "audio", out);
 
-	if (media->resource)
+	if (strlen(media->resource))
 		fprintf (out, "<li>There is an associated resource: %s (DXR)</li>\n", media->resource);
 
 	fprintf (out, "</ul>");
