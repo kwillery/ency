@@ -194,33 +194,40 @@ exit(0);
 
 main(int argc, char *argv[])
 {
+  int args_read = 0;
   char search_string[50];
   struct ency_titles *thingy;
   struct ency_titles *kill_me;
   struct st_ency_formatting *fmt1, *fmt2;
   int i, fin_arg;
-if (argc > 1)
+// if (argc > 1)
 {
 for (i = 0; i < argc; i++)
 {
-printf("%s",argv[i]);
+// printf("%s",argv[i]);
 fin_arg = 0;
-if (!fin_arg)
- if (argv[i] ==  "-f")
-  if(strcpy(filename,argv[++i])) fin_arg = 1; else usage;
+// if (!fin_arg)
+//  if (argv[i][1] ==  "f")
+//   if(strcpy(filename,argv[++i])) fin_arg = 1; else usage;
 if (!fin_arg)
  if (argv[i][1] ==  'e')
   if (exact = 1) fin_arg = 1; else usage;
+if (argv[i][1] == '-')
+ usage;
+args_read++;
 }
 }
 if (argc == 1) // no args
 {
- usage();
+// usage();
 }
-strcpy(search_string,argv[argc-1]);
-//  printf ("Enter search string :");
+if (argc-args_read > 0) strcpy(search_string,argv[argc-1]);
+if (argc-args_read == 0) 
+{
+  printf ("Enter search string :");
 //  scanf ("%s", search_string);
-//  scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
+  scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
+}
 if (exact)
  thingy = ency_get_title (search_string);
 else
