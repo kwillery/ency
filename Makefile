@@ -19,7 +19,7 @@ libency.a(encyfuncs.o): ency.h encyfuncs.c
 
 findenc htmlenc: libency.a
 
-clean :
+clean:
 	rm -f findenc htmlenc encyfuncs.o libency.a core
 
 install: findenc htmlenc
