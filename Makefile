@@ -1,4 +1,3 @@
-SHELL=/bin/sh
 CFLAGS=-O3 -g -Wall
 LDFLAGS=
 CC=gcc

@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
-#define __USE_ISOC99 /* For isblank() in ctype.h */
 #include <ctype.h>
 #include <string.h>
 #include <errno.h>
@@ -41,6 +40,10 @@
 #define DBG(a) ;
 #endif
 
+/* For MSVC etc. without 'inline' */
+#ifndef __GNUC__
+#define inline
+#endif
 static char *ency_filename = NULL;
 
 static int st_file_type = 0;
@@ -209,6 +212,18 @@ int st_count_filetypes(void)
 void st_unload_data(void)
 {
 	st_data_clear();
+}
+
+static int isblank (char c)
+{
+	switch (c)
+	{
+		case ' ':
+		case '\t':
+		case '\n':
+			return 1;
+	}
+	return 0;
 }
 
 /* struct manipulation */
@@ -642,17 +657,20 @@ static inline char *get_text_from_file (FILE *inp)
  * has a maximum length and simpler error checking */
 static inline char *get_text_from_file_max_length (FILE *inp, int length)
 {
-	char c, text[length+1];
+	char c, *text;
 	char *t;
 	int quotes=0;
 
-	t = text;
+	t = text = malloc (length + 1);
+	if (!text)
+		return NULL;
+
 	if ((c = getc(inp)) == '\"')
 		quotes = 1;
 	else
 		ungetc (c, inp);
 
-	while (1)
+	while (t - text < length)
 	{
 		c = getc (inp);
 
@@ -668,7 +686,9 @@ static inline char *get_text_from_file_max_length (FILE *inp, int length)
 
 	*t = 0;
 
-	return strdup (text);
+	DBG ((stderr,"get_text_from_file_max_length: read '%s', ending at %ld\n", text, ftell(inp)));
+
+	return text;
 }
 
 /* Reads an attrib table from 'inp' and appends
@@ -2308,10 +2328,16 @@ static struct st_media *new_media (struct st_media *old_media)
 static int in_simple_list (long filepos, int entrylen, char *match)
 {
 	FILE *inp;
-	char entry[entrylen+1];
+	char *entry;
+
+	entry = malloc (entrylen + 1);
+
+	if (!entry)
+		return 0;
 
 	inp = curr_open (filepos);
 	fseek (inp, 12, SEEK_CUR);
+
 	while (getc (inp) != ']')
 	{
 		while (getc (inp) != '\"');
@@ -2321,10 +2347,12 @@ static int in_simple_list (long filepos, int entrylen, char *match)
 		if (!strncasecmp (match, entry, strlen (entry)))
 		{
 			fclose (inp);
+			free (entry);
 			return 1;
 		}
 	}
 	fclose (inp);
+	free (entry);
 	return 0;
 }
 
@@ -2537,7 +2565,7 @@ int st_get_picture(char *name, char *file, long width, long height)
 	DBG ((stderr, "Got part '%s' @ %ld, %ld bytes long.\n", name, part->start, part->size));
 
 	inp = open_part (part);
-	ret = create_ppm_from_image (file, inp, width, height, part->size)
+	ret = create_ppm_from_image (file, inp, width, height, part->size);
 
 	DBG ((stderr, "Ret: %d\n", ret));
 	fclose (inp);
