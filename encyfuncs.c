@@ -92,6 +92,7 @@ int st_init (void)
 {
 	char *temp = NULL;
 
+	DBG ((stderr, "Entering st_init()\n"));
 	if (count_files() == 0) /* If there isnt an RC file already loaded... */
 		load_rc_file_info(NULL);
 	if (!count_files())
