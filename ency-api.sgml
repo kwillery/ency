@@ -122,7 +122,7 @@ struct ency_titles
 <tt/fmt/ is the entry's formatting information. (see <ref id="st_ency_formatting" name="st_ency_formatting">)
 <tt/next/ leads to the next returned entry (<tt/NULL/ if this is the last one).
 <tt/err/ is a returned error code (see <ref id="st_nice_error" name="st_nice_error">).
-<tt/filepos/ is the # of bytes into the data file the information starts. (see <ref id="get_title_at" name="get_title_at">)
+<tt/filepos/ is the # of bytes into the data file the information starts. (see <ref id="get_title_at" name="get_title_at">). It should be free'd with one of the <ref id="st_free_entry*" name="st_free_entry*"> functions
 
 
 <sect1>st_table<label id="st_table">
