@@ -1054,7 +1054,7 @@ void st_unload_media (void)
 	if (st_LtoS)
 		es_slist_free_data (st_LtoS, 1, 1);
 	if (st_StoL)
-		es_slist_free_data (st_LtoS, 1, 1);
+		es_slist_free_data (st_StoL, 1, 1);
 	if (st_pcpts)
 		es_slist_free_data (st_pcpts, 1, 1);
 	if (st_vcpts)
