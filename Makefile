@@ -13,7 +13,7 @@ INCDIR=/usr/include
 
 all: libency.a(encyfuncs.o) htmlenc findenc showm
 
-libency.a(encyfuncs.o): ency.h
+libency.a(encyfuncs.o): ency.h encyfuncs.c
 
 findenc htmlenc showm: libency.a
 

@@ -87,8 +87,8 @@ const struct st_file_info st_files[] =
    {0x52, 0x49, 0x46, 0x58, 0x0, 0x4C, 0xAE, 0xC4, 0x4D, 0x56, 0x39, 0x33, 0x69, 0x6D, 0x61, 0x70}, 1}
 };
 
-struct st_caption *st_cpts = NULL, *st_oldcpts;
-struct st_table *st_tbls = NULL, *st_oldtbls;
+struct st_caption *st_cpts = NULL, *st_oldcpts = NULL;
+struct st_table *st_tbls = NULL, *st_oldtbls = NULL;
 
 int 
 ency_init (void)
@@ -100,6 +100,7 @@ ency_init (void)
     st_tbls = st_get_table ();
   if (!st_cpts)
     st_cpts = st_get_captions ();
+return(1);
 }
 
 int 
@@ -143,7 +144,7 @@ ency_finish (void)
 	  free (st_oldtbls);
 	}
     }
-
+return(1);
 }
 
 int
@@ -268,9 +269,14 @@ char *st_lcase(char *mcase)
 {
 char *lcase=NULL;
 int i=0;
-lcase = malloc (strlen(mcase)+1);
-//strcpy (lcase, mcase);
-while(lcase[i] = tolower(mcase[i])) i++;
+int length = 0;
+
+length = strlen(mcase) + 1;
+lcase = (char *)malloc (length);
+
+for (i=0;i<length;i++)
+ lcase[i] = tolower(mcase[i]);
+
 return(lcase);
 }
 
@@ -291,7 +297,7 @@ st_fingerprint (void)
       for (i = 0; i < 16; i++)
 	input_fp[i] = getc (inp);
 
-// compare fingerprints etc...
+/* compare fingerprints etc... */
       for (i = 0; i < ST_FILE_TYPES; i++)
 	{
 	  good = 0;
@@ -299,9 +305,7 @@ st_fingerprint (void)
 	    {
 	      if (input_fp[z] == st_files[i].fingerprint[z])
 		good++;
-// printf("%x == %x?\n",input_fp[z],st_files[i].fingerprint[z]);
 	    }
-// printf("%d\n",good);
 	  if (good == 16)
 	    {
 	      st_close_file ();
@@ -322,13 +326,11 @@ st_fingerprint (void)
 struct st_ency_formatting *
 st_return_fmt (void)
 {
-  struct st_ency_formatting *root_fmt, *last_fmt, *curr_fmt;
+  struct st_ency_formatting *root_fmt = NULL, *last_fmt = NULL, *curr_fmt = NULL;
   int first_time = 1;
   char c = 0;
   int i = 0;
   char tmp_txt[50];
-
-  root_fmt = last_fmt = curr_fmt = NULL;
 
   c = getc (inp);
 
@@ -358,7 +360,7 @@ st_return_fmt (void)
 	}
       tmp_txt[i] = 0;
       if (st_return_body)
-	curr_fmt->firstword = atoi (tmp_txt);	// starts at
+	curr_fmt->firstword = atoi (tmp_txt);	/* starts at */
 
       c = getc (inp);
 
@@ -375,7 +377,7 @@ st_return_fmt (void)
       tmp_txt[i] = 0;
 
       if (st_return_body)
-	curr_fmt->words = atoi (tmp_txt);	// words
+	curr_fmt->words = atoi (tmp_txt);	/* words */
 
       c = getc (inp);
 
@@ -462,8 +464,6 @@ st_return_text (void)
   char old_c = 0;
   char *temp_text=NULL;
 
-  // temp_text = malloc (1);
-
   while (!bye)
     {
       c = st_cleantext (getc (inp));
@@ -497,24 +497,20 @@ st_return_title (void)
   char *title = NULL;
   int title_size = 0;
 
-   title = malloc (70);		// should be 1, not 70.
+   title = malloc (70);		/* should be 1, not 70. */
 
-// malloc & realloc calls keep crashing, no idea why.
+/* malloc & realloc calls keep crashing, no idea why. */
 
   while ((c = st_cleantext (getc (inp))) != '@')
 
     {
-
-// /* should be on! */ title = realloc(title,title_size+1);
-      
+/*  should be on!  title = realloc(title,title_size+1); */
          if (title == NULL)
          {
          printf("Oh, ^$#%%!\n");
          return (NULL);
          }
-       
       title[title_size++] = c;
-
     }
 
   title[title_size] = 0;
@@ -542,7 +538,7 @@ struct ency_titles *
 st_title_error (int error_no)
 {
 
-  struct ency_titles *return_error;
+  struct ency_titles *return_error = NULL;
   return_error = (struct ency_titles *) malloc (sizeof (struct ency_titles));
 
   if (return_error == NULL)
@@ -570,15 +566,13 @@ curr_find_list (char *search_string, int exact)
   int i = 0;
   int found = 0;
   char *lc_title = NULL, *lc_search_string = NULL;
-  struct ency_titles *root_title, *curr_title, *last_title;
+  struct ency_titles *root_title = NULL, *curr_title = NULL, *last_title = NULL;
   int no_so_far = 0;
   char *title = NULL, *temp_text = NULL;
-  struct st_ency_formatting *text_fmt, *kill_fmt;
+  struct st_ency_formatting *text_fmt = NULL, *kill_fmt = NULL;
 
   lc_search_string = st_lcase(search_string);
   
-  root_title = curr_title = last_title = NULL;
-
   if (!st_open ())
     {
       return (st_title_error (1));
@@ -594,14 +588,14 @@ curr_find_list (char *search_string, int exact)
       text_fmt = st_return_fmt ();
       i = 0;
       no_so_far++;
+
       title = st_return_title ();
-             
       /* Title & number:  printf ("%d:%s\n", no_so_far, title); */
+fflush(NULL);
       c = getc (inp);
 
       lc_title = st_lcase(title);
       /* */
-
       found = 0;
 
       /* Is this the one we want?? */
@@ -635,7 +629,7 @@ free (lc_title);
 	    if (curr_title == NULL)
 	      {
 		printf ("Memory allocation failed\n");
-//                exit (1);
+/*                exit (1); */
 	      }
 	  }
 	  if ((root_title) == NULL)
@@ -673,7 +667,7 @@ free (lc_title);
     }
   while (no_so_far != curr_lastone);
   st_close_file ();
-
+free (lc_search_string);
   if (found_any_yet)
     return (root_title);
   else
@@ -681,12 +675,12 @@ free (lc_title);
 }
 
 struct ency_titles *
-ency_find_list (char title[], int exact)
+ency_find_list (char *title, int exact)
 {
-  struct ency_titles *root, *current, *temp;
+  struct ency_titles *root = NULL, *current = NULL, *temp = NULL;
   int i, first_time = 1;
   upto = 0;
-  root = current = temp = NULL;
+  
   for (i = 0; i < st_file_type; i++)
     {
       while (ency_starts_at[upto] != 0)
@@ -694,7 +688,7 @@ ency_find_list (char title[], int exact)
       upto++;
     }
   if (ency_starts_at[upto] != 0x1)
-    {				// if its 0x1, its reserved.
+    {				/* if its 0x1, its reserved. */
 
       curr = 1;
       while (ency_starts_at[upto] != 0)
@@ -726,12 +720,12 @@ ency_find_list (char title[], int exact)
 }
 
 struct ency_titles *
-epis_find_list (char title[], int exact)
+epis_find_list (char *title, int exact)
 {
-  struct ency_titles *root, *current, *temp;
+  struct ency_titles *root = NULL, *current = NULL, *temp = NULL;
   int i, first_time = 1;
   upto = 0;
-  root = current = temp = NULL;
+
   for (i = 0; i < st_file_type; i++)
     {
       while (epis_starts_at[upto] != 0)
@@ -739,7 +733,7 @@ epis_find_list (char title[], int exact)
       upto++;
     }
   if (epis_starts_at[upto] != 0x1)
-    {				// if its 0x1, its reserved.
+    {				/* if its 0x1, its reserved. */
 
       curr = 2;
       while (epis_starts_at[upto] != 0)
@@ -771,12 +765,12 @@ epis_find_list (char title[], int exact)
 }
 
 struct ency_titles *
-chro_find_list (char title[], int exact)
+chro_find_list (char *title, int exact)
 {
-  struct ency_titles *root, *current, *temp;
+  struct ency_titles *root = NULL, *current = NULL, *temp = NULL;
   int i, first_time = 1;
   upto = 0;
-  root = current = temp = NULL;
+  
   for (i = 0; i < st_file_type; i++)
     {
       while (chro_starts_at[upto] != 0)
@@ -784,7 +778,7 @@ chro_find_list (char title[], int exact)
       upto++;
     }
   if (chro_starts_at[upto] != 0x1)
-    {				// if its 0x1, its reserved.
+    {				/* if its 0x1, its reserved. */
 
       curr = 3;
       while (chro_starts_at[upto] != 0)
@@ -819,12 +813,11 @@ struct st_table *
 st_get_table (void)
 {
   int i = 0, first_time;
-  struct st_table *root_tbl, *curr_tbl, *last_tbl;
+  struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
   int c = 0, text_size = 0;
-  char *temp_text;
+  char *temp_text = NULL;
   upto = 0;
 
-  root_tbl = curr_tbl = last_tbl = NULL;
   first_time = 1;
   curr = 4;
   for (i = 0; i < st_file_type; i++)
@@ -835,7 +828,6 @@ st_get_table (void)
     }
   if (st_table_starts_at[upto] != 0x1)
     {
-// ** //
       while (st_table_starts_at[upto] != 0)
 	{
 	  if (!st_open ())
@@ -848,7 +840,7 @@ st_get_table (void)
 	      for (i = 0; i < st_table_lastone[upto]; i++)
 		{
 		  while ((c = getc (inp)) != ']')
-		    {		// main loop
+		    {		/* main loop */
 
 		      temp_text = malloc (1);
 		      text_size = 0;
@@ -898,7 +890,7 @@ st_get_table (void)
 			last_tbl->next = curr_tbl;
 		      last_tbl = curr_tbl;
 		      curr_tbl = NULL;
-		    }		// main loop
+		    }		/* end main loop */
 
 		}
 	    }
@@ -906,7 +898,7 @@ st_get_table (void)
 	  upto++;
 	}
 
-// ** //
+/* */
 
     }
   return (root_tbl);
@@ -916,9 +908,9 @@ struct st_caption *
 st_get_captions (void)
 {
   int i = 0, first_time;
-  struct st_caption *root_cpt = 0, *curr_cpt = 0, *last_cpt = 0;
+  struct st_caption *root_cpt = NULL, *curr_cpt = NULL, *last_cpt = NULL;
   int c = 0, text_size = 0;
-  char *temp_text;
+  char *temp_text = NULL;
   upto = 0;
 
   last_cpt = NULL;
@@ -945,7 +937,7 @@ st_get_captions (void)
 	      for (i = 0; i < st_caption_lastone[upto]; i++)
 		{
 		  while ((c = getc (inp)) != ']')
-		    {		// main loop
+		    {		/* main loop */
 
 		      temp_text = malloc (1);
 		      text_size = 0;
@@ -1005,7 +997,7 @@ st_get_captions (void)
 			last_cpt->next = curr_cpt;
 		      last_cpt = curr_cpt;
 		      curr_cpt = NULL;
-		    }		// main loop
+		    }		/* end main loop */
 
 		}
 	    }
@@ -1022,11 +1014,11 @@ get_title_at (long filepos)
 {
   int return_body_was;
   char c;
-  char *temp_text;
+  char *temp_text = NULL;
   int i = 0;
-  struct ency_titles *root_title;
-  char *ttl;
-  struct st_ency_formatting *text_fmt;
+  struct ency_titles *root_title = NULL;
+  char *ttl = NULL;
+  struct st_ency_formatting *text_fmt = NULL;
 
   root_title = NULL;
   return_body_was = st_return_body;
@@ -1052,7 +1044,7 @@ get_title_at (long filepos)
   c = getc (inp);
 
   temp_text = st_return_text ();
-// copy pointer stuff over
+/* copy pointer stuff over */
   root_title->filepos = filepos;
   root_title->title = ttl;
   root_title->text = temp_text;
