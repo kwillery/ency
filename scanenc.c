@@ -263,10 +263,35 @@ int identify_section (char *section)
 		free (temp);
 		return 9;
 	}
-	if (!strncmp (temp, "ency_", 5))
+	if (!strncmp (temp, "ency_omni", 9))
 	{
 		free (temp);
 		return 9;
+	}
+	if (!strncmp (temp, "epis_omni", 9))
+	{
+		free (temp);
+		return 10;
+	}
+	if (!strncmp (temp, "ency_new_", 9))
+	{
+		free (temp);
+		return 9;
+	}
+	if (!strncmp (temp, "epis_new_", 9))
+	{
+		free (temp);
+		return 10;
+	}
+	if (!strncmp (temp, "ency_revomni", 12))
+	{
+		free (temp);
+		return 9;
+	}
+	if (!strcmp (temp, "dummy")) /* Ep. guides */
+	{
+		free (temp);
+		return 10;
 	}
 
 	free (temp);
@@ -286,7 +311,7 @@ void process_cast_block (FILE *inp, long size)
 	block = malloc (size * sizeof (char));
 	fread (block, size, 1, inp);
 
-	switch (block[3])
+	switch (block[3] + block[6])
 	{
 		case 0:
 		case 1:
@@ -379,7 +404,7 @@ void process_cast_block (FILE *inp, long size)
 //	case 7: // ??
 			break;
 		default:
-		printf (", Ignoring...");
+		printf (", Ignoring [%d/%d]...", block[3], block[6]);
 		free (block);
 		return;
 	}
