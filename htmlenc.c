@@ -123,6 +123,7 @@ int main (int argc, char *argv[])
 	int use_media = 0;
 	int count = 0;
 	int section = ST_SECT_ENCY;
+	int options = ST_OPT_MATCH_SUBSTRING | ST_OPT_NO_CACHE | ST_OPT_NO_FMT;
 	FILE *out = stdout;
 	char *filename = NULL;
 
@@ -145,7 +146,10 @@ int main (int argc, char *argv[])
 			section = ST_SECT_EPIS;
 			break;
 		case 'c':
-			section = ST_SECT_CHRO;
+			if (section == ST_SECT_EPIS)
+				options = options | ST_OPT_SORTEPIS;
+			else
+				section = ST_SECT_CHRO;
 			break;
 		case 's':
 			filename = optarg;
@@ -181,7 +185,7 @@ int main (int argc, char *argv[])
 		scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
 	}
 
-	thingy = st_find (search_string, section, ST_OPT_MATCH_SUBSTRING | ST_OPT_NO_CACHE | ST_OPT_NO_FMT);
+	thingy = st_find (search_string, section, options);
 
 	i = 0;
 	fprintf (out, "<html>\n");

@@ -48,6 +48,7 @@ int main (int argc, char *argv[])
 	char base_path[] = "/cdrom";	/* where the media dirs etc. are */
 	int use_media = 0;
 	int section = ST_SECT_ENCY;
+	int options = ST_OPT_MATCH_SUBSTRING | ST_OPT_RETURN_BODY | ST_OPT_NO_CACHE | ST_OPT_NO_FMT;
 	static struct option long_opts[] =
 	{
 		{"help", 0, 0, 'h'},
@@ -69,7 +70,10 @@ int main (int argc, char *argv[])
 			section = ST_SECT_EPIS;
 			break;
 		case 'c':
-			section = ST_SECT_CHRO;
+			if (section == ST_SECT_EPIS)
+				options = options | ST_OPT_SORTEPIS;
+			else
+				section = ST_SECT_CHRO;
 			break;
 		case 'h':
 		default:
@@ -103,7 +107,7 @@ int main (int argc, char *argv[])
 	 * st_set_filename ("/dose/trek/Reference/eg_tng.dxr");
 	 */
 
-	thingy = st_find (search_string, section, ST_OPT_MATCH_SUBSTRING | ST_OPT_RETURN_BODY | ST_OPT_NO_CACHE | ST_OPT_NO_FMT);
+	thingy = st_find (search_string, section, options);
 
 	/*
 	 * get from a certain point in the file...
