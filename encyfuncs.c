@@ -468,7 +468,6 @@ static int curr_open (void)
 			{
 				st_force_unknown_file (1);
 				st_set_filename (temp_fn);
-				free (temp_fn);
 			}
 		}
 	if (ency_filename == NULL) return (0);
@@ -1584,8 +1583,7 @@ static struct ency_titles *st_find_unknown (int section, char *search_string, in
 			last_start = *curr_title->title;
 
 			/* build the cached version of this entry */
-			if (!(options & ST_OPT_NO_CACHE))
-				st_add_to_cache (last_section,curr_title->title,this_one_starts_at);
+			st_add_to_cache (last_section,curr_title->title,this_one_starts_at);
 		}
 	}
 	return (st_find_in_cache (section, search_string, exact, 1));
