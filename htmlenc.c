@@ -40,13 +40,12 @@ int loopies(char *txt,struct st_ency_formatting *fmt,int size)
  char smeg[50];
  int print_br = 0;
 
-while (fmt->firstword < words)
+while ((fmt->firstword < words+1) && (fmt != NULL))
  {
-fmt2=fmt;
-fmt=fmt->next;
-free(fmt2);
+  fmt2=fmt;
+  fmt=fmt->next;
+  free(fmt2);
  }
-
 while (strlen(txt))
 {
 z=sscanf(txt,"%s",smeg);
@@ -155,10 +154,12 @@ first_time = 1;
 }
 txt += (strlen(smeg)+1);
 while ((txt[0] == 32) || (txt[0] == 13))
- {
+{
+printf("%c",txt[0]);
 txt++;
 }
 }
+// printf("%d",words);
 return(0);
 }
 
@@ -175,10 +176,9 @@ words=0;
 loopies(tmp,fmt1,size);
 
 printf("<br>\n");
-
 tmp=stuff->text;
+fmt1=stuff->fmt;
 size=strlen(stuff->text) - 10;
-
 loopies(tmp,fmt1,size);
 
 printf("<br>\n");
@@ -236,6 +236,7 @@ if (exact)
 else
  thingy = ency_find_titles (search_string);
 
+
 printf("<html>\n");
 printf("<head><title>Search results for: %s</title></head>",search_string);
 printf("<h1>Star Trek Encyclopedia</h1><br>\n");
@@ -244,7 +245,7 @@ printf("You searched for <b>%s</b>.\n",search_string);
     {
       do
 	{
-words=0;
+// words=0;
  printoff(thingy);
 //	  printf ("\n%s\n\n%s\n", thingy->title, thingy->text);
 	  kill_me = thingy;
@@ -253,11 +254,14 @@ words=0;
 	  free(kill_me);
 	}
       while (thingy != NULL);
-printf("<hr>\nMibus' ency reader<br>\n");
-printf("queries, comments, flames, to <a href=\"mailto:beemer@picknowl.com.au\">Robert Mibus (beemer@picknowl.com.au)</a>");
     }
   else
-    printf ("No matches\n");
+    printf ("No matches<br>\n");
+
+printf("<hr>\nMibus' ency reader<br>\n");
+printf("<a href=\"http://www.picknowl.com.au/homepages/beemer/ency.html\">http://www.picknowl.com.au/homepages/beemer/ency.html</a><br>\n");
+printf("queries, comments, flames, to <a href=\"mailto:beemer@picknowl.com.au\">Robert Mibus (beemer@picknowl.com.au)</a>");
+
 printf("</html>\n");
 return(0);
 }

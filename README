@@ -18,7 +18,7 @@ That's about it.
 
 The More Technical Thingys
 --------------------------
-I am (slowly) implementing a set of functions to do stuff in the encyclopedia, so anyone can write a small app to do ency stuff. findenc.c is my sample.
+I am (slowly) implementing a set of functions to do stuff in the encyclopedia, so anyone can write a small app to do ency stuff. htmlenc.c is my sample.
 For info on how my program works, read the source.
 
 --

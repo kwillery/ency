@@ -22,19 +22,34 @@
 /*      webpage www.picknowl.com.au/homepages/beemer/robonly.html             */
 /******************************************************************************/
 
+#ifndef ENCY_H
+#define ENCY_H
+
 #include <gtk/gtk.h>
 
-GtkWidget *window, *box0, *box1, *entry1, *label1, *button1, *results, *vscroll;
-GtkWidget *table;
+char ency_cleantext (unsigned char);
+GtkWidget *window, *box0, *box1, *entry1, *label1, *button1, *results,
+        *results_vscroll, *results_table, *menu_bar, *file_menu, *open_item,
+        *file_item, *menu_item, *submenu, *hdr_list, *hdr_list_scrolled_window;
 char *label1text;
-char *rtnresults;
+static char *rtntitle[] = {"int"};
+char *rtnresults[100][1000];
+char *teststring;
 
 char ency_cleantext (unsigned char);
 int ency_open (void);
 int ency_close (void);
-int getnext (char[]);
 struct ency_titles *ency_find_titles (char[]);
 struct ency_titles *ency_get_title (char[]);
+int epis_open (void);
+int epis_close (void);
+struct ency_titles *epis_find_titles (char[]);
+struct ency_titles *epis_get_title (char[]);
+int chro_open (void);
+int chro_close (void);
+struct ency_titles *chro_find_titles (char[]);
+struct ency_titles *chro_get_title (char[]);
+
 struct st_ency_formatting
 {
 int bi;
@@ -50,3 +65,7 @@ struct ency_titles
     struct st_ency_formatting *fmt;
     struct ency_titles *next;
   };
+int crap;
+int counter;
+#endif
+

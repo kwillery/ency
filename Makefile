@@ -1,6 +1,7 @@
 SHELL = /bin/sh
 CFLAGS = -O3 -m486
-GTKCFLAGS = `gtk-config --cflags` -I. -O -Wall
+#GTKCFLAGS = `gtk-config --cflags` -I. -O -Wall
+GTKCFLAGS = `gtk-config --cflags`
 LDFLAGS=
 CC=gcc
 BINDIR=/usr/local/bin
@@ -13,7 +14,7 @@ findenc : findenc.c encyfuncs.c ency.h
 	$(CC) $(GTKCFLAGS)  encyfuncs.c $(LIBS) $< -o $@
 
 htmlenc : htmlenc.c encyfuncs.c ency.h
-	$(CC) $(GTKCFLAGS) encyfuncs.c $(LIBS) $< -o $@
+	$(CC) encyfuncs.c $< -o $@
 
 clean :
 	rm -f findenc htmlenc core

@@ -29,10 +29,32 @@
 
 FILE *inp;
 char ency_filename[] = "Data.cxt";
-long int ency_starts_at = 506920; // Bytes into file info starts at - 1
-long int ency_lastone = 6937; // Zytchin III
 
-int ency_open (void)
+long int ency_starts_at = 0x7bc28; // Bytes into file info starts at - 1
+long int epis_starts_at = 0x3b8e20;
+long int chro_starts_at = 0x41e32c;
+
+long int ency_lastone = 7067; // should be +1, Zytchin (last) dumps core. damn.
+long int epis_lastone = 402;
+long int chro_lastone = 10000;
+
+long int curr_starts_at,curr_lastone,curr;
+int screwy = 0;
+
+int st_open (void)
+{
+if (curr == 0) // Defaults to ency
+ curr_starts_at=ency_starts_at;
+if (curr == 1) // Ency
+ curr_starts_at=ency_starts_at;
+if (curr == 2) // Epis
+ curr_starts_at=epis_starts_at;
+if (curr == 3) // Chro
+ curr_starts_at=chro_starts_at;
+return(curr_open());
+}
+
+int curr_open (void)
 {
   char c;
   int i;
@@ -42,22 +64,62 @@ int ency_open (void)
 //      printf ("I can't find/open Data.cxt. Read the INSTALL file.\n");
       return (1);
     }
-  for (i = 0; i < ency_starts_at; i++)
+for (i = 0; i < curr_starts_at; i++)
    c = getc (inp);
 
 return(0);
 }
 
-int ency_close (void)
+int ency_open (void)
+{
+curr=1;
+curr_starts_at = ency_starts_at;
+return(curr_open());
+}
+
+int epis_open (void)
+{
+curr=2;
+curr_starts_at = epis_starts_at;
+return(curr_open());
+}
+
+int chro_open (void)
+{
+curr=3;
+curr_starts_at = chro_starts_at;
+return(curr_open());
+}
+
+int curr_close (void)
 {
   fclose (inp);
 return(0);
+}
+
+int ency_close (void)
+{
+curr_close();
+}
+
+int epis_close (void)
+{
+curr_close();
+}
+
+int chro_close (void)
+{
+curr_close();
 }
 
 char ency_cleantext (unsigned char c)
 {
   switch (c)
     {
+// FIXME: i need something not detected as a space/null by sscanf, but looks like one.
+    case 0xD1:
+      return ('_');
+      break;
     case 0xD2:
       return (34);
       break;
@@ -85,7 +147,7 @@ char ency_cleantext (unsigned char c)
     }
 }
 
-struct st_ency_formatting *ency_return_fmt (void)
+struct st_ency_formatting *curr_return_fmt (void)
 {
 struct st_ency_formatting *root_fmt, *last_fmt, *curr_fmt;
 int first_time = 1;
@@ -166,7 +228,21 @@ c=getc(inp);
  return(root_fmt);
 }
 
-int ency_find_start (void)
+struct st_ency_formatting *ency_return_fmt (void)
+{
+return(curr_return_fmt());
+}
+struct st_ency_formatting *epis_return_fmt (void)
+{
+return(curr_return_fmt());
+}
+struct st_ency_formatting *chro_return_fmt (void)
+{
+return(curr_return_fmt());
+}
+
+
+int curr_find_start (void)
 {
 /* int c = 0;
  while ((c = getc (inp)) != '~')
@@ -177,6 +253,8 @@ int oldc = 0;
 while (c != '~') {
  c=getc(inp);
  if ((oldc == 0x16) && (c != 0x2E)) {
+// screwy=1;
+// printf("screwy one found: ");
   ungetc(c,inp); return (0); }
  oldc=c;
  }
@@ -184,22 +262,45 @@ while (c != '~') {
 return(0);
 }
 
-char *ency_return_text (void)
+int ency_find_start (void)
+{
+return(curr_find_start());
+}
+int epis_find_start (void)
+{
+return(curr_find_start());
+}
+int chro_find_start (void)
+{
+return(curr_find_start());
+}
+
+
+char *curr_return_text (void)
 {
 int text_size = 0;
 int bye = 0;
-char c;
+char c=0;
 char old_c = 0;
+char done_once = 0;
 char *temp_text;
 temp_text = malloc(1);
           while (!bye)
             {
 c=ency_cleantext(getc(inp));
+if (c == 0) bye = 1;
 if ((old_c == 13) && (c == 13)) bye = 1;
+if (curr == 2)
+ if ((done_once < 2) && (bye == 1))
+  {
+  done_once++;
+  bye=0;
+  }
+ 
 if (!bye)
 {
-              if (c == 0)
-                exit;
+//              if (c == 0)
+//                exit;
               temp_text = realloc(temp_text,text_size+1);
               if (temp_text == NULL)
                 {
@@ -210,39 +311,68 @@ old_c=c;
 }
             }
 temp_text[text_size] = 0;
-// printf("%s",temp_text);
 return(temp_text);
 }
+char *ency_return_text (void)
+{
+return(curr_return_text());
+}
+char *epis_return_text (void)
+{
+return(curr_return_text());
+}
+char *chro_return_text (void)
+{
+return(curr_return_text());
+}
 
-char *ency_return_title (void)
+
+char *curr_return_title (void)
 {
 char c;
-char *ttl = NULL;
+char *titl = NULL;
 int title_size = 0;
 
-ttl = malloc(50); // should be 1, not 50.
+titl = malloc(50); // should be 1, not 50.
 
 // malloc & realloc calls keep crashing, no idea why.
 
       while ((c = ency_cleantext (getc (inp))) != '@')
 {
 
-// /* should be on! */ ttl = realloc(ttl,title_size+1);
+// /* should be on! */ titl = realloc(titl,title_size+1);
 /*
-              if (ttl == NULL)
+              if (titl == NULL)
                 {
                   printf("Oh, ^$#%%!\n");
                   return (NULL);
                 }
 */
-              ttl[title_size++] = c;
+              titl[title_size++] = c;
+// printf("%c",c);
 }
-ttl[title_size] = 0;
-// printf("ert2 %d %s\n",title_size,ttl);
-return (ttl);
+// printf("\n");
+titl[title_size] = 0;
+// printf("ert2 %d %s\n",title_size,titl);
+// if (screwy){screwy=0;printf("%s\n",titl);}
+return (titl);
 }
 
-struct ency_titles *ency_find_titles (char title[])
+char *ency_return_title(void)
+{
+return(curr_return_title());
+}
+char *epis_return_title(void)
+{
+return(curr_return_title());
+}
+char *chro_return_title(void)
+{
+return(curr_return_title());
+}
+
+
+struct ency_titles *curr_find_titles (char title[])
 {
   int first_time = 1;
   char c;
@@ -257,7 +387,7 @@ struct ency_titles *ency_find_titles (char title[])
 
   root_title = curr_title = last_title = NULL;
 
-  if (ency_open () == 1)
+  if (st_open () == 1)
 {
 printf("Error opening file.\n");
 }
@@ -285,11 +415,15 @@ no_so_far++;
 
  ttl = ency_return_title();
 
- // printf("dbg1 %s %d\n",ttl,strlen(ttl));
+// printf("dbg1 %s %d\n",ttl,strlen(ttl));
       c = getc (inp);
+ printf ("%d: %s\n", no_so_far, ttl);
+// if (screwy){screwy=0;printf("%s\n",ttl);}
+// printf("%s=%s:%d",ttl,title,strstr(ttl,title));
       if (strstr (ttl, title))
+// if (!strcmp(ttl,title))
 	{
-
+// if (screwy){screwy=0;printf("%s\n",ttl);}
 //          printf ("%d: %s\n", no_so_far, ttl);
 
 temp_text = ency_return_text();
@@ -321,12 +455,32 @@ temp_text = ency_return_text();
 	} else free(ttl);
 // printf("dbg5\n");
     }
-  while (no_so_far != ency_lastone);
+  while (no_so_far != curr_lastone);
 // printf("dbg6\n");
 return(root_title);
 }
 
-struct ency_titles *ency_get_title (char title[])
+struct ency_titles *ency_find_titles (char title[])
+{
+curr=1;
+curr_lastone = ency_lastone;
+return(curr_find_titles(title));
+}
+struct ency_titles *epis_find_titles (char title[])
+{
+curr=2;
+curr_lastone = epis_lastone;
+return(curr_find_titles(title));
+}
+struct ency_titles *chro_find_titles (char title[])
+{
+curr=3;
+curr_lastone = chro_lastone;
+return(curr_find_titles(title));
+}
+
+
+struct ency_titles *curr_get_title (char title[])
 {
   int first_time = 1;
   char c;
@@ -339,7 +493,7 @@ struct ency_titles *ency_get_title (char title[])
 
   root_title = NULL;
 
-  if (ency_open () == 1)
+  if (st_open () == 1)
 {
 printf("Error opening file.\n");
 }
@@ -364,6 +518,7 @@ no_so_far++;
  ttl = ency_return_title();
 
       c = getc (inp);
+
       if (!strcmp (ttl, title))
         {
 // printf("%s, %s",ttl,title);
@@ -375,10 +530,29 @@ temp_text = ency_return_text();
           root_title->text = temp_text;
           root_title->next = NULL;
           root_title->fmt = text_fmt;
-no_so_far = ency_lastone;
+no_so_far = curr_lastone;
         } else free(ttl);
     }
-  while (no_so_far != ency_lastone);
+  while (no_so_far != curr_lastone);
 return(root_title);
+}
+
+struct ency_titles *ency_get_title (char title[])
+{
+curr=1;
+curr_lastone = ency_lastone;
+return(curr_get_title(title));
+}
+struct ency_titles *epis_get_title (char title[])
+{
+curr=2;
+curr_lastone = epis_lastone;
+return(curr_get_title(title));
+}
+struct ency_titles *chro_get_title (char title[])
+{
+curr=3;
+curr_lastone = chro_lastone;
+return(curr_get_title(title));
 }
 

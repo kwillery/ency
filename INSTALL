@@ -6,11 +6,12 @@ Run:
 
  make
 
-Copy or move the findenc & readenc files to the install directory.
+Copy or move the findenc & htmlenc files to the install directory.
 
 To run:
 
  findenc
+ htmlenc
 
 --
 Robert Mibus
