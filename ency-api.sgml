@@ -31,6 +31,7 @@ These are the different file types ency supports.
 #define ST_FILE_OMNI2 2
 #define ST_FILE_TNG1 3
 #define ST_FILE_DS91 4
+#define ST_FILE_CURR -1
 </verb>
 
 <p>
@@ -46,9 +47,37 @@ TNG1 is the TNG Episode guide.
 <p>
 DS91 is the DS9 episode guide.
 <p>
+CURR is the last one loaded/used (default: ENCY98). Only useful with <ref id="st_fileinfo_get_name" name="st_fileinfo_get_name"> 
+<p>
 These are used in the <ref id="st_autofind" name="st_autofind">, <ref id="st_fingerprint" name="st_fingerprint">, and <ref id="st_fileinfo_get_name" name="st_fileinfo_get_name"> functions.
 
+<sect1>ST_SECT_*<label id="ST_SECT_*">
+<p>
+These are the different sections of each encyclopedia.
 
+<verb>
+#define ST_SECT_ENCY 0
+#define ST_SECT_EPIS 1
+#define ST_SECT_CHRO 2
+</verb>
+<p>
+<tt/ENCY/ is the Encyclopedia section, <tt/EPIS/ is the Episode section, and <tt/CHRO/ is the Chronology (timeline) section.
+<p>
+Used with <ref id="st_find" name="st_find">.
+<sect1>ST_OPT_*<label id="ST_OPT_*">
+<p>
+These are options passed to <ref id="st_find" name="st_find">.
+<verb>
+#define ST_OPT_CASE_SENSITIVE 1
+#define ST_OPT_RETURN_BODY 2
+#define ST_OPT_MATCH_SUBSTRING 4
+</verb>
+<p>
+<tt/CASE_SENSITIVE/ is whether the search is case-sensitive or not. (default: no)
+<tt/RETURN_BODY/ determines whether the <tt/fmt/ and <tt/text/ parts of an <ref id="ency_titles" name="ency_titles"> struct are returned. (default: no). If they are not returned, <ref id="get_title_at" name="get_title_at"> can be used to retrieve the full entry.
+<tt/MATCH_SUBSTRING/ determines whether <ref id="st_find" name="st_find"> will match substrings or not. (default: no)
+<p>
+For more information on how to use these, see the <ref id="st_find" name="st_find"> section.
 <sect>Struct Types
 
 <sect1>st_ency_formatting<label id="st_ency_formatting">
@@ -162,7 +191,7 @@ If <tt/st_ignore_case/ is set to 1, the <ref id="*_find_list" name="*_find_list"
 
 
 <sect1>st_return_body<label id="st_return_body">
-<p>If <tt/st_ignore_case/ is set to 0, the <tt/fmt/ and <tt/text/ parts of a <ref id="ency_titles" name="ency_titles"> struct returned from a <ref id="*_find_list" name="*_find_list"> are set to <tt/NULL/. <ref id="get_title_at" name="get_title_at"> can be used to retrieve the full entry.
+<p>If <tt/st_return_body/ is set to 0, the <tt/fmt/ and <tt/text/ parts of a <ref id="ency_titles" name="ency_titles"> struct returned from a <ref id="*_find_list" name="*_find_list"> are set to <tt/NULL/. <ref id="get_title_at" name="get_title_at"> can be used to retrieve the full entry.
 The default is 1, which <em/does/ return <tt/fmt/ and <tt/text/ parts.
 
 
@@ -223,8 +252,27 @@ This function locates a data file in a directory.
 <tt/filetype/ is a <ref id="ST_FILE_*" name="ST_FILE_*"> definition.
 <tt/directory/ is the base directory to look in for the data file. If one is found, the full filename is returned, else <tt/NULL/ is returned. <ref id="st_set_filename" name="st_set_filename"> can then be used with the string.
 
+<sect1>st_find<label id="st_find">
+<p>
+This is the preferred method for doing a search.
+<verb>
+struct ency_titles *st_find (char *search_string, int section, int options)
+</verb>
+<p>
+<tt/search_string/ is the string to search for. <tt/section/ is the <ref id="ST_SECT_*" name="ST_SECT_*"> define. <tt/options/ come from the <ref id="ST_OPT_*" name="ST_OPT_*"> defines.
+<p>
+Example usage:
+<verb>
+ results = st_find ("Kirk", ST_SECT_ENCY, ST_OPT_MATCH_SUBSTRING | ST_OPT_RETURN_BODY);
+</verb>
+<p>
+Only one section can be specified, but multiple options can be used with the '|' (binary "OR") symbol.
+<p>
+More on this later; It is a new function and may (probably will) change.
 
 <sect1>*_find_list<label id="*_find_list">
+<p>
+<em/NOTE/ These are being phased out in favour of <ref id="st_find" name="st_find"> and may disappear soon.
 <p>
 These functions start searches on the three sections of the data file (Encyclopedia, Episode, Chronology).
 <verb>
@@ -324,6 +372,13 @@ This function checks the currently set file, and returns an <ref id="ST_FILE_*" 
 
 <sect>Example Implementation
 <p>
+Compile the following program as such:
+  <tt/gcc -o test test.c encyfuncs.c/
+(assuming you have the ency source in this directory, and have called this program 'test.c')
+or (more likely)
+  <tt/gcc -o test test.c -lency/
+(assuming you have libency.a in /usr/lib, ency.h in /usr/include, and have named this program test.c)
+<p>
 <verb>
 #include <stdio.h>
 #include <stdlib.h>
@@ -357,10 +412,14 @@ int main (int argc, char *argv[])
   st_ignore_case = 1;
 
   /* if you want to manually set the filename
-   * st_set_filename ("/dose/trek/Reference/eg_tng.dxr");
+   *   st_set_filename ("/dose/trek/Reference/eg_tng.dxr");
+   * if you want to look for an ency version in a directory,
+   *   st_autofind (ST_FILE_ENCY98, "/dose/trek/Reference");
+   * NOTE: st_autofind() only checks a few hard-coded directories,
+   * it is *not* a full search.
    * else it defaults to "./Data.cxt" */
 
-    thingy = ency_find_list (search_string, 0);
+    thingy = st_find (search_string, ST_SECT_ENCY, ST_OPT_MATCH_SUBSTRING | ST_OPT_RETURN_BODY);
 
 /* Other possibilities:
     thingy = epis_find_list (search_string, 0);
@@ -372,11 +431,12 @@ int main (int argc, char *argv[])
       /* print the returned text */
       printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
       media = st_get_media(thingy->title);
-      for (i = 0; i < 5; i++)
-       if (strlen (media->photos[i].file)) {   /* if there is a response */
-          temp_fn = st_format_filename (media->photos[i].file, base_path, 0);
-          printf ("%s: %s\n", temp_fn, media->photos[i].caption);
-       }
+      if (media)
+        for (i = 0; i < 5; i++)
+         if (strlen (media->photos[i].file)) {   /* if there is a response */
+            temp_fn = st_format_filename (media->photos[i].file, base_path, 0);
+            printf ("%s: %s\n", temp_fn, media->photos[i].caption);
+         }
 
 
       /* free the returned stuff */
@@ -408,6 +468,5 @@ int main (int argc, char *argv[])
   st_finish ();
   return (0);
 }
-
 </verb>
 </article>
