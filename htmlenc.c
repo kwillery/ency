@@ -59,7 +59,8 @@ loopies (char *txt, struct st_ency_formatting *fmt)
     {
       fmt2 = fmt;
       fmt = fmt->next;
-      if (remove_fmt) free (fmt2);
+      if (remove_fmt)
+	free (fmt2);
     }
   while (strlen (txt))
     {

@@ -57,6 +57,18 @@ fnbasen: the fnbase from the tables (see 'struct st_table' && st_get_table), plu
 caption: the picture's caption
 next: the next in the list.
 
+struct st_media {
+    struct st_photo photos[5];
+};
+one st_media exists for each encyclopedia entry, see st_get_media()
+
+struct st_photo {
+    char file[8];
+    char caption[50];
+};
+five of these for each media struct, contains things like "kirkst1" in 'file'
+and the picture caption in 'caption'
+
 struct st_ency_formatting
   {
     int bi;
@@ -121,6 +133,26 @@ use code like...
     /* do your stuff... */
     }
 
+int ency_init (void)
+loads the tables & captions for later use (in st_get_media)
+
+int ency_finish (void)
+unloads the tables & captions
+
+int ency_initted (void)
+are the tables loaded? 0 == no, 1 == yes.
+
+struct st_media *st_get_media (char *search_string)
+returns a media struct with info in pics/captions/etc.
+requires ency_init() to have been run.
+
+char *st_format_filename (char *fnbasen, char *base_path, int media)
+fnbasen is the 'file' part of the photos[] part of the st_media struct.
+base_path is exactly that (usually "/cdrom" or "/mnt/cdrom")
+'media' is 0 for a picture, 1 for a movie file.
+eg:
+ st_format_filename(media->photos[i].file, "/cdrom", 0);
+where 'media' was returned from st_get_media()
 --------
 EXAMPLES
 --------

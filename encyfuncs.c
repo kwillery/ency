@@ -87,6 +87,66 @@ const struct st_file_info st_files[] =
    {0x52, 0x49, 0x46, 0x58, 0x0, 0x4C, 0xAE, 0xC4, 0x4D, 0x56, 0x39, 0x33, 0x69, 0x6D, 0x61, 0x70}, 1}
 };
 
+struct st_caption *st_cpts = NULL, *st_oldcpts;
+struct st_table *st_tbls = NULL, *st_oldtbls;
+
+int 
+ency_init (void)
+{
+  /*
+   * Get the table & captions (if we don't already have them)
+   */
+  if (!st_tbls)
+    st_tbls = st_get_table ();
+  if (!st_cpts)
+    st_cpts = st_get_captions ();
+}
+
+int 
+ency_initted (void)
+{
+  if ((st_cpts) && (st_tbls))
+    return (1);
+  else
+    return (0);
+}
+
+int 
+ency_finish (void)
+{
+
+/* Free the caption & table info */
+  while (st_cpts)
+    {
+      st_oldcpts = st_cpts;
+      st_cpts = st_cpts->next;
+      if (st_oldcpts)
+	{
+	  if (st_oldcpts->fnbasen)
+	    free (st_oldcpts->fnbasen);
+	  if (st_oldcpts->caption)
+	    free (st_oldcpts->caption);
+	  free (st_oldcpts);
+	}
+    }
+
+  while (st_tbls)
+    {
+      st_oldtbls = st_tbls;
+      st_tbls = st_tbls->next;
+      if (st_oldtbls)
+	{
+	  if (st_oldtbls->fnbase)
+	    free (st_oldtbls->fnbase);
+	  if (st_oldtbls->title)
+	    free (st_oldtbls->title);
+	  free (st_oldtbls);
+	}
+    }
+
+//    if (ency_filename) free (ency_filename);
+}
+
 int
 curr_open (void)
 {
@@ -298,7 +358,7 @@ curr_return_fmt (void)
 	  memset (curr_fmt, 0, sizeof (struct st_ency_formatting));
 	}
       if (first_time)
-	  root_fmt = curr_fmt;
+	root_fmt = curr_fmt;
 
       first_time = 0;
       i = 0;
@@ -1095,7 +1155,6 @@ get_title_at (long filepos)
 
   c = getc (inp);
 
-
   temp_text = ency_return_text ();
 // copy pointer stuff over
   root_title->filepos = filepos;
@@ -1106,4 +1165,117 @@ get_title_at (long filepos)
   st_return_body = return_body_was;
   curr_close ();
   return (root_title);
+}
+
+struct st_photo 
+st_parse_captions (char *fnbasen)
+{
+  struct st_photo photo;
+  st_oldcpts = st_cpts;
+
+  strcpy (photo.file, "");
+  strcpy (photo.caption, "");
+  while (st_cpts)
+    {
+      if (!strcmp (fnbasen, st_cpts->fnbasen))
+	{
+
+	  strcpy (photo.file, fnbasen);
+	  strcpy (photo.caption, st_cpts->caption);
+
+	}
+      st_cpts = st_cpts->next;
+    }
+
+  st_cpts = st_oldcpts;
+  return (photo);
+}
+
+struct st_media *
+st_get_media (char *search_string)
+{
+  int i = 0;
+  struct st_media *media = NULL;
+  char *temp_fnbase;
+  char *title_with_dot;
+  struct st_table *root_tbl = NULL;
+  struct st_caption *root_cpt = NULL;
+
+  root_tbl = st_tbls;
+  root_cpt = st_cpts;
+  temp_fnbase = malloc (9);
+
+  title_with_dot = malloc (strlen (search_string) + 2);
+  snprintf (title_with_dot, strlen (search_string) + 2, "%s.", search_string);
+
+  media = malloc (sizeof (struct st_media));
+  while (st_tbls)
+    {
+      if ((!strcmp (st_tbls->title, search_string)) || (!strcmp (st_tbls->title, title_with_dot)))
+	{
+	  for (i = 0; i < 5; i++)
+	    {
+	      snprintf (temp_fnbase, 9, "%s%d", st_tbls->fnbase, i + 1);
+	      media->photos[i] = st_parse_captions (temp_fnbase);
+	    }
+	}
+      st_tbls = st_tbls->next;
+    }
+
+  st_tbls = root_tbl;
+  st_cpts = root_cpt;
+
+  free (temp_fnbase);
+  free (title_with_dot);
+  return (media);
+}
+
+char *
+st_format_filename (char *fnbasen, char *base_path, int media)
+{
+/* media: 0 == pic, 1 == vid */
+  char *filename = NULL;
+  int dir_size = 0;
+
+  if (fnbasen && (media < 2))
+    {
+
+      if (base_path)
+	dir_size = strlen (base_path);
+
+      if (media == 0)
+	dir_size += strlen (st_files[st_file_type].pic_dir);
+      if (media == 1)
+	dir_size += strlen (st_files[st_file_type].vid_dir);
+
+      filename = malloc (dir_size + 17);
+      if (base_path)
+	{
+	  strcpy (filename, base_path);
+	  strcat (filename, "/");
+	}
+      else
+	strcat (filename, "/");
+
+      if (media == 0)
+	strcat (filename, st_files[st_file_type].pic_dir);
+      if (media == 1)
+	strcat (filename, st_files[st_file_type].vid_dir);
+
+      strcat (filename, "/");
+      if (st_files[st_file_type].append_char)
+	{
+	  filename[dir_size + 2] = fnbasen[0];
+	  filename[dir_size + 3] = 0;
+	  strcat (filename, "/");
+	}
+      strncat (filename, fnbasen, 8);
+
+      if (media == 0)
+	strcat (filename, "r.pic");
+      if (media == 1)
+	strcat (filename, "q.mov");
+
+    }
+  return (filename);
 }

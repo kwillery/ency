@@ -32,6 +32,10 @@
 #define ST_FILE_TNG1 3
 #define ST_FILE_DS91 4
 
+int ency_init (void);
+int ency_initted (void);
+int ency_finish (void);
+
 struct ency_titles *ency_find_titles (char[]);
 struct ency_titles *ency_find_list (char[], int);
 struct ency_titles *ency_get_title (char[]);
@@ -47,8 +51,12 @@ struct ency_titles *chro_get_title (char[]);
 struct st_table *st_get_table (void);
 struct st_caption *st_get_captions (void);
 struct ency_titles *get_title_at (long);
-char *st_nice_error (int error_no);
+
+char *st_nice_error (int);
 int st_fingerprint (void);
+
+struct st_media *st_get_media (char *);
+char *st_format_filename (char *, char *, int);
 
 struct st_ency_formatting
   {
@@ -92,6 +100,17 @@ struct st_file_info
     int append_char;
     int fingerprint[16];
     long int filesize;
+  };
+
+struct st_photo
+  {
+    char file[8];
+    char caption[50];
+  };
+
+struct st_media
+  {
+    struct st_photo photos[5];
   };
 
 #endif

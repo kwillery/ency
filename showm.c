@@ -28,74 +28,61 @@
 #include "ency.h"
 
 extern int st_file_type;
-int debug = 0;
+extern char *ency_filename;
 
-struct st_caption *captions, *oldcaptions;
-
-int
-print_media (char *fnbase)
-{
-  int i = 0;
-  char *temp_fnbase;
-
-  temp_fnbase = malloc (strlen (fnbase) + 2);
-  for (i = 1; i <= 5; i++)
-    {
-      oldcaptions = captions;
-      strcpy (temp_fnbase, fnbase);
-      temp_fnbase[strlen (fnbase)] = '0' + i;
-      temp_fnbase[strlen (fnbase) + 1] = 0;
-      if (debug > 1)
-	printf ("%s\n", temp_fnbase);
-      while (captions)
-	{
-	  if (debug)
-	    printf ("%s=%s?\n", captions->fnbasen, temp_fnbase);
-	  if (!strcmp (captions->fnbasen, temp_fnbase))
-	    {
-	      printf ("%sr.pic == %s\n", temp_fnbase, captions->caption);
-	      captions = NULL;
-	    }
-	  if (captions)
-	    captions = captions->next;
-	}
-      captions = oldcaptions;
-    }
-  return (1);
-}
-
-int
+int 
 main (int argc, char *argv[])
 {
   int silent = 0;
   int i = 0;
-  char search_string[70];
-  char title[70];
+  char search_string[70], *temp_fn;
   struct st_table *tbl, *oldtbl;
+  struct st_media *media = NULL;
+  char base_path[] = "/cdrom";
 
+  /* identify whatever file were looking at */
   st_file_type = st_fingerprint ();
 
-  captions = st_get_captions ();
+  /* this enables the media funcs. in encyfuncs.c */
+  ency_init ();
+
+  /* get a table so we know what's in the encyclopedia */
   tbl = st_get_table ();
-  for (i = 0; i < argc; i++)
+
+  /* parse command-line args */
+  for (i = 1; i < argc; i++)
     {
-      if (!strcmp ("-d", argv[i]))
-	debug++;
       if (!strcmp ("-s", argv[i]))
 	silent++;
+      else if (argv[i][0] == '-')
+	{
+	printf("No help yet\n");
+	return(0);
+	}
+      else
+	{
+	strcpy(search_string, argv[i]);
+	silent=2;
+	}
     }
-  if (!silent)
+
+  /* get the search_string */
+  if (silent < 1)
     printf ("Enter search string :");
-  scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
+  if (silent < 2) scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
 
   while (tbl)
     {
-      strcpy (title, tbl->title);
-      if (strstr (title, search_string))
+      if (strstr (tbl->title, search_string))
 	{
-//        printf ("/cdrom/video98/%c/%s1q.mov\n", tbl->fnbase[0], tbl->fnbase);
-	  // printf("%s\n",tbl->title);
-	  print_media (tbl->fnbase);
+	  media = st_get_media (tbl->title);
+	  for (i = 0; i < 5; i++)
+	    if (strlen (media->photos[i].file))		/* if there is a response */
+	      {
+		temp_fn = st_format_filename (media->photos[i].file, base_path, 0);	/* makes /a/abc1q.pic etc */
+		printf ("%s : %s\n", temp_fn, media->photos[i].caption);
+		free (temp_fn);
+	      }
 	}
       oldtbl = tbl;		/* store tbl's memory address in oldtbl */
       tbl = tbl->next;		/* progress tbl along the list */
@@ -103,12 +90,7 @@ main (int argc, char *argv[])
       free (oldtbl->fnbase);	/* free the last fnbase */
       free (oldtbl);		/* free the last entry */
     }
-  while (captions)
-    {
-      oldcaptions = captions;
-      captions = captions->next;
-      free (oldcaptions->caption);
-      free (oldcaptions->fnbasen);
-      free (oldcaptions);
-    }
+  ency_finish ();		/* cleans up after ency_init() */
+  if (ency_filename)
+    free (ency_filename);
 }

@@ -49,6 +49,8 @@ main (int argc, char *argv[])
       printf ("findenc - Searches Star Trek encyclopedia\nhttp://www.picknowl.com.au/homepages/beemer/ency.html\nUsage: findenc -[c|e]\n-c: searches chronology\n-e: searches episodes\ndefault: search encyclopedia\n");
       exit (0);
     }
+
+/* get the search string, one way or another */
   if (argc > optind)
     {
       strcpy (search_string, argv[optind]);
@@ -59,26 +61,39 @@ main (int argc, char *argv[])
       scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
     }
 
+  /* make the search *not* case sensitive */
   st_ignore_case = 1;
+
+  /* if you want to manually set the filename
+   * ency_filename = (char *) malloc (60);
+   * strcpy (ency_filename, "/dose/trek/Reference/Encyclopedia/Ency98/Data.cxt");
+   */
+
+  /* identify the file were looking at
+   * (defaults to the env. var. ENCY_FILENAME
+   *  or, failing that, "./Data.cxt") */
   st_file_type = st_fingerprint ();
-//  st_file_type = ST_FILE_OMNI2;
+
+/*
+ * If you want to set it manually, use:
+ * st_file_type = ST_FILE_OMNI2;
+ * (ST_FILE_* is in ency.h
+ */
+
+
   if (st_file_type <= ST_FILE_TYPES)
     {
-//  ency_filename = (char *) malloc (60);
-
-//  strcpy (ency_filename, "/dose/trek/Reference/Encyclopedia/Ency98/Data.cxt");
-      //  strcpy (ency_filename, "/dose/trek/Reference/omni1.dxr");
-      //  strcpy (ency_filename, "/dose/trek/Reference/omni_v2.dxr");
-      //  strcpy (ency_filename, "/dose/trek/Reference/ds9/ds9/eg_ds9.dxr");
-      //  strcpy (ency_filename, "/dose/trek/Reference/tng/source/eg_tng.dxr");
-
       if (i == 'c')
 	thingy = chro_find_list (search_string, 0);
       if (i == 'e')
 	thingy = epis_find_list (search_string, 0);
       if ((i != 'c') && (i != 'e'))
 	thingy = ency_find_list (search_string, 0);
-      // thingy = get_title_at (0x149310);
+
+      /*
+       * get from a certain point in the file...
+       * thingy = get_title_at (0x149310);
+       */
 
       i = 0;
 
@@ -86,25 +101,26 @@ main (int argc, char *argv[])
 	{
 	  do
 	    {
+	      /* print the returned text */
 	      printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
+
+	      /* free the returned stuff */
 	      kill_me = thingy;
 	      thingy = thingy->next;
-
 	      fmt = kill_me->fmt;
-
 	      while (fmt)
 		{
 		  kill_fmt = fmt;
 		  fmt = fmt->next;
 		  free (kill_fmt);
 		}
-
 	      if (kill_me->title)
 		free (kill_me->title);
 	      if (kill_me->text)
 		free (kill_me->text);
 	      if (kill_me)
 		free (kill_me);
+
 	    }
 	  while (thingy != NULL);
 	}
