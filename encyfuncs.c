@@ -42,6 +42,7 @@ static int st_file_type = 0;
 
 struct st_wl
 {
+	char *fnbase;
 	int word;
 	struct st_wl *next;
 };
@@ -49,8 +50,8 @@ struct st_wl
 struct st_ftlist
 {
 	int section;
+	long filepos;
 	char *word;
-	char *fnbase;
 	struct st_wl *words;
 	struct st_ftlist *next;
 };
@@ -995,9 +996,9 @@ int st_load_media (void)
 	 * have needed to to search it). But if the entry list
 	 * is free()'d in between the search and now, there
 	 * will be no videos in the media list.
-	 * (10 lines of comments for two of code! :-) */
-	if (!st_vtbls)
-		st_vtbls = entrylist_head;
+	 * (10 lines of comments for one of code! :-) */
+	st_vtbls = entrylist_head;
+
 	if (!st_vcpts)
 		st_vcpts = st_get_captions (ST_SECT_VCPT);
 
@@ -1660,7 +1661,7 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 	struct st_table *tbl=NULL;
 
 	if (!entry_list_has_section (section))
-		if (!st_get_video_table (section))
+		if (!load_entry_list (section))
 			return NULL;
 
 	tmp = entrylist_head;
@@ -1719,15 +1720,75 @@ static int ft_list_has_section (int section)
 	return 0;
 }
 
+static struct st_wl *load_ft_word (FILE *inp)
+{
+	struct st_wl *wl_curr=NULL, *wl_last=NULL, *ret=NULL;
+	int found_word;
+	int multi=0;
+	char c;
+
+	/* If it doesn't look like an FT word list,
+	 * we don't want to know about it. */
+	c = getc (inp);
+	if (c != '[')
+		return NULL;
+	
+	while (c != ']')
+	{
+		while ((getc (inp)) != '\"');
+		ungetc ('\"', inp);
+
+		wl_curr = (struct st_wl *) malloc (sizeof (struct st_wl));
+		wl_curr->next = NULL;
+		if (ret == NULL)
+			ret = wl_curr;
+		wl_curr->fnbase = get_text_from_file_max_length (inp, 10);
+
+		while ((getc (inp) != ':'));
+		while ((c = getc (inp)) == ' ');
+		if (c == '"')
+		{
+			multi = 1;
+		} else {
+			ungetc (c, inp);
+			multi = 0;
+		}
+
+		fscanf (inp, "%d", &found_word);
+		wl_curr->word = found_word;
+
+		if (wl_last)
+			wl_last->next = wl_curr;
+		wl_curr->next = NULL;
+
+		if (multi)
+		{
+			while (getc (inp) == ',')
+			{
+				wl_last = wl_curr;
+				wl_curr = (struct st_wl *) malloc (sizeof (struct st_wl));
+				wl_curr->next = NULL;
+				wl_curr->fnbase = NULL;
+				wl_last->next = wl_curr;
+
+				fscanf (inp, "%d", &found_word);
+				wl_curr->word = found_word;
+			}
+		}
+		wl_last = wl_curr;
+					
+		c = getc (inp);
+	}
+	return ret;
+}
+
 static void load_ft_list (int section)
 {
 	struct st_part *part;
 	struct st_ftlist *root=NULL, *curr=NULL, *last=NULL;
-	struct st_wl *wl_curr=NULL, *wl_last=NULL;
-	char *word, c=0;
-	int found_word;
+	char c=0;
 	FILE *inp=NULL;
-	int count=0, multi, i;
+	int count=0, i;
 
 	while ((part = get_part (st_file_type, ST_BLOCK_FTLIST, section, count++, 0)))
 	{
@@ -1743,82 +1804,42 @@ static void load_ft_list (int section)
 				fseek (inp, 16, SEEK_CUR);
 			}
 
+			/* Get rid of the leading '[' if its there */
 			if (getc (inp) == '\"')
 				ungetc ('\"', inp);
 			
-			c = getc (inp);
-			if (c != '\"')
-				c = ']';
-			else
-			{
-				ungetc (c, inp);
-				c=0;
-			}
-
+			c=0;
 			while (c != ']')
 			{
-
-				while (getc (inp) != '\"');
-				ungetc ('\"', inp);
-
-				word = get_text_from_file (inp);
-
-				while ((getc (inp)) != '[');
-
-				while (c != ']')
-				{
-					curr = (struct st_ftlist *) malloc (sizeof (struct st_ftlist));
-					curr->words = NULL;
-					curr->section = section;
-
-					if (!root)
-						root = curr;
-
-					curr->word = word;
-					/* we only want the 1st one to have the word stored
-					   so we can save memory */
-					word = NULL;
-
-					while ((getc (inp)) != '\"');
-					ungetc ('\"', inp);
-
-					curr->fnbase = get_text_from_file_max_length (inp, 10);
-
-					while ((getc (inp) != ':'));
-					getc (inp);
-					if (isdigit (c = getc (inp)))
-					{
-						ungetc (c, inp);
-						multi = 0;
-					} else
-						multi = 1;
-
-					fscanf (inp, "%d", &found_word);
-					wl_curr = (struct st_wl *) malloc (sizeof (struct st_wl));
-					wl_curr->word = found_word;
-					wl_curr->next = NULL;
-					curr->words = wl_curr;
-
-					if (multi)
-					{
-						while (getc (inp) == ',')
-						{
-							wl_last = wl_curr;
-							wl_curr = (struct st_wl *) malloc (sizeof (struct st_wl));
-							wl_curr->next = NULL;
-							wl_last->next = wl_curr;
-							
-							fscanf (inp, "%d", &found_word);
-							wl_curr->word = found_word;
-						}
-					}
-					if (last)
-						last->next = curr;
-					curr->next = NULL;
-					last = curr;
-					
+				do {
 					c = getc (inp);
-				}
+				} while (c != '\"');
+				ungetc (c, inp);
+
+				curr = (struct st_ftlist *) malloc (sizeof (struct st_ftlist));
+				curr->words = NULL;
+				curr->section = section;
+			
+				if (!root)
+					root = curr;
+			
+				curr->word = get_text_from_file (inp);
+				while (c != '[')
+					c = getc (inp);
+
+				curr->filepos = ftell (inp) - 1;
+
+				do {
+					c = getc (inp);
+				} while (c != ']');
+
+				if (last)
+					last->next = curr;
+				curr->next = NULL;
+				last = curr;
+				
+				/* This will (should) load either a ']'
+				 * or a ',', tested in the while() loop */
 				c = getc (inp);
 			}
 		}
@@ -1834,11 +1855,26 @@ struct entry_scores
 	struct entry_scores *next;
 };
 
+static struct st_wl *get_ft_word_at (long filepos)
+{
+	struct st_wl *wl;
+	FILE *inp;
+
+	inp = curr_open (filepos);
+	if (!inp)
+		return NULL;
+
+	wl = load_ft_word (inp);
+	fclose (inp);
+	return (wl);
+}
+
+
+
 static struct entry_scores *find_words (struct entry_scores *root, char *words, struct st_ftlist *fl)
 {
 	struct entry_scores *scores=NULL, *curr=NULL, *last=NULL;
 	struct st_wl *wl;
-	char *match=NULL;
 
 	if (!words)
 		return NULL;
@@ -1851,62 +1887,83 @@ static struct entry_scores *find_words (struct entry_scores *root, char *words, 
 
 	while (fl)
 	{
-		if (fl->word)
-			match = fl->word;
-
-		if (!strcasecmp (match, words))
+		if (!strcasecmp (fl->word, words))
 		{
-			if (!scores)
-			{
-				scores = last = curr = (struct entry_scores *) malloc (sizeof (struct entry_scores));
-				strcpy (curr->fnbase, fl->fnbase);
+			if (!fl->words)
+				fl->words = get_ft_word_at (fl->filepos);
 
-				curr->score = 5;
-				wl = fl->words;
-				while (wl)
+			wl = fl->words;
+
+			while (wl)
+			{
+				if (wl->fnbase == NULL)
 				{
-					curr->score++;
 					wl = wl->next;
+					continue;
 				}
-				curr->next = NULL;
-			} else
-			{
-				curr = scores;
-				while (curr)
-				{
-					if (!strcasecmp (curr->fnbase, fl->fnbase))
-					{
-						curr->score += 5;
 
-						wl = fl->words;
-						while (wl)
-						{
-							curr->score++;
-							wl = wl->next;
-						}
-						break;
-					}
-					curr = curr->next;
-				}
-				if (!curr)
+				if (!scores) /* First found word */
 				{
-					last->next = curr = (struct entry_scores *) malloc (sizeof (struct entry_scores));
-					strcpy (curr->fnbase, fl->fnbase);
+					scores = last = curr = (struct entry_scores *) malloc (sizeof (struct entry_scores));
+					strcpy (curr->fnbase, wl->fnbase);
+
 					curr->score = 5;
-
-					wl = fl->words;
+					wl = wl->next;
 					while (wl)
 					{
-						curr->score++;
+						/* later ones will not have ->fnbase 'cos we
+						 * cheat to save memory */
+						if (!wl->fnbase)
+							curr->score++;
+						else /* This one doesn't belong to us. */
+							break;
 						wl = wl->next;
 					}
-
 					curr->next = NULL;
-					last = curr;
+				} else /* We have already found words before */
+				{
+					curr = scores;
+					while (curr)
+					{
+						if (!strcasecmp (curr->fnbase, wl->fnbase)) /* Is the entry we found is in the list? */
+						{
+							curr->score += 5;
+							wl = wl->next;
+
+							while (wl)
+							{
+								if (!wl->fnbase)
+									curr->score++;
+								else
+									break;
+								wl = wl->next;
+							}
+							break;
+						}
+						curr = curr->next;
+					}
+					if (!curr) /* The entry we just found wasn't already in the list */
+					{
+						last->next = curr = (struct entry_scores *) malloc (sizeof (struct entry_scores));
+						strcpy (curr->fnbase, wl->fnbase);
+						curr->score = 5;
+						wl = wl->next;
+
+						while (wl)
+						{
+							if (!wl->fnbase)
+								curr->score++;
+							else
+								break;
+							wl = wl->next;
+						}
+
+						curr->next = NULL;
+						last = curr;
+					}
 				}
-
+				
 			}
-
 		}
 		fl = fl->next;
 	}
