@@ -332,7 +332,6 @@ static int curr_open (void)
       st_set_filename ("Data.cxt");
     } else {
       st_set_filename (temp_fn);
-      free (temp_fn);
     }
   }
   inp = fopen (ency_filename, "rb");
