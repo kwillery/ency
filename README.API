@@ -6,12 +6,16 @@ ency API
 ----------------
 global variables
 ----------------
+
 extern char *ency_filename;
  sets the Data.cxt filename explicitly (eg "/dose/ency98/Data.cxt")
+
 extern int st_ignore_case;
  sets for most functions to ignore case when searching
+
 extern int st_return_body;
  sets whether a function returns formatting & text. (in applicable functions that is :-)
+
 extern int st_file_type;
  sets the file type (ST_FILE_* definitions)
 
@@ -25,7 +29,7 @@ definitions
 #define ST_FILE_DS91 4
 
 ENCY98 is the default, the 1998 version
-OMNI1 is the original CD based Omnipedia ** doesnt work as i dont have a copy **
+OMNI1 is the original CD based Omnipedia
 OMNI2 is the second CD Omnipedia (Upto the ST:Generations movie)
 TNG1 is the TNG Episode guide
 DS91 is the DS9 episode guide
@@ -41,6 +45,17 @@ struct st_table
     struct st_table *next;
   };
 a simple linked list, with titles (title) and filename base (eg /cdrom/video98/a/%fnbase%*.mov if fnbase started with an 'a'. see the notes at the end...)
+
+struct st_caption
+  {
+    char *fnbasen;
+    char *caption;
+    struct st_caption *next;
+  };
+another simple linked list, for picture captions.
+fnbasen: the fnbase from the tables (see 'struct st_table' && st_get_table), pluse a number from 1 to 5 on the end.
+caption: the picture's caption
+next: the next in the list.
 
 struct st_ency_formatting
   {
@@ -64,7 +79,7 @@ title = the title of an entry
 text = the body of the entry
 fmt = formatting info
 next = the next returned entry
-err = the error code (see encyfuncs.c for now)
+err = the error code (see the st_nice_error function)
 filepos = position in Data.cxt of info; use get_title_at() to retrieve the info.
 (eg. have (st_return_body = 0), build list using ency_find_list(), and get_title_at() to get data when clicked/selected)
 
@@ -85,15 +100,73 @@ st_return_body = global variable
 struct st_table *st_get_table (void)
 returns a list of all encyclopedia (ency,epis, and chro) titles, and file name base. (eg /cdrom/video98/a/%fnbase%*.mov if fnbase started with an 'a'. email me for a better explanation)
 
+struct st_caption *st_get_captions(void)
+returns a linked list relating the fnbase, a number from 1 to 5, and a picture caption.
+
 struct ency_titles *get_title_at (long filepos)
 returns title & text of entry at file position filepos
 use filepos variable returned with the ency_titles structure.
 
+char *st_nice_error (int error_no)
+pass along the 'err' value returned with the *_find_list functions.
+it returns a text version of the error message (ie for a dialog box etc...)
+
+int st_fingerprint (void)
+returns a value for the st_file_type variable, or > ST_FILE_TYPES for an error.
+use code like...
+
+  st_file_type = st_fingerprint ();
+  if (st_file_type <= ST_FILE_TYPES)
+    {
+    /* do your stuff... */
+    }
+
+--------
+EXAMPLES
+--------
+/* ******************************* Example 1 ******************************* */
+/* I dont know how many of these are needed... */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "ency.h"
+/* ... but they're there just to be safe :) */
+
+extern int st_ignore_case;
+extern int st_file_type;
+extern char *ency_filename;
+
+int main() {
+struct ency_titles *search_result = NULL;
+char search_string[5] = "kirk";
+
+ency_filename = (char *) malloc (60);
+strcpy (ency_filename, "/dose/trek/Reference/Encyclopedia/Ency98/Data.cxt");
+st_file_type = ST_FILE_ENCY98;
+search_result = ency_find_list (search_string, 0);
+
+if ((thingy != NULL) && (thingy->title != NULL))
+{
+ do
+ {
+  printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
+  kill_me = thingy;
+  thingy = thingy->next;
+  free (kill_me);
+ }
+ while (thingy != NULL);
+}
+else
+ printf ("No matches\n");
+}
+/* ***************************** End Example 1 ***************************** */
+
 -----
 NOTES
 -----
-The *_get_title and *_find_titles functions no longer work.
-these are explanatory emails between me & the gnometrek author...
+1) The *_get_title and *_find_titles functions no longer work.
+
+2) These are explanatory emails between me & the gnometrek author...
 
 re: fnbase & st_table stuff
 ---
@@ -151,6 +224,7 @@ either mov or pic as far as im aware.)
 (bajole is the fnbase equivalent of 'Bajoran Wormhole')
 the [a-z] is a 'q' if its a movie, or an 'r' if it is a pic.
 ---
+
 ---------
 Robert Mibus
 beemer@picknowl.com.au

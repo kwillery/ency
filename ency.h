@@ -48,6 +48,7 @@ struct st_table *st_get_table (void);
 struct st_caption *st_get_captions (void);
 struct ency_titles *get_title_at (long);
 char *st_nice_error (int error_no);
+int st_fingerprint (void);
 
 struct st_ency_formatting
   {
@@ -85,6 +86,7 @@ struct st_file_info
   {
     char *name;
     char *filename;
+    char *data_dir;
     char *vid_dir;
     char *pic_dir;
     int append_char;

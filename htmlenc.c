@@ -25,7 +25,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "ency.h"
+
 extern int st_ignore_case;
 extern int st_return_body;
 extern int optind;		// for getopt()
@@ -34,7 +36,6 @@ extern int st_file_type;
 
 int remove_fmt = 0;
 int words = 0;
-char filename[100] = "stdout";
 int exact = 0;
 
 int
@@ -43,7 +44,6 @@ loopies (char *txt, struct st_ency_formatting *fmt)
   char fmtstring[10];
   struct st_ency_formatting *fmt2;
   int i = 0, z = 0;
-  int first_time = 1;
   char smeg[50];
   int print_br = 0;
 
@@ -141,10 +141,7 @@ loopies (char *txt, struct st_ency_formatting *fmt)
 		  txt += (strlen (smeg) + 1);
 		  while ((txt[0] == 32) || (txt[0] == 10))
 		    txt++;
-//                if (!first_time)
 		  printf (" ");
-//                else
-		  //                  first_time = 0;
 		  if (sscanf (txt, "%s", smeg) == -1)
 		    i = fmt->words;
 		  if (i < fmt->words)
@@ -220,8 +217,8 @@ int
 main (int argc, char *argv[])
 {
   char search_string[50];
-  struct ency_titles *thingy, *full_body;
-  struct ency_titles *kill_me;
+  struct ency_titles *thingy = NULL, *full_body = NULL;
+  struct ency_titles *kill_me = NULL;
   int i = 0;
   int search_what = 0;
   st_ignore_case = 1;

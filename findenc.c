@@ -31,16 +31,13 @@ extern int st_ignore_case;
 extern int st_file_type;
 extern char *ency_filename;
 
+int
 main (int argc, char *argv[])
 {
   int i = 0;
   char search_string[70];
-  char titlle[70];
-  struct st_table *tbl, *oldtbl;
-  struct ency_titles *thingyz;
-  struct ency_titles *thingy;
-  struct ency_titles *kill_me;
-  struct st_ency_formatting *fmt1, *fmt2;
+  struct ency_titles *thingy = NULL;
+  struct ency_titles *kill_me = NULL;
 
   i = getopt (argc, argv, "ech");
 
@@ -90,22 +87,6 @@ main (int argc, char *argv[])
       else
 	printf ("No matches\n");
 
-/*  tbl = st_get_table ();
-   i = 0;
-   while (tbl)
-   {
-   //   strcpy(titlle,tbl->title);
-   //   if(strstr(titlle,search_string))
-   {
-   printf ("%s:%s\n", tbl->title, tbl->fnbase);
-   }
-   oldtbl = tbl;
-   tbl = tbl->next;
-   free (oldtbl->title);
-   free (oldtbl->fnbase);
-   free (oldtbl);
-   } 
- */
     }
   else
     printf ("An error has occurred.\n");
