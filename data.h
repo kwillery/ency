@@ -39,7 +39,6 @@ struct st_block
 	long start;
 	int start_id;
 	long size;
-	char *dir;
 	struct st_block *next;
 };
 
@@ -58,6 +57,13 @@ struct st_dfile
 	struct st_dfile *next;
 };
 
+struct st_vidlist
+{
+	char *name;
+	char *dir;
+	struct st_vidlist *next;
+};
+
 struct st_data_filenode
 {
 	char *name;
@@ -65,6 +71,7 @@ struct st_data_filenode
 	char *datadir;
 	char *photodir;
 	char *videodir;
+	struct st_vidlist *videolist;
 	char *fingerprint;
 	int append_char;
 	struct st_dfile *dfiles;
@@ -89,6 +96,7 @@ struct st_block *get_block_by_id (int file, int dfiletype, int block_id);
 struct st_block *get_block_by_name (int file, int dfiletype, char *name);
 char *get_exception (int file, char *type, char *from);
 void free_exception (struct st_data_exception *ex);
+char *get_videolistblock_dir(int file, int number);
 
 struct st_block *new_block(void);
 struct st_dfile *new_dfile(void);

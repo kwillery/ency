@@ -58,8 +58,6 @@ void free_block (struct st_block *block)
 {
 	if (block->name)
 		free (block->name);
-	if (block->dir)
-		free (block->dir);
 	free (block);
 }
 
@@ -82,6 +80,7 @@ void free_data_filenode (struct st_data_filenode *file)
 	struct st_block *block,*tmp_block;
 	struct st_data_exception *ex, *tmp_ex;
 	struct st_dfile *df, *tmp_df;
+	struct st_vidlist *vl, *tmp_vl;
 
 	df = file->dfiles;
 	while (df)
@@ -104,6 +103,18 @@ void free_data_filenode (struct st_data_filenode *file)
 		tmp_ex = ex;
 		ex = ex->next;
 		free_exception (tmp_ex);
+	}
+
+	vl = file->videolist;
+	while (vl)
+	{
+		tmp_vl = vl;
+		vl = vl->next;
+		if (tmp_vl->name)
+			free (tmp_vl->name);
+		if (tmp_vl->dir)
+			free (tmp_vl->dir);
+		free (tmp_vl);
 	}
 	if (file->name)
 		free (file->name);
@@ -147,7 +158,6 @@ struct st_block *new_block()
 		block->section = 0;
 		block->start = 0;
 		block->start_id = 0;
-		block->dir = NULL;
 		block->next = NULL;
 		strcpy (block->btype, "");
 	}
@@ -317,6 +327,56 @@ static void data_scan (struct st_block *block)
 	return;
 }
 
+struct st_vidlist *get_vidlist (int file, int number)
+{
+	struct st_data_filenode *file_node=NULL;
+	struct st_vidlist *vl=NULL;
+	char *name = NULL;
+	int i;
+
+	file_node = get_filenode (file);
+
+	if (!file_node)
+		return NULL;
+
+	vl = file_node->videolist;
+	for (i=0;i<number;i++)
+	{
+		if (!vl)
+			return NULL;
+
+		vl = vl->next;
+	}
+
+	return vl;
+}
+
+/* Videolist blocks are referenced by ->videolist in struct st_data_filenode,
+ * this runs along that, gets the name of the block and finds that. */
+struct st_block *get_videolist_block (int file, int number)
+{
+	struct st_vidlist *vl=NULL;
+
+	vl = get_vidlist (file, number);
+
+	if (vl && vl->name)
+		return get_block_by_name (file, ST_DFILE_DATA, vl->name);
+
+	return NULL;
+}
+
+/* Gets the directory for a video list */
+char *get_videolistblock_dir(int file, int number)
+{
+	struct st_vidlist *vl=NULL;
+
+	vl = get_vidlist (file, number);
+	if (vl)
+		return (vl->dir);
+
+	return NULL;
+}
+
 /* Gets a 'block' based on its type, section, and number in the list.
  * (The first one matching type & section is '0', the next that matches
  * is '1', etc.) */
@@ -326,6 +386,10 @@ struct st_block *get_block (int file, int dfiletype, int type, int section, int 
 	struct st_dfile *df=NULL;
 	struct st_block *block=NULL;
 	int i=0;
+
+	/* Video lists are handled differently ATM */
+	if (type == ST_SECT_VLST)
+		return get_videolist_block (file, number);
 
 	file_node = get_filenode (file);
 
@@ -486,6 +550,7 @@ struct st_data_filenode *st_data_new_filenode (void)
 		new_node->datadir = NULL;
 		new_node->photodir = NULL;
 		new_node->videodir = NULL;
+		new_node->videolist = NULL;
 		new_node->fingerprint = NULL;
 		new_node->append_char = 1;
 		new_node->dfiles = NULL;

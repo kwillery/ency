@@ -255,7 +255,7 @@ static struct st_block *append_block_from_rc_file (struct st_block *block_root, 
 {
 	struct st_block *block=NULL, *block_last=NULL;
 	char *name, *type, *section, *start, *count;
-	char *start_id, *bcount, *dir;
+	char *start_id, *bcount;
 
 	block = block_root;
 	while (block)
@@ -276,10 +276,10 @@ static struct st_block *append_block_from_rc_file (struct st_block *block_root, 
 	count = get_rc_arg (arg, "count");
 	start_id = get_rc_arg (arg, "start_id");
 	bcount = get_rc_arg (arg, "bcount");
-	if (get_rc_arg (arg, "dir"))
+/*	if (get_rc_arg (arg, "dir"))
 		dir = strdup (get_rc_arg (arg, "dir"));
 	else
-		dir = NULL;
+		dir = NULL;*/
 
 	if (type == NULL || start == NULL)
 	{
@@ -292,11 +292,12 @@ static struct st_block *append_block_from_rc_file (struct st_block *block_root, 
 
 	/* set the strings... */
 	block->name = name;
-	block->dir = dir;
 
 	/* get the type */
+	/* No more! Done differently now.
 	if (!strcasecmp (type, "videolist"))
 		block->type = ST_SECT_VLST;
+	*/
 	/* the others should really be here too, but... */
 	/* :-D */
 
@@ -348,6 +349,32 @@ static struct st_data_exception *append_exception_from_rc_file (struct st_data_e
 		return ex;
 
 	return ex_root;
+}
+
+/* Adds a videolist lookup */
+void add_videolist (struct st_data_filenode *node, struct rcfile_args *args)
+{
+	struct st_vidlist *vl=NULL, *v=NULL;
+	char *name=NULL, *dir=NULL;
+
+	name = get_rc_arg (args, "name");
+	dir = get_rc_arg (args, "dir");
+
+	if (!name || !dir)
+		return;
+
+	vl = malloc (sizeof(struct st_vidlist));
+
+	if (!vl)
+		return;
+
+	vl->name = strdup(name);
+	vl->dir = strdup(dir);
+
+	/* prepend the list - easier than
+	 * appending */
+	vl->next = node->videolist;
+	node->videolist = vl;
 }
 
 /* Frees an rc argument list. */
@@ -407,12 +434,17 @@ static struct st_data_filenode *make_filenode_from_rc_file (FILE *inp)
 			new_node->name = strdup (get_rc_arg (cmd->args, NULL));
 		if (!strcasecmp (cmd->name, "mainfile"))
 			new_node->mainfile = strdup (get_rc_arg (cmd->args, NULL));
+		if (!strcasecmp (cmd->name, "piconfile"))
+		{
+		}
 		if (!strcasecmp (cmd->name, "datadir"))
 			new_node->datadir = strdup (get_rc_arg (cmd->args, NULL));
 		if (!strcasecmp (cmd->name, "photodir"))
 			new_node->photodir = strdup (get_rc_arg (cmd->args, NULL));
 		if (!strcasecmp (cmd->name, "videodir"))
 			new_node->videodir = strdup (get_rc_arg (cmd->args, NULL));
+		if (!strcasecmp (cmd->name, "videolist"))
+			add_videolist (new_node, cmd->args);
 		if (!strcasecmp (cmd->name, "fingerprint"))
 			new_node->fingerprint = strdup (get_rc_arg (cmd->args, NULL));
 		if (!strcasecmp (cmd->name, "append_char"))

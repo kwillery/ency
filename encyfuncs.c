@@ -2276,7 +2276,7 @@ static int in_simple_list (long filepos, int entrylen, char *match)
 		fread (entry, entrylen, 1, inp);
 		entry[entrylen] = 0;
 		getc (inp);
-		if (!strncasecmp (match, entry, strlen (entry)))
+		if (!strncasecmp (match, entry, strlen (match)))
 		{
 			fclose (inp);
 			free (entry);
@@ -2388,13 +2388,15 @@ static char *get_video_dir (char *fnbasen)
 	char *dir;
 	int count=0;
 
-	while ((block = get_block (st_file_type, ST_DFILE_DATA, ST_SECT_VLST, 0, count++, 0)))
+	while ((block = get_block (st_file_type, ST_DFILE_DATA, ST_SECT_VLST, 0, count, 0)))
+	{
 		if (in_simple_list (block->start, 12, fnbasen))
 		{
-			dir = block->dir;
-			return dir;
+			dir = get_videolistblock_dir(st_file_type, count);
+			return dir ? dir : "";
 		}
-
+		count++;
+	}
 	return (char *) st_fileinfo_get_data(st_file_type,video_dir);
 
 }

@@ -3,8 +3,8 @@ file
  mainfile: data99.cxt
  datadir: ENCYprogram/Pro
  photodir: Media99
- videodir: Video99
- part: type=videolist, start=509722, dir=Video99
+ videodir: Video98
+ videolist: name=ency99_videoadds, dir=Video99
  append_char
  fingerprint: 58;46;49;52;12;a;bc;0;33;39;56;4d;70;61;6d;69;
  needscan
