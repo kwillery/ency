@@ -1,26 +1,26 @@
-/******************************************************************************/
-/* Mibus's Ency 98 Reader: Reads the Star Trek Encyclopedia (1998 version)    */
-/* Also reads the various Omnipedias & Episode guides                         */
-/* Copyright (C) 1998 Robert Mibus                                            */
-/*                                                                            */
-/* This program is free software; you can redistribute it and/or              */
-/* modify it under the terms of the GNU General Public License                */
-/* as published by the Free Software Foundation; either version 2             */
-/* of the License, or (at your option) any later version.                     */
-/*                                                                            */
-/* This program is distributed in the hope that it will be useful,            */
-/* but WITHOUT ANY WARRANTY; without even the implied warranty of             */
-/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              */
-/* GNU General Public License for more details.                               */
-/*                                                                            */
-/* You should have received a copy of the GNU General Public License          */
-/* along with this program; if not, write to the Free Software                */
-/* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. */
-/*                                                                            */
-/* Author:                                                                    */
-/*      Email   mibus@bigpond.com                                             */
-/*      Webpage http://users.bigpond.com/mibus/                               */
-/******************************************************************************/
+/*****************************************************************************/
+/* Mibus's Ency 98 Reader: Reads the Star Trek Encyclopedia (1998 version)   */
+/* Also reads the various Omnipedias & Episode guides                        */
+/* Copyright (C) 1998 Robert Mibus                                           */
+/*                                                                           */
+/* This program is free software; you can redistribute it and/or             */
+/* modify it under the terms of the GNU General Public License               */
+/* as published by the Free Software Foundation; either version 2            */
+/* of the License, or (at your option) any later version.                    */
+/*                                                                           */
+/* This program is distributed in the hope that it will be useful,           */
+/* but WITHOUT ANY WARRANTY; without even the implied warranty of            */
+/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             */
+/* GNU General Public License for more details.                              */
+/*                                                                           */
+/* You should have received a copy of the GNU General Public License         */
+/* along with this program; if not, write to the Free Software               */
+/* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.*/
+/*                                                                           */
+/* Author:                                                                   */
+/*      Email   mibus@bigpond.com                                            */
+/*      Webpage http://users.bigpond.com/mibus/                              */
+/*****************************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,14 +49,24 @@ int main (int argc, char *argv[])
   struct st_media *media = NULL;
   char base_path[] = "/cdrom"; /* where the media dirs etc. are */
   int use_media = 0;
-
+  int section = ST_SECT_ENCY;
   strcpy (search_string, "");
 
   while ((i = getopt (argc, argv, "echm")) != EOF) {
-    if (i == 'h')
-      print_usage ();
-    if (i == 'm')
-      use_media = 1;
+    switch (i)
+      {
+      case 'm':
+	use_media = 1;
+	break;
+      case 'e':
+	section = ST_SECT_EPIS;
+	break;
+      case 'c':
+	section = ST_SECT_CHRO;
+	break;
+      default:
+	print_usage ();
+      }
   }
 
 /* get the search string, one way or another */
@@ -76,19 +86,11 @@ int main (int argc, char *argv[])
   if (use_media)
     st_load_media ();
 
-  /* make the search *not* case sensitive */
-  st_ignore_case = 1;
-
   /* if you want to manually set the filename
    * st_set_filename ("/dose/trek/Reference/eg_tng.dxr");
    */
 
-  if (i == 'c')
-    thingy = chro_find_list (search_string, 0);
-  if (i == 'e')
-    thingy = epis_find_list (search_string, 0);
-  if ((i != 'c') && (i != 'e'))
-    thingy = ency_find_list (search_string, 0);
+  thingy = st_find (search_string, section, ST_OPT_MATCH_SUBSTRING | ST_OPT_RETURN_BODY);
 
   /*
    * get from a certain point in the file...

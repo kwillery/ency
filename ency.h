@@ -32,6 +32,14 @@
 #define ST_FILE_TNG1 3
 #define ST_FILE_DS91 4
 
+/* Options to st_find() */
+#define ST_SECT_ENCY 0
+#define ST_SECT_EPIS 1
+#define ST_SECT_CHRO 2
+#define ST_OPT_CASE_SENSITIVE 1
+#define ST_OPT_RETURN_BODY 2
+#define ST_OPT_MATCH_SUBSTRING 4
+
 /* Initialisation & De-init*/
 int st_init (void);
 int st_finish (void);
@@ -55,6 +63,7 @@ struct st_media *st_get_media (char *);
 char *st_format_filename (char *, char *, int);
 
 /* For the actual searches */
+struct ency_titles *st_find (char *, int, int);
 struct ency_titles *ency_find_list (char[], int);
 struct ency_titles *epis_find_list (char[], int);
 struct ency_titles *chro_find_list (char[], int);

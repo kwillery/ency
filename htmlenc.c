@@ -112,7 +112,6 @@ int loopies (char *txt, struct st_ency_formatting *fmt)
 	print_br = 0;
       }
     }
-// strlen(txt)-strlen(smeg) == 0 
     txt += (strlen (smeg));
     if (strlen (txt))
       while ((txt[0] == 32) || (txt[0] == '\n')) {
@@ -168,17 +167,25 @@ int main (int argc, char *argv[])
   int i = 0;
   int use_media = 0;
   int search_what = 0;
+  int section = ST_SECT_ENCY;
 
   st_ignore_case = 1;
   st_return_body = 0;
   
-  while ((i = getopt (argc, argv, "ecmh")) != EOF) {
-    if (i == 'h')
-      print_usage ();
-    if (i == 'm')
-      use_media = 1;
-    else
-      search_what = i;
+  while ((i = getopt (argc, argv, "ecmh")) != EOF) 
+    switch (i)
+  {
+  case 'm':
+    use_media = 1;
+    break;
+  case 'e':
+    section = ST_SECT_EPIS;
+    break;
+  case 'c':
+    section = ST_SECT_CHRO;
+    break;
+  default:
+    print_usage ();
   }
   
   if (argc > optind) {
@@ -193,13 +200,8 @@ int main (int argc, char *argv[])
   if (use_media)
     st_load_media ();
 
-  if (search_what == 'c')
-    thingy = chro_find_list (search_string, 0);
-  if (search_what == 'e')
-    thingy = epis_find_list (search_string, 0);
-  if ((search_what != 'c') && (search_what != 'e'))
-    thingy = ency_find_list (search_string, 0);
-
+  thingy = st_find (search_string, section, ST_OPT_MATCH_SUBSTRING);
+  
   i = 0;
   printf ("<html>\n");
   printf ("<head><title>Search results for: %s</title></head>", search_string);

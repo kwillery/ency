@@ -439,7 +439,6 @@ static struct st_ency_formatting *st_return_fmt (void)
   int first_time = 1;
   char c = 0;
   int i = 0;
-  char tmp_txt[50];
 
   c = getc (inp);
 
@@ -460,13 +459,10 @@ static struct st_ency_formatting *st_return_fmt (void)
     i = 0;
 
     while (c != ':') {
-      if ((c != 20) && (c != ','))
-	tmp_txt[i++] = c;
+      if ((c != 20) && (c != ',') && (st_return_body))
+	curr_fmt->firstword = curr_fmt->firstword * 10 + (c - '0');
       c = getc (inp);
     }
-    tmp_txt[i] = 0;
-    if (st_return_body)
-      curr_fmt->firstword = atoi (tmp_txt);	/* starts at */
 
     c = getc (inp);
 
@@ -475,14 +471,9 @@ static struct st_ency_formatting *st_return_fmt (void)
 
     i = 0;
 
-    while ((c = getc (inp)) != ',') {
-      tmp_txt[i++] = c;
-    }
-
-    tmp_txt[i] = 0;
-
-    if (st_return_body)
-      curr_fmt->words = atoi (tmp_txt);		/* words */
+    while ((c = getc (inp)) != ',')
+      if (st_return_body)
+	curr_fmt->words = curr_fmt->words * 10 + (c-'0');
 
     c = getc (inp);
 
@@ -507,6 +498,7 @@ static struct st_ency_formatting *st_return_fmt (void)
     }
 
     c = getc (inp);
+
     if (st_return_body) {
       curr_fmt->next = NULL;
       if (last_fmt != NULL)
@@ -669,14 +661,11 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
 	temp_text = st_return_text ();
 
       /* define the pointer */
-/*        if (curr_title != root_title) */
       {
 	curr_title = (struct ency_titles *) malloc (sizeof (struct ency_titles));
 
-	if (curr_title == NULL) {
+	if (curr_title == NULL)
 	  printf ("Memory allocation failed\n");
-/*                exit (1); */
-	}
       }
       if ((root_title) == NULL)
 	root_title = curr_title;
@@ -698,14 +687,14 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
 /* */
     } else
       /* It's not the one we want */
-    {
-      free (title);
-      while (text_fmt) {
-	kill_fmt = text_fmt;
-	text_fmt = text_fmt->next;
-	free (kill_fmt);
+      {
+	free (title);
+	while (text_fmt) {
+	  kill_fmt = text_fmt;
+	  text_fmt = text_fmt->next;
+	  free (kill_fmt);
+	}
       }
-    }
 
   }
   while (no_so_far != curr_lastone);
@@ -829,6 +818,41 @@ struct ency_titles *chro_find_list (char *title, int exact)
     }
   }
   return (root);
+}
+
+struct ency_titles *st_find (char *search_string, int section, int options)
+{
+  int exact = 0;
+  if (options & ST_OPT_CASE_SENSITIVE)
+    st_ignore_case = 0;
+  else
+    st_ignore_case = 1;
+
+  if (options & ST_OPT_RETURN_BODY)
+    st_return_body = 1;
+  else
+    st_return_body = 0;
+
+  if (options & ST_OPT_MATCH_SUBSTRING)
+    exact = 0;
+  else
+    exact = 1;
+
+  switch (section)
+    {
+    case ST_SECT_ENCY:
+      return (ency_find_list (search_string, exact));
+      break;
+    case ST_SECT_EPIS:
+      return (epis_find_list (search_string, exact));
+      break;
+    case ST_SECT_CHRO:
+      return (chro_find_list (search_string, exact));
+      break;
+    default:
+      break;
+      return (NULL);
+    }
 }
 
 struct st_table *st_get_table (void)
