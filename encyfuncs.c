@@ -98,6 +98,8 @@ int st_init (void)
 
 int st_finish (void)
 {
+  if (st_loaded_media ())
+    st_unload_media ();
   if (ency_filename)
     free (ency_filename);
   return (1);

@@ -110,6 +110,7 @@ int main (int argc, char *argv[])
 	  if (strlen (media->photos[i].file)) {   /* if there is photos #i */
             temp_fn = st_format_filename (media->photos[i].file, base_path, 0);
             printf ("%s: %s\n", temp_fn, media->photos[i].caption);
+	    free (temp_fn);
 	  }
       }
       
