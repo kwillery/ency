@@ -400,6 +400,7 @@ static struct st_table *st_new_table ()
 	tbl->title = NULL;
 	tbl->fnbase = NULL;
 	tbl->audio = NULL;
+	tbl->resource = NULL;
 	tbl->section = 0;
 	tbl->block_id = 0;
 	tbl->id = 0;
@@ -435,6 +436,8 @@ static void st_clear_entry_list ()
 			free (tbl->fnbase);
 		if (tbl->audio)
 			free (tbl->audio);
+		if (tbl->resource)
+			free (tbl->resource);
 
 		free (tbl);
 	}
@@ -457,6 +460,9 @@ int st_open_ency (char *directory)
                             ency_directory[len] = 0; \
                             st_file_type = i; \
                             DBG ((stderr, "Found ency #%d in '%s'\n", i, ency_directory)); \
+                            st_clear_cache(); \
+                            st_clear_entry_list(); \
+                            st_unload_media(); \
                             return i; \
                            }
 
@@ -929,88 +935,93 @@ static struct st_table *read_attribs_table (FILE *inp, int section)
 		ungetc (c, inp);
 
 	while (!feof (inp))
-		{	/* main loop */
+	{	/* main loop */
 
-			curr_tbl = st_new_table ();
+		curr_tbl = st_new_table ();
 
-			if (curr_tbl == NULL)
-				return (NULL);
+		if (curr_tbl == NULL)
+			return (NULL);
 
-			curr_tbl->section = section;
+		curr_tbl->section = section;
 
-			curr_tbl->title = st_cleanstring (get_text_from_file (inp));
+		curr_tbl->title = st_cleanstring (get_text_from_file (inp));
 
+		c = getc (inp);
+		if (c == ':')
+		{
 			c = getc (inp);
-			if (c == ':')
-				{
-					c = getc (inp);
-					c = getc (inp);
-					level = 1;
-					commas = 0;
-					in_quote = 0;
-					while (level)
-						{
-							c = getc (inp);
-							if (!in_quote)
-								{
-									if (c == '[')
-										level++;
-									if (c == ']')
-										level--;
-									if ((level == 1) && (c == ','))
-										commas++;
-									switch (commas)
-									{
-									case 1: // # of thumbnails
-										break;
-									case 2: // List of thumbnail pointers
-										break;
-									case 4: // Video
-										if (c != '"')
-											break;
-										ungetc (c, inp);
-										curr_tbl->fnbase = st_cleanstring (get_text_from_file_max_length (inp, 20));
-										c=0;
-										break;
-									case 5: // Audio
-										if (c != '"')
-											break;
-										ungetc (c, inp);
-										curr_tbl->audio = st_cleanstring (get_text_from_file_max_length (inp, 20));
-										c=0;
-										break;
-									case 6: // 'Resource' link
-										break;
-									case 8: // Block ID
-										fscanf (inp, "%d", &(curr_tbl->block_id));
-										break;
-									case 9: // Entry ID (in block)
-										fscanf (inp, "%d", &(curr_tbl->id));
-										break;
-									}
-								}
-							if (c == '\"')
-								in_quote = !in_quote;
-						}
-				}
-
-			curr_tbl->next = NULL;
-			if (last_tbl)
-				last_tbl->next = curr_tbl;
-			else
-				root_tbl = curr_tbl;
-			last_tbl = curr_tbl;
-			curr_tbl = NULL;
-
-			do {
+			c = getc (inp);
+			level = 1;
+			commas = 0;
+			in_quote = 0;
+			while (level)
+			{
 				c = getc (inp);
-			} while ((c == ' ') || (c == ','));
-			ungetc (c, inp);
-
-			if (ungetc (getc (inp), inp) == ']')
-				break;
-
+				if (!in_quote)
+				{
+					if (c == '[')
+						level++;
+					if (c == ']')
+						level--;
+					if ((level == 1) && (c == ','))
+						commas++;
+					switch (commas)
+					{
+					case 1: // # of thumbnails
+						break;
+					case 2: // List of thumbnail pointers
+						break;
+					case 4: // Video
+						if (c != '"')
+							break;
+						ungetc (c, inp);
+						curr_tbl->fnbase = st_cleanstring (get_text_from_file_max_length (inp, 20));
+						c=0;
+						break;
+					case 5: // Audio
+						if (c != '"')
+							break;
+						ungetc (c, inp);
+						curr_tbl->audio = st_cleanstring (get_text_from_file_max_length (inp, 20));
+						c=0;
+						break;
+					case 6: // 'Resource' link
+						if (c != '"')
+							break;
+						ungetc (c, inp);
+						curr_tbl->resource = st_cleanstring (get_text_from_file (inp));
+						c=0;
+						break;
+					case 8: // Block ID
+						fscanf (inp, "%d", &(curr_tbl->block_id));
+						break;
+					case 9: // Entry ID (in block)
+						fscanf (inp, "%d", &(curr_tbl->id));
+						break;
+					}
+				}
+				if (c == '\"')
+					in_quote = !in_quote;
+			}
 		}
+
+		curr_tbl->next = NULL;
+		if (last_tbl)
+			last_tbl->next = curr_tbl;
+		else
+			root_tbl = curr_tbl;
+		last_tbl = curr_tbl;
+		curr_tbl = NULL;
+
+		do {
+			c = getc (inp);
+		} while ((c == ' ') || (c == ','));
+		ungetc (c, inp);
+
+		if (ungetc (getc (inp), inp) == ']')
+			break;
+
+	}
 	return root_tbl;
 }
 

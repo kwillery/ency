@@ -109,6 +109,7 @@ struct st_table
 	char *title;
 	char *fnbase;
 	char *audio;
+	char *resource;
 	int section;
 	int block_id;
 	int id;
