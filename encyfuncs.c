@@ -91,7 +91,7 @@ static void st_clear_cache (void);
 /* init/de-init stuff */
 int st_init (void)
 {
-	load_file_info(NULL);
+	load_xmlfile_info(NULL);
 	st_fingerprint ();
 	return (st_file_type >= 254 ? force_unknown : 1);
 }
@@ -103,7 +103,7 @@ int st_finish (void)
 	if (ency_filename)
 		free (ency_filename);
 	st_clear_cache ();
-	free_xml_doc();
+	st_data_clear();
 
 	return (1);
 }
@@ -316,8 +316,8 @@ char *st_get_filename (void)
 
 int st_load_xml_file (char *filename)
 {
-	free_xml_doc();
-	return (load_file_info (filename));
+	st_data_clear ();
+	return (load_xmlfile_info (filename));
 }
 
 char *st_fileinfo_get_name (int file_type)
@@ -525,6 +525,7 @@ static struct st_table *read_table (FILE *input, struct st_table *root)
 
 	int text_size = 0;
 	unsigned char c = 0;
+	unsigned char d = 0;
 	char *temp_text = NULL, *str_text = NULL;
 	int z;
 
@@ -535,11 +536,18 @@ static struct st_table *read_table (FILE *input, struct st_table *root)
 		while (last_tbl->next)
 			last_tbl = last_tbl->next;
 	}
+
 	c = getc (inp);
+
 	if (c != '\"')
-		if (ungetc (getc (inp), inp) != '\"')
+	{
+		d = ungetc (getc (inp), inp);
+		if ((d != '\"') && (!isdigit (d)))
 			return (root);
+	}
+
 	ungetc (c, inp);
+
 	if (c == '\"')
 		ungetc ('[', inp);
 
@@ -566,7 +574,7 @@ static struct st_table *read_table (FILE *input, struct st_table *root)
 
 		temp_text = malloc (8);
 		text_size = 0;
-
+			
 		fread (temp_text, 1, 6, input);
 		temp_text[6] = 0;
 
@@ -617,7 +625,7 @@ static struct st_table *st_get_table ()
 
 	curr = 4;
 
-	while ((part = get_part (st_file_type, ST_SECT_PTBL, count, 0)))
+	while ((part = get_part (st_file_type, ST_SECT_PTBL, 0, count, 0)))
 	{
 		curr_starts_at = part->start;
 		if (!st_open ())
@@ -639,7 +647,6 @@ static struct st_table *st_get_table ()
 		}
 		st_close_file ();
 		count++;
-		free (part);
 	}
 	return (root_tbl);
 }
@@ -747,7 +754,7 @@ static struct st_caption *st_get_captions (int section)
 
 	curr = 6;
 
-	while ((part = get_part (st_file_type, section, count, 0)))
+	while ((part = get_part (st_file_type, section, 0, count, 0)))
 	{
 		curr_starts_at = part->start;
 		if (!st_open ())
@@ -763,7 +770,6 @@ static struct st_caption *st_get_captions (int section)
 			}
 		}
 		count++;
-		free (part);
 		st_close_file ();
 	}
 	return (root_cpt);
@@ -892,7 +898,7 @@ static struct st_table *st_get_video_table (int section, int reverse)
 
 	curr = 7;
 
-	while ((part = get_part (st_file_type, section, count, (reverse) ? ST_PART_OPT_EPISLIST : 0)))
+	while ((part = get_part (st_file_type, ST_SECT_VTBL, section == ST_SECT_VTBL ? 0 : section, count, (reverse) ? ST_PART_OPT_EPISLIST : 0)))
 	{
 		curr_starts_at = part->start;
 		if (!st_open ())
@@ -913,7 +919,6 @@ static struct st_table *st_get_video_table (int section, int reverse)
 
 			st_close_file ();
 			count++;
-			free (part);
 		}
 	}
 	return (root_tbl);
@@ -1437,46 +1442,41 @@ static void add_to_block_cache (int block_id, int id, long filepos)
 static void load_block_cache (void)
 {
 	char c;
-	int section, n, i=0;
+	int n=0, i;
 	int id;
 	struct st_part *part;
 
 	/* this next for is *NOT* the right way to do this... */
-	for (section = 0; section < 3; section++)
+	while ((part = get_part(st_file_type, ST_BLOCK_TEXT, -1, n++, 0)))
 	{
-		n=0;
-		while ((part = get_part(st_file_type, section, n++, 0)))
+		if ((part->start_id) && (part->bcount))
 		{
-			if ((part->start_id) && (part->bcount))
+			inp = (FILE *) curr_open (part->start);
+			if (inp)
 			{
-				inp = (FILE *) curr_open (part->start);
-				if (inp)
+				for (i=part->start_id;i<part->start_id + part->bcount;i++)
 				{
-					for (i=part->start_id;i<part->start_id + part->bcount;i++)
+					if (i > part->start_id)
 					{
-						if (i > part->start_id)
-						{
-							find_next_stxt_block (inp);
-							fseek (inp, 16, SEEK_CUR);
-						}
-						add_to_block_cache (i, id=1, ftell (inp));
-						while ((c = getc (inp)))
-						{
-							if (c == '~')
-							{
-								id++;
-								add_to_block_cache (i, id, ftell (inp));
-							}
-						}
-						/* So we can determine the size of the last entry */
-						/* in a block later. This is *not* a real entry,  */
-						/* and thus should never be read.                 */
-						add_to_block_cache (i, ++id, ftell (inp)-1);
+						find_next_stxt_block (inp);
+						fseek (inp, 16, SEEK_CUR);
 					}
-					fclose (inp);
+					add_to_block_cache (i, id=1, ftell (inp));
+					while ((c = getc (inp)))
+					{
+						if (c == '~')
+						{
+							id++;
+							add_to_block_cache (i, id, ftell (inp));
+						}
+					}
+					/* So we can determine the size of the last entry */
+					/* in a block later. This is *not* a real entry,  */
+					/* and thus should never be read.                 */
+					add_to_block_cache (i, ++id, ftell (inp)-1);
 				}
+				fclose (inp);
 			}
-			free (part);
 		}
 	}
 }
@@ -1649,7 +1649,7 @@ static void load_ft_list (int section)
 	FILE *inp=NULL;
 	int count=0, multi, i;
 
-	while ((part = get_part (st_file_type, section, count++, ST_PART_OPT_FTLIST)))
+	while ((part = get_part (st_file_type, ST_BLOCK_FTLIST, section, count++, ST_PART_OPT_FTLIST)))
 	{
 		inp = (FILE *) curr_open (part->start);
 		if (!inp)
@@ -1750,7 +1750,6 @@ static void load_ft_list (int section)
 			}
 		}
 		fclose (inp);
-		free (part);
 	}
 	ftlist = root;
 }
@@ -2151,7 +2150,7 @@ char *get_video_dir (char *fnbasen)
 	FILE *inp;
 	int count=0;
 
-	while ((part = get_part (st_file_type, ST_SECT_VLST, count++, 0)))
+	while ((part = get_part (st_file_type, ST_SECT_VLST, 0, count++, 0)))
 	{
 		inp = (FILE *) curr_open (part->start);
 		while (getc (inp) != ']')
@@ -2163,12 +2162,10 @@ char *get_video_dir (char *fnbasen)
 			{
 				fclose (inp);
 				dir = part->dir;
-				free (part);
 				return dir;
 			}
 		}
 		fclose (inp);
-		free (part);
 	}
 	return (char *) st_fileinfo_get_data(st_file_type,video_dir);
 
