@@ -140,8 +140,6 @@ void free_data_filenode (struct st_data_filenode *file)
 	}
 	if (file->name)
 		free (file->name);
-	if (file->mainfile)
-		free (file->mainfile);
 	if (file->datadir)
 		free (file->datadir);
 	if (file->photodir)
@@ -265,6 +263,8 @@ int st_fingerprint (void)
 	unsigned char text_fp[16 * 3 + 1]="";
 	char *match_fp=NULL;
 
+	DBG((stderr, "Beginning fingerprint...\n"));
+
 	inp = (FILE *) curr_open (NULL, 0);
 
 	if (inp)
@@ -279,15 +279,17 @@ int st_fingerprint (void)
 			match_fp = filenode->fingerprint;
 			if (!match_fp)
 			{
-				fprintf (stderr, "No fingerprint for file #%d ('%s')\n", i, filenode->name ? filenode->name : "Unnamed");
+				DBG((stderr, "No fingerprint for file #%d ('%s')\n", i, filenode->name ? filenode->name : "Unnamed"));
 				continue;
 			}
 			if (!strcmp(match_fp, text_fp))
 				return (i);
 		}
 	} else {
+		DBG((stderr, "... couldn't open file\n"));
 		return (255);
 	}
+	DBG((stderr, "... unknown file\n"));
 	return 254;
 }
 
@@ -302,6 +304,7 @@ char *get_name_of_file (int file_type)
 const char *st_fileinfo_get_data (int file, st_filename_type type)
 {
 	struct st_data_filenode *node=NULL;
+	struct st_dfile *df=NULL;
 
 	node = get_filenode (file);
 
@@ -311,7 +314,10 @@ const char *st_fileinfo_get_data (int file, st_filename_type type)
 	switch (type)
 	{
 		case mainfilename:
-			return node->mainfile;
+			df = get_dfile (file, ST_DFILE_DATA);
+			if (!df)
+				return NULL;
+			return df->filename;
 		case data_dir:
 			return node->datadir;
 		case picture_dir:
@@ -332,7 +338,7 @@ static void data_scan (char *filename, struct st_block *block)
 {
 	FILE *inp=NULL;
 	struct st_block *tmp=NULL;
-	char *path=NULL, *fn=NULL;
+	char *path=NULL, *fn=NULL, *t=NULL;
 
 	if (filename)
 	{
@@ -341,7 +347,15 @@ static void data_scan (char *filename, struct st_block *block)
 		fn = malloc (strlen (path) + strlen (filename) + 1);
 		strcpy (fn, path);
 		strcat (fn, filename);
-		inp = (FILE *) curr_open (fn, 0);
+		inp = curr_open (fn, 0);
+		/* lowercase filename maybe? */
+		if (!inp)
+		{
+			strcpy (fn, path);
+			strcat (fn, t = st_lcase (filename));
+			free (t);
+			inp = (FILE *) curr_open (fn, 0);
+		}
 		free (fn);
 		free (path);
 	} else
@@ -442,13 +456,10 @@ struct st_block *get_block (int file, int dfiletype, int type, int section, int 
 			if (i == number)
 				return block;
 			i++;
-		}
-
-		if (block->type == ST_BLOCK_SCAN)
+		} else if (block->type == ST_BLOCK_SCAN)
 			data_scan (df->filename, block);
 
-		if (block)
-			block = block->next;
+		block = block->next;
 	}
 
 	return NULL;
@@ -473,8 +484,7 @@ struct st_block *get_block_by_id (int file, int dfiletype, int block_id)
 	{
 		if (block->start_id == block_id)
 			return block;
-
-		if (block->type == ST_BLOCK_SCAN)
+		else if (block->type == ST_BLOCK_SCAN)
 			data_scan (df->filename, block);
 
 		block = block->next;
@@ -555,7 +565,6 @@ struct st_data_filenode *st_data_new_filenode (void)
 	if (new_node)
 	{
 		new_node->name = NULL;
-		new_node->mainfile = NULL;
 		new_node->datadir = NULL;
 		new_node->photodir = NULL;
 		new_node->videodir = NULL;

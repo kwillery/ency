@@ -1,6 +1,7 @@
 file
  name: "Encyclopedia 3.0"
- mainfile: data99.cxt
+ dfile: type=ency, filename=Ency99.dxr
+ dfile: type=data, filename=Data99.cxt
  dfile: type=picon, filename=Picons.cxt
  datadir: ENCYprogram/Pro
  photodir: Media99
@@ -13,7 +14,8 @@ file
 endfile
 file
  name: Encyclopedia
- mainfile: Data.cxt
+ dfile: type=ency, filename=Ency98.dxr
+ dfile: type=data, filename=Data.cxt
  dfile: type=picon, filename=Picons.cxt
  datadir: Ency98
  photodir: media98
@@ -24,8 +26,9 @@ file
 endfile
 file
  name: Omnipedia
- mainfile: omni1.dxr
- dfile: type=picon, filename=omni1.dxr
+ dfile: type=ency, filename=OMNI1.DXR
+ dfile: type=data, filename=OMNI1.DXR
+ dfile: type=picon, filename=OMNI1.DXR
  datadir: ""
  photodir: media
  videodir: media
@@ -35,7 +38,8 @@ file
 endfile
 file
  name: "Omnipedia (updated)"
- mainfile: omni_v2.dxr
+ dfile: type=ency, filename=omni_v2.dxr
+ dfile: type=data, filename=omni_v2.dxr
  dfile: type=picon, filename=omni_v2.dxr
  datadir: startrek
  photodir: media
@@ -46,7 +50,8 @@ file
 endfile
 file
  name: "TNG Episode guide"
- mainfile: eg_tng.dxr
+ dfile: type=ency, filename=eg_tng.dxr
+ dfile: type=data, filename=eg_tng.dxr
  dfile: type=picon, filename=eg_tng.dxr
  datadir: source
  photodir: media
@@ -57,7 +62,8 @@ file
 endfile
 file
  name: "DS9 Episode guide"
- mainfile: eg_ds9.dxr
+ dfile: type=ency, filename=eg_ds9.dxr
+ dfile: type=data, filename=eg_ds9.dxr
  dfile: type=picon, filename=eg_ds9.dxr
  datadir: ds9
  photodir: media

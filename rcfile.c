@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "encyfuncs.h"
 #include "rcfile.h"
 #include "data.h"
 
@@ -250,73 +251,6 @@ static char *get_rc_arg (struct rcfile_args *arg, char *name)
 	return NULL;
 }
 
-/* Makes a block out of an rc argument list. */
-static struct st_block *append_block_from_rc_file (struct st_block *block_root, struct rcfile_args *arg)
-{
-	struct st_block *block=NULL, *block_last=NULL;
-	char *name, *type, *section, *start, *count;
-	char *start_id, *bcount;
-
-	block = block_root;
-	while (block)
-	{
-		block_last = block;
-		block = block->next;
-	}
-
-	/* NB name & dir are the only ones which we
-	   want to keep, the others hold numbers */
-	if (get_rc_arg (arg, "name"))
-		name = strdup (get_rc_arg (arg, "name"));
-	else
-		name = NULL;
-	type = get_rc_arg (arg, "type");
-	section = get_rc_arg (arg, "section");
-	start = get_rc_arg (arg, "start");
-	count = get_rc_arg (arg, "count");
-	start_id = get_rc_arg (arg, "start_id");
-	bcount = get_rc_arg (arg, "bcount");
-/*	if (get_rc_arg (arg, "dir"))
-		dir = strdup (get_rc_arg (arg, "dir"));
-	else
-		dir = NULL;*/
-
-	if (type == NULL || start == NULL)
-	{
-		fprintf (stderr, "Bogus block in rc file!\n");
-		fprintf (stderr, "Bombing out...\n");
-		exit (1);
-	}
-
-	block = new_block ();
-
-	/* set the strings... */
-	block->name = name;
-
-	/* get the type */
-	/* No more! Done differently now.
-	if (!strcasecmp (type, "videolist"))
-		block->type = ST_SECT_VLST;
-	*/
-	/* the others should really be here too, but... */
-	/* :-D */
-
-	/* get the section, etc... */
-	if (section)
-		sscanf (section, "%d", &(block->section));
-	if (start)
-		sscanf (start, "%ld", &(block->start));
-	if (start_id)
-		sscanf (start_id, "%d", &(block->start_id));
-
-	if (block_last)
-		block_last->next = block;
-	else
-		return block;
-
-	return block_root;
-}
-
 /* Makes an exception out of an rc arg list. */
 static struct st_data_exception *append_exception_from_rc_file (struct st_data_exception *ex_root, struct rcfile_args *arg)
 {
@@ -388,11 +322,15 @@ void add_file (struct st_data_filenode *node, struct rcfile_args *args)
 
 	if (type == NULL)
 		dfiletype = ST_DFILE_UNKNOWN;
+	else if (!strcasecmp (type, "ency"))
+		dfiletype = ST_DFILE_ENCY;
+	else if (!strcasecmp (type, "data"))
+		dfiletype = ST_DFILE_DATA;
 	else if (!strcasecmp (type, "picon"))
 		dfiletype = ST_DFILE_PICON;
 
 	filename = get_rc_arg (args, "filename");
-
+	DBG ((stderr, "Have '%s' file '%s'.\n", type, filename));
 	df = node->dfiles;
 	if (!df)
 	{
@@ -449,7 +387,7 @@ static struct st_data_filenode *make_filenode_from_rc_file (FILE *inp)
 
 	while ((cmd = rc_file_get_cmd (inp)))
 	{
-		/* if we the end block, stop */
+		/* if we get to the end block, stop */
 		if (new_node && !strcmp (cmd->name, "endfile"))
 		{
 			free_rc_cmd (cmd);
@@ -459,15 +397,10 @@ static struct st_data_filenode *make_filenode_from_rc_file (FILE *inp)
 		/* We allocate the node here just in case there is nothing left
 		   in the rcfile when we start */
 		if (!new_node)
-		{
 			new_node = st_data_new_filenode ();
-			new_node->dfiles = new_dfile();
-			new_node->dfiles->type = ST_DFILE_DATA;
-		}
+
 		if (!strcasecmp (cmd->name, "name"))
 			new_node->name = strdup (get_rc_arg (cmd->args, NULL));
-		if (!strcasecmp (cmd->name, "mainfile"))
-			new_node->mainfile = strdup (get_rc_arg (cmd->args, NULL));
 		if (!strcasecmp (cmd->name, "dfile"))
 			add_file (new_node, cmd->args);
 		if (!strcasecmp (cmd->name, "datadir"))
@@ -482,13 +415,6 @@ static struct st_data_filenode *make_filenode_from_rc_file (FILE *inp)
 			new_node->fingerprint = strdup (get_rc_arg (cmd->args, NULL));
 		if (!strcasecmp (cmd->name, "append_char"))
 			new_node->append_char = 1;
-		if (!strcasecmp (cmd->name, "needscan"))
-		{
-			new_node->dfiles->blocks = new_block ();
-			new_node->dfiles->blocks->type = ST_BLOCK_SCAN;
-		}
-		if (!strcasecmp (cmd->name, "block"))
-			new_node->dfiles->blocks = append_block_from_rc_file (new_node->dfiles->blocks, cmd->args);
 		if (!strcasecmp (cmd->name, "exception"))
 			new_node->exceptions = append_exception_from_rc_file (new_node->exceptions, cmd->args);
 

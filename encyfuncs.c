@@ -208,7 +208,7 @@ unsigned char *st_cleanstring (unsigned char *string)
 	return NULL;
 }
 
-static char *st_lcase (char *mcase)
+char *st_lcase (char *mcase)
 {
 	char *lcase = NULL;
 	int i = 0;
@@ -473,6 +473,8 @@ FILE *curr_open (char *filename, long start)
 	int i = 0;
 	char *temp_fn = NULL;
 
+	DBG ((stderr, "curr_open: %s, %ld (ency_filename = %s)\n", filename, start, ency_filename));
+
 	if (filename)
 	{
 		inp = fopen (filename, "rb");
@@ -559,7 +561,7 @@ char *get_ency_dir ()
 FILE *open_block(int dfile, struct st_block *block)
 {
 	char *filename=NULL, *path=NULL;
-	char *new_fn=NULL;
+	char *new_fn=NULL, *t=NULL;
 	FILE *ret=NULL;
 
 	if (!block)
@@ -579,6 +581,15 @@ FILE *open_block(int dfile, struct st_block *block)
 	strcat (new_fn, filename);
 
 	ret = curr_open (new_fn, block->start);
+
+	/* lowercase filename maybe? */
+	if (!ret)
+	{
+		strcpy (new_fn, path);
+		strcat (new_fn, t = st_lcase (filename));
+		free (t);
+		ret = curr_open (new_fn, block->start);
+	}
 
 	/* Clean up - don't remove 'filename' as it is directly 
 	 * out of a data struct */
@@ -721,6 +732,8 @@ static inline char *get_text_from_file (FILE *inp)
 	fseek (inp, start_pos, SEEK_SET);
 	fread (text, size, sizeof (char), inp);
 	text[size-1] = 0;
+
+	DBG ((stderr,"get_text_from_file: read '%s', ending at %ld\n", text, ftell(inp)));
 
 	return text;
 }
