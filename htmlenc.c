@@ -28,7 +28,8 @@
 #include "ency.h"
 extern int st_ignore_case;
 extern int st_return_body;
-extern int optind; // for getopt()
+extern int optind;		// for getopt()
+
 int remove_fmt = 0;
 int words = 0;
 char filename[100] = "stdout";
@@ -44,11 +45,11 @@ loopies (char *txt, struct st_ency_formatting *fmt)
   char smeg[50];
   int print_br = 0;
 
-      while ((txt[0] == 32) || (txt[0] == 10))
-        {
-          printf ("%c", txt[0]);
-          txt++;
-        }
+  while ((txt[0] == 32) || (txt[0] == 10))
+    {
+      printf ("%c", txt[0]);
+      txt++;
+    }
 
   while ((fmt) && (fmt->firstword < words + 1))
     {
@@ -138,10 +139,10 @@ loopies (char *txt, struct st_ency_formatting *fmt)
 		  txt += (strlen (smeg) + 1);
 		  while ((txt[0] == 32) || (txt[0] == 10))
 		    txt++;
-//		  if (!first_time)
-		    printf (" ");
-//		  else
-//		    first_time = 0;
+//                if (!first_time)
+		  printf (" ");
+//                else
+		  //                  first_time = 0;
 		  if (sscanf (txt, "%s", smeg) == -1)
 		    i = fmt->words;
 		  if (i < fmt->words)
@@ -158,7 +159,8 @@ loopies (char *txt, struct st_ency_formatting *fmt)
 
 	      fmt2 = fmt;
 	      fmt = fmt->next;
-if (remove_fmt)	      free (fmt2);
+	      if (remove_fmt)
+		free (fmt2);
 	      z = 0;
 	    }
 	if (z)
@@ -173,11 +175,15 @@ if (remove_fmt)	      free (fmt2);
       }
 // strlen(txt)-strlen(smeg) == 0 
       txt += (strlen (smeg));
-if(strlen(txt)) while ((txt[0] == 32) || (txt[0] == '\n'))
-	{
-	  if (txt[0] == 32) printf ("%c", txt[0]); else printf("<br>\n");
-	  txt++;
-	}
+      if (strlen (txt))
+	while ((txt[0] == 32) || (txt[0] == '\n'))
+	  {
+	    if (txt[0] == 32)
+	      printf ("%c", txt[0]);
+	    else
+	      printf ("<br>\n");
+	    txt++;
+	  }
     }
   return (0);
 }
@@ -196,7 +202,7 @@ printoff (struct ency_titles *stuff)
 
   loopies (tmp, fmt1);
 
-  remove_fmt=1;
+  remove_fmt = 1;
   printf ("<br>\n");
   tmp = stuff->text;
 
@@ -219,19 +225,26 @@ main (int argc, char *argv[])
   st_ignore_case = 1;
   st_return_body = 0;
 
-while ((i = getopt (argc, argv, "ech")) != EOF)
-{  if (i == 'h')
+  while ((i = getopt (argc, argv, "ech")) != EOF)
     {
-      printf ("htmlenc - Searches Star Trek encyclopedia\nhttp://www.picknowl.com.au/homepages/beemer/ency.html\nUsage: htmlenc -[c|e]\n-c: searches chronology\n-e: searches episodes\ndefault: search encyclopedia\n");
-      exit (0);
+      if (i == 'h')
+	{
+	  printf ("htmlenc - Searches Star Trek encyclopedia\nhttp://www.picknowl.com.au/homepages/beemer/ency.html\nUsage: htmlenc -[c|e]\n-c: searches chronology\n-e: searches episodes\ndefault: search encyclopedia\n");
+	  exit (0);
+	}
+      search_what = i;
     }
-search_what=i;
-}
 
 //if (argc > optind) printf("%s\n",argv[optind]);
-if (argc > optind) {strcpy(search_string,argv[optind]);} else {
-  printf ("Enter search string :");
-  scanf ("%[a-zA-Z0-9.\"\'() -]", search_string); }
+  if (argc > optind)
+    {
+      strcpy (search_string, argv[optind]);
+    }
+  else
+    {
+      printf ("Enter search string :");
+      scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
+    }
 
   if (search_what == 'c')
     thingy = chro_find_list (search_string, 0);
@@ -240,7 +253,7 @@ if (argc > optind) {strcpy(search_string,argv[optind]);} else {
   if ((search_what != 'c') && (search_what != 'e'))
     thingy = ency_find_list (search_string, 0);
 
-i=0;
+  i = 0;
   printf ("<html>\n");
   printf ("<head><title>Search results for: %s</title></head>", search_string);
   printf ("<h1>Star Trek Encyclopedia</h1>\n");
@@ -252,10 +265,10 @@ i=0;
 	  full_body = get_title_at (thingy->filepos);
 // printf("**\n%s\n%s\n**",full_body->title,full_body->text);
 	  printoff (full_body);
-//	  printoff (thingy);
+//        printoff (thingy);
 	  kill_me = thingy;
 	  thingy = thingy->next;
-//	  free (kill_me->text);
+//        free (kill_me->text);
 	  free (kill_me->title);
 	  free (kill_me);
 	  free (full_body->title);

@@ -12,6 +12,23 @@ extern int st_ignore_case;
  sets for most functions to ignore case when searching
 extern int st_return_body;
  sets whether a function returns formatting & text. (in applicable functions that is :-)
+extern int st_file_type;
+ sets the file type (ST_FILE_* definitions)
+
+-----------
+definitions
+-----------
+#define ST_FILE_ENCY98 0
+#define ST_FILE_OMNI1 1
+#define ST_FILE_OMNI2 2
+#define ST_FILE_TNG1 3
+#define ST_FILE_DS91 4
+
+ENCY98 is the default, the 1998 version
+OMNI1 is the original CD based Omnipedia ** doesnt work as i dont have a copy **
+OMNI2 is the second CD Omnipedia (Upto the ST:Generations movie)
+TNG1 is the TNG Episode guide
+DS91 is the DS9 episode guide
 
 ----------
 structures
@@ -23,7 +40,7 @@ struct st_table
     char *fnbase;
     struct st_table *next;
   };
-a simple linked list, with titles (title) and filename base (eg /cdrom/video98/a/%fnbase%*.mov if fnbase started with an 'a'. email me for a better explanation)
+a simple linked list, with titles (title) and filename base (eg /cdrom/video98/a/%fnbase%*.mov if fnbase started with an 'a'. see the notes at the end...)
 
 struct st_ency_formatting
   {
@@ -65,18 +82,6 @@ st_ignore_case = global variable
 st_return_body = global variable
 (same for epis_find_list & chro_find_list)
 
-struct ency_titles *ency_find_titles (char title[])
-returns - struct containing encyclopedia titles & text. matches a substring.
-title: a string to search for.
-st_ignore_case = global variable
-(same for epis_find_titles & chro_find_titles)
-
-struct ency_titles *ency_get_title (char title[])
-returns - struct containing encyclopedia title and text. matches exactly.
-title: title to retrieve.
-case *sensitive*
-(same for epis_get_title & chro_get_title)
-
 struct st_table *st_get_table (void)
 returns a list of all encyclopedia (ency,epis, and chro) titles, and file name base. (eg /cdrom/video98/a/%fnbase%*.mov if fnbase started with an 'a'. email me for a better explanation)
 
@@ -84,6 +89,68 @@ struct ency_titles *get_title_at (long filepos)
 returns title & text of entry at file position filepos
 use filepos variable returned with the ency_titles structure.
 
+-----
+NOTES
+-----
+The *_get_title and *_find_titles functions no longer work.
+these are explanatory emails between me & the gnometrek author...
+
+re: fnbase & st_table stuff
+---
+> btw, it says in README.API:
+> "a simple linked list, with titles (title) and filename base (eg
+> /cdrom/video98/a/%fnbase%*.mov if fnbase started with an 'a'. email me for
+> a better explanation)"
+> so this is me emailing for a better explanation... :)
+
+/* declare a var. */ // main() etc. omitted.
+  struct st_table *tbl, *oldtbl;
+
+  printf ("Enter search string :");
+  scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
+
+/* this much should be clear... */
+
+  tbl = st_get_table (); // retrieves the lookup table.
+  while (tbl)                   /* while the table isnt null (exists! :)
+*/
+    {
+      strcpy (title, tbl->title);       /* copy the _real_ title to a
+local variable */
+      if (strstr (title, search_string))        /* check for the search
+string  */
+        {
+          printf ("/cdrom/video98/%c/%s1q.mov\n", tbl->fnbase[0],
+tbl->fnbase);
+        }
+      oldtbl = tbl;             /* store tbl's memory address in oldtbl
+*/
+      tbl = tbl->next;          /* progress tbl along the list */
+      free (oldtbl->title);     /* free the last entry's title */
+      free (oldtbl->fnbase);    /* free the last fnbase */
+      free (oldtbl);            /* free the last entry */
+    }
+ /* end */
+
+so for example, i run this,
+type in 'wormhole', and get
+
+/cdrom/video98/a/artleq1q.mov
+/cdrom/video98/b/bajole1q.mov
+/cdrom/video98/b/barzle1q.mov
+/cdrom/video98/m/micleb1q.mov
+/cdrom/video98/w/worman1q.mov
+/cdrom/video98/w/wormle1q.mov
+/cdrom/video98/w/wornsb1q.mov
+
+printed.
+
+they are in the form of video98/b/bajole[0-9][a-z].* in sh-speak. (* is
+either mov or pic as far as im aware.)
+(b is the 1st letter of bajole)
+(bajole is the fnbase equivalent of 'Bajoran Wormhole')
+the [a-z] is a 'q' if its a movie, or an 'r' if it is a pic.
+---
 ---------
 Robert Mibus
 beemer@picknowl.com.au

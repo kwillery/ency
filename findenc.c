@@ -28,6 +28,8 @@
 #include <unistd.h>
 #include "ency.h"
 extern int st_ignore_case;
+extern int st_file_type;
+extern char *ency_filename;
 
 main (int argc, char *argv[])
 {
@@ -52,58 +54,59 @@ main (int argc, char *argv[])
   scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
 
   st_ignore_case = 1;
+  st_file_type = ST_FILE_TNG1;
+  ency_filename = (char *) malloc (60);
+//  strcpy(ency_filename,"/dose/trek/Reference/omni_v2.dxr");
+  //  strcpy(ency_filename,"/dose/trek/Reference/ds9/ds9/eg_ds9.dxr");
+  strcpy (ency_filename, "/dose/trek/Reference/tng/source/eg_tng.dxr");
 
-  if (i == 'c')
-    thingy = chro_find_list (search_string, 0);
-  if (i == 'e')
-    thingy = epis_find_list (search_string, 0);
-  if ((i != 'c') && (i != 'e'))
-    thingy = ency_find_list (search_string, 0);
-  // thingy = get_title_at (0x149310);
-  // thingy = ency_find_titles (search_string);
+/*
+   if (i == 'c')
+   thingy = chro_find_list (search_string, 0);
+   if (i == 'e')
+   thingy = epis_find_list (search_string, 0);
+   if ((i != 'c') && (i != 'e'))
+   thingy = ency_find_list (search_string, 0);
+   // thingy = get_title_at (0x149310);
 
-  i = 0;
+   i = 0;
 
-  if ((thingy != NULL) && (thingy->title != NULL))
-    {
-      do
-	{
-	  printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
+   if ((thingy != NULL) && (thingy->title != NULL))
+   {
+   do
+   { 
+   printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text); */
 /*        thingyz = ency_get_title (thingy->title);
  *        printf ("%s\n\n", thingyz->text);
  *        free (thingyz->fmt);
  *        free (thingyz->text);
  *        free (thingyz->title);
- */ kill_me = thingy;
-	  thingy = thingy->next;
-	  free (kill_me);
-	}
-      while (thingy != NULL);
+   *//* kill_me = thingy;
+     thingy = thingy->next;
+     free (kill_me);
+     }
+     while (thingy != NULL);
+     }
+     else
+     printf ("No matches\n");
+
+   */
+
+  tbl = st_get_table ();
+  i = 0;
+  while (tbl)
+    {
+//   strcpy(titlle,tbl->title);
+      //   if(strstr(titlle,search_string))
+      {
+	printf ("%s:%s\n", tbl->title, tbl->fnbase);
+      }
+      oldtbl = tbl;
+      tbl = tbl->next;
+      free (oldtbl->title);
+      free (oldtbl->fnbase);
+      free (oldtbl);
     }
-  else
-    printf ("No matches\n");
 
-
-
-/* tbl=st_get_table();
-   i=0;
-   while(tbl)
-   {
-   strcpy(titlle,tbl->title);
-   if(strstr(titlle,search_string))
-   {
-   printf("/cdrom/video98/%c/",tolower(tbl->fnbase[0]));
-   i=0;
-   while(tbl->fnbase[i])
-   printf("%c",tolower(tbl->fnbase[i++]));
-   printf("1q.mov\n");
-   }
-   oldtbl=tbl;
-   tbl=tbl->next;
-   free(oldtbl->title);
-   free(oldtbl->fnbase);
-   free(oldtbl);
-   }
- */
   return (0);
 }

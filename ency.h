@@ -25,6 +25,12 @@
 #ifndef ENCY_H
 #define ENCY_H
 
+#define ST_FILE_ENCY98 0
+#define ST_FILE_OMNI1 1
+#define ST_FILE_OMNI2 2
+#define ST_FILE_TNG1 3
+#define ST_FILE_DS91 4
+
 struct ency_titles *ency_find_titles (char[]);
 struct ency_titles *ency_find_list (char[], int);
 struct ency_titles *ency_get_title (char[]);
