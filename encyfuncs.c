@@ -756,7 +756,6 @@ static struct st_table *read_table (FILE *inp, struct st_table *root)
 static struct st_table *st_get_table ()
 {
 	FILE *inp;
-	int i;
 	int count = 0;
 	struct st_table *root_tbl = NULL;
 	struct st_block *block;
@@ -765,20 +764,12 @@ static struct st_table *st_get_table ()
 	{
 		if (!(inp = open_block (block)))
 			return (NULL);
-		else
-		{
-			fseek (inp, 12, SEEK_CUR);
-			for (i = 0; i < block->count; i++)
-			{
-				if (i)
-				{
-					find_next_stxt_block (inp);
-					fseek (inp, 16, SEEK_CUR);
-				}
-				root_tbl = read_table (inp, root_tbl);
-			}
-		}
+
+		fseek (inp, 12, SEEK_CUR);
+		root_tbl = read_table (inp, root_tbl);
+
 		fclose (inp);
+
 		count++;
 	}
 	return (root_tbl);
@@ -854,7 +845,6 @@ static struct st_caption *read_captions (FILE *inp, struct st_caption *root)
 static struct st_caption *st_get_captions (int section)
 {
 	FILE *inp;
-	int i;
 	int count = 0;
 	struct st_caption *root_cpt = NULL;
 	struct st_block *block;
@@ -863,14 +853,13 @@ static struct st_caption *st_get_captions (int section)
 	{
 		if (!(inp = open_block (block)))
 			return (NULL);
-		else
-		{
-			fseek (inp, 12, SEEK_CUR);
-			for (i = 0; i < block->count; i++)
-				root_cpt = read_captions (inp, root_cpt);
-		}
-		count++;
+
+		fseek (inp, 12, SEEK_CUR);
+		root_cpt = read_captions (inp, root_cpt);
+
 		fclose (inp);
+
+		count++;
 	}
 	return (root_cpt);
 }
@@ -995,22 +984,20 @@ static struct st_table *st_get_video_table (int section)
 	{
 		if (!(inp = open_block (block)))
 			return (root_tbl);
-		else
+
+		fseek (inp, 12, SEEK_CUR);
+		if (curr_tbl)
 		{
-			fseek (inp, 12, SEEK_CUR);
-			if (curr_tbl)
-			{
-				while (curr_tbl->next)
-					curr_tbl = curr_tbl->next;
-
-				curr_tbl->next = read_attribs_table (inp, block->section, block->count);
-			}
-			else
-				curr_tbl = root_tbl = read_attribs_table (inp, block->section, block->count);
-
-			fclose (inp);
-			count++;
+			while (curr_tbl->next)
+				curr_tbl = curr_tbl->next;
+			curr_tbl->next = read_attribs_table (inp, block->section, block->count);
 		}
+		else
+			curr_tbl = root_tbl = read_attribs_table (inp, block->section, block->count);
+
+		fclose (inp);
+
+		count++;
 	}
 	return (root_tbl);
 }
@@ -1559,7 +1546,6 @@ static void load_block_cache (int block_id)
 {
 	FILE *inp;
 	char c;
-	int i;
 	int id;
 	struct st_block *block;
 
@@ -1575,23 +1561,16 @@ static void load_block_cache (int block_id)
 
 	if (inp)
 	{
-		for (i=block->start_id;i<block->start_id + block->bcount;i++)
-		{
-			if (i > block->start_id)
-			{
-				find_next_stxt_block (inp);
-				fseek (inp, 16, SEEK_CUR);
-			}
-			add_to_block_cache (i, id=1, ftell (inp));
-			while ((c = getc (inp)))
-				if (c == '~')
-					add_to_block_cache (i, ++id, ftell (inp));
+		add_to_block_cache (block->start_id, id=1, ftell (inp));
+		while ((c = getc (inp)) && !(feof(inp)))
+			if (c == '~')
+				add_to_block_cache (block->start_id, ++id, ftell (inp));
 
-			/* So we can determine the size of the last entry */
-			/* in a block later. This is *not* a real entry,  */
-			/* and thus should never be read.                 */
-			add_to_block_cache (i, ++id, ftell (inp)-1);
-		}
+		/* So we can determine the size of the last entry */
+		/* in a block later. This is *not* a real entry,  */
+		/* and thus should never be read.                 */
+		add_to_block_cache (block->start_id, ++id, ftell (inp)-1);
+
 		fclose (inp);
 	}
 }
@@ -1847,7 +1826,7 @@ static void load_ft_list (int section)
 	struct st_ftlist *root=NULL, *curr=NULL, *last=NULL;
 	char c=0;
 	FILE *inp=NULL;
-	int count=0, i;
+	int count=0;
 
 	while ((block = get_block (st_file_type, ST_BLOCK_FTLIST, section, count++, 0)))
 	{
@@ -1856,61 +1835,53 @@ static void load_ft_list (int section)
 
 		fseek (inp, 12, SEEK_CUR);
 
-		for (i=0;i<block->count;i++)
+		/* Get rid of the leading '[' if its there */
+		if (getc (inp) == '\"')
+			ungetc ('\"', inp);
+
+		c=0;
+		while (c != ']')
 		{
-			if (i)
-			{
-				find_next_stxt_block (inp);
-				fseek (inp, 16, SEEK_CUR);
-			}
-
-			/* Get rid of the leading '[' if its there */
-			if (getc (inp) == '\"')
-				ungetc ('\"', inp);
-			
-			c=0;
-			while (c != ']')
-			{
-				/* Go to the beginning '"'. This may not
-				 * immediately seem necessary, but when we
-				 * come around in the loop again we are right
-				 * after the ',', which usually doesn't have
-				 * the '"' after it. */
-				do {
-					c = getc (inp);
-				} while (c != '\"');
-				ungetc (c, inp);
-
-				curr = (struct st_ftlist *) malloc (sizeof (struct st_ftlist));
-				curr->words = NULL;
-				curr->section = section;
-			
-				if (!root)
-					root = curr;
-
-				/* Get the word */
-				curr->word = get_text_from_file (inp);
-				while (c != '[')
-					c = getc (inp);
-
-				/* Save the position of the '[' for later */
-				curr->filepos = ftell (inp) - 1;
-
-				/* Go to the end of the list of entries */
-				do {
-					c = getc (inp);
-				} while (c != ']');
-
-				if (last)
-					last->next = curr;
-				curr->next = NULL;
-				last = curr;
-				
-				/* This will (should) load either a ']'
-				 * or a ',', tested in the while() loop */
+			/* Go to the beginning '"'. This may not
+			 * immediately seem necessary, but when we
+			 * come around in the loop again we are right
+			 * after the ',', which usually doesn't have
+			 * the '"' after it. */
+			do {
 				c = getc (inp);
-			}
+			} while (c != '\"');
+			ungetc (c, inp);
+
+			curr = (struct st_ftlist *) malloc (sizeof (struct st_ftlist));
+			curr->words = NULL;
+			curr->section = section;
+
+			if (!root)
+				root = curr;
+
+			/* Get the word */
+			curr->word = get_text_from_file (inp);
+			while (c != '[')
+				c = getc (inp);
+
+			/* Save the position of the '[' for later */
+			curr->filepos = ftell (inp) - 1;
+
+			/* Go to the end of the list of entries */
+			do {
+				c = getc (inp);
+			} while (c != ']');
+
+			if (last)
+				last->next = curr;
+			curr->next = NULL;
+			last = curr;
+				
+			/* This will (should) load either a ']'
+			 * or a ',', tested in the while() loop */
+			c = getc (inp);
 		}
+
 		fclose (inp);
 	}
 	ftlist = root;
