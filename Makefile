@@ -1,41 +1,33 @@
 SHELL = /bin/sh
-CFLAGS = -O3 -m486
-#GTKCFLAGS = `gtk-config --cflags` -I. -O -Wall
-GTKCFLAGS = `gtk-config --cflags`
+CFLAGS = -O3
 LDFLAGS=
 CC=gcc
+AR=ar
 DOCDIR=/usr/doc
 BINDIR=/usr/bin
 MANDIR=/usr/man
-LIBS = `gtk-config --libs`
+LIBDIR=/usr/lib
 
-all: htmlenc findenc gtkenc
+all: libency htmlenc findenc
 
-no-gtk: findenc htmlenc
+libency : encyfuncs.c ency.h
+	$(CC) -o libency.o -c encyfuncs.c
+	$(AR) r libency.a libency.o
 
 findenc : findenc.c encyfuncs.c ency.h
-	$(CC) encyfuncs.c $< -o $@
+	$(CC) $< -o $@ -L. -lency
 
 htmlenc : htmlenc.c encyfuncs.c ency.h
-	$(CC) encyfuncs.c $< -o $@
-
-gtkenc : gtkenc.c encyfuncs.c ency.h
-	$(CC) $(GTKCFLAGS)  encyfuncs.c $(LIBS) $< -o $@
+	$(CC) $< -o $@ -L. -lency
 
 clean :
-	rm -f findenc htmlenc gtkenc core
+	rm -f findenc htmlenc libency.o libency.a core
 
-install: findenc htmlenc gtkenc
-	install -c findenc $(BINDIR)
-#	install -c findenc.1 $(MANDIR)
-	install -c htmlenc $(BINDIR)
-#	install -c htmlenc.1 $(MANDIR)
-	install -c gtkenc $(BINDIR)
-
-nogtk-install: findenc htmlenc
+install: findenc htmlenc
 	install -c findenc $(BINDIR)
 	install -c htmlenc $(BINDIR)
+	install -c libency.a $(LIBDIR)
 
 uninstall:
-	rm -f $(BINDIR)/findenc $(MANDIR)/findenc.1 $(BINDIR)/htmlenc $(MANDIR)/htmlenc.1 $(BINDIR)/gtkenc
+	rm -f $(BINDIR)/findenc $(BINDIR)/htmlenc
 
