@@ -72,15 +72,15 @@ struct entry_scores
 static struct st_table *entrylist_head=NULL;
 
 /* Lookup lists */
-static struct es_list *st_LtoS = NULL;
-static struct es_list *st_StoL = NULL;
+static struct es_slist *st_LtoS = NULL;
+static struct es_slist *st_StoL = NULL;
 
 /* for pictures */
-static struct es_list *st_pcpts = NULL;
+static struct es_slist *st_pcpts = NULL;
 
 /* for videos */
 static struct st_table *st_vtbls = NULL;
-static struct es_list *st_vcpts = NULL;
+static struct es_slist *st_vcpts = NULL;
 
 /* cache */
 static struct ency_titles *cache = NULL;
@@ -750,7 +750,7 @@ static inline char *get_text_from_file_max_length (FILE *inp, int length)
 }
 
 /* Reads a list/table from 'inp' */
-void read_list (FILE *inp, struct es_list *list)
+void read_list (FILE *inp, struct es_slist *list)
 {
 	char c = 0;
 
@@ -775,14 +775,14 @@ void read_list (FILE *inp, struct es_list *list)
 		} while ((c == ' ') || (c == ','));
 		ungetc (c, inp);
 
-		index = st_lcase_in_place(get_text_from_file (inp));
+		index = get_text_from_file (inp);
 
 		do {
 			c = getc (inp);
 		} while ((c == ' ') || (c == ':'));
 		ungetc (c, inp);
 
-		es_list_add (list, index, NULL, ftell (inp));
+		es_slist_add (list, index, NULL, ftell (inp));
 		c = getc (inp);
 		if (c == '"')
 			while (getc (inp) != '"')
@@ -798,15 +798,15 @@ void read_list (FILE *inp, struct es_list *list)
 	return;
 }
 
-/* Create an es_list from a list on disk */
-struct es_list *st_get_list (int type)
+/* Create an es_slist from a list on disk */
+struct es_slist *st_get_list (int type)
 {
 	FILE *inp;
-	struct es_list *l;
+	struct es_slist *l;
 	struct st_block *block;
 	int count=0;
 
-	l = es_list_new();
+	l = es_slist_new();
 
 	while ((block = get_block (st_file_type, ST_DFILE_DATA, type, 0, count, 0)))
 	{
@@ -825,19 +825,13 @@ struct es_list *st_get_list (int type)
 	return (l);
 }
 
-char *get_es_list_data_string (struct es_list *list, char *index)
+char *get_es_slist_data_string (struct es_slist *list, char *index)
 {
 	struct es_list_entry *e;
-	char *lc_index;
 
-	lc_index = st_lcase (index);
-
-	e = es_list_get (list, lc_index);
+	e = es_slist_get (list, index);
 	if (!e)
-	{
-		free (lc_index);
 		return NULL;
-	}
 
 	if (!e->data)
 	{
@@ -847,7 +841,6 @@ char *get_es_list_data_string (struct es_list *list, char *index)
 		fclose (inp);
 	}
 
-	free (lc_index);
 	return e->data;
 }
 
@@ -1041,17 +1034,18 @@ int st_loaded_media (void)
  * tables 'cos it's really just the entrylist */
 void st_unload_media (void)
 {
-/* Free the caption & table info for the pictures */
-
-	es_list_free_data (st_pcpts, 1, 1);
-
-	es_list_free_data (st_LtoS, 1, 1);
-
-/* & for the videos */
-
-	es_list_free_data (st_vcpts, 1, 1);
+	if (st_LtoS)
+		es_slist_free_data (st_LtoS, 1, 1);
+	if (st_StoL)
+		es_slist_free_data (st_LtoS, 1, 1);
+	if (st_pcpts)
+		es_slist_free_data (st_pcpts, 1, 1);
+	if (st_vcpts)
+		es_slist_free_data (st_vcpts, 1, 1);
 
 	/* clean up... */
+	st_LtoS = NULL;
+	st_StoL = NULL;
 	st_pcpts = NULL;
 	st_vtbls = NULL;
 	st_vcpts = NULL;
@@ -2035,12 +2029,12 @@ static struct ency_titles *st_find_fulltext (char *search_string, int section, i
 		/* do the search (find_words() appends BTW) */
 		scores = find_words (scores, single_word, ftlist);
 	}
-	es_list_dump(st_StoL);
+
 	while (scores)
 	{
-		title = get_es_list_data_string (st_StoL, scores->fnbase);
+		title = get_es_slist_data_string (st_StoL, scores->fnbase);
 		if (!title)
-			printf ("No '%s'!\n", scores->fnbase);
+			DBG ((stderr, "No '%s' in StoL!\n", scores->fnbase));
 		if (title)
 		{
 			/* Get the table entry from the entry list, we want the
@@ -2130,7 +2124,7 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 
 /* Looks through all of the picture caption list for a given
  * fnbase. Returns the fnbasen & caption. */
-static struct st_photo st_parse_captions (struct es_list *list, char *fnbasen)
+static struct st_photo st_parse_captions (struct es_slist *list, char *fnbasen)
 {
 	struct st_photo photo;
 	char *title;
@@ -2138,7 +2132,7 @@ static struct st_photo st_parse_captions (struct es_list *list, char *fnbasen)
 	strcpy (photo.file, "");
 	strcpy (photo.caption, "");
 
-	title = get_es_list_data_string (list, fnbasen);
+	title = get_es_slist_data_string (list, fnbasen);
 
 	if (title)
 	{
@@ -2251,7 +2245,7 @@ struct st_media *st_get_media (char *search_string)
 
 		media = new_media (media);
 
-		if ((ret_fnbase = get_es_list_data_string (st_LtoS, search_string)))
+		if ((ret_fnbase = get_es_slist_data_string (st_LtoS, search_string)))
 		{
 			for (i = 0; i < 6; i++)
 			{
