@@ -33,13 +33,6 @@
 #include "data.h"
 #include "pictures.h"
 
-#define free(A) {if (A) free (A); A=NULL;}
-#ifdef DEBUG
-#define DBG(a) fprintf a;
-#else
-#define DBG(a) ;
-#endif
-
 /* For MSVC etc. without 'inline' */
 #ifndef __GNUC__
 #define inline
@@ -2595,6 +2588,8 @@ int st_get_picture(char *name, char *file, int dfile_type, long width, long heig
 	DBG ((stderr, "Got block '%s' @ %ld, %ld bytes long.\n", name, block->start, block->size));
 
 	inp = open_block (dfile_type, block);
+	if (!inp)
+		return 3;
 	ret = create_ppm_from_image (file, inp, width, height, block->size);
 
 	DBG ((stderr, "Ret: %d\n", ret));
@@ -2607,23 +2602,62 @@ int st_get_thumbnail(char *name, char *file)
 {
 	int w=60, h=40;
 	struct st_block *block=NULL;
+	long dsize;
+	FILE *inp;
 
 	if (!name || !file)
 		return 1;
 
+
+	/* Some thumbnails aren't exactly 60x40, dammit! */
 	block = get_block_by_name (st_file_type, ST_DFILE_PICON, name, ST_DATA_OPT_PREFIX);
 	if (!block)
 		return 2;
 
-	/* Some thumbnails aren't exactly 60x40, luckily mostly uncompressed ones */
-	if (block->size == 59*40)
+	switch (block->size)
+	{
+	case 60*40:
+		break;
+	case 59*40:
 		w = 59;
-	else if (block->size == 58*40)
+		break;
+	case 58*40:
 		w = 58;
-	else if (block->size == 60*39)
+		break;
+	case 60*39:
 		h = 39;
-	else if (block->size == 60*38)
+		break;
+	case 60*38:
 		h = 38;
+		break;
+	default:
+		/* Must be compressed... probably :-) */
+		inp = open_block (ST_DFILE_PICON, block);
+		if (!inp)
+			return 3;
+		dsize = get_decompressed_size (inp, block->size);
+		fclose (inp);
+		switch (dsize)
+		{
+		case 60*40:
+			break;
+		case 59*40:
+			w = 59;
+			break;
+		case 58*40:
+			w = 58;
+			break;
+		case 60*39:
+			h = 39;
+			break;
+		case 60*38:
+			h = 38;
+			break;
+		default:
+			/* Shouldn't get here with most thumbnails */
+			break;
+		}
+	}
 
 	return st_get_picture (name, file, ST_DFILE_PICON, w, h);
 }
