@@ -313,6 +313,30 @@ const char *st_fileinfo_get_data (int file, st_filename_type type)
 	}
 }
 
+char *get_exception (int file, char *type, char *from)
+{
+	xmlNode *node=NULL;
+
+	node = get_file_info (file);
+
+	if (node)
+		node = node->childs;
+	else
+		return NULL;
+
+	while (node)
+	{
+		node = find_xml_node (node, "exception");
+		if (node)
+			if (!strcasecmp (type, xmlGetProp (node, "type")))
+				if (!strcasecmp (from, xmlGetProp (node, "from")))
+					return (xmlGetProp (node, "to"));
+		if (node)
+			node = node->next;
+	}
+	return NULL;
+}
+
 struct st_part *get_part (int file, int section, int number, int options)
 {
 	struct st_part *part=NULL;

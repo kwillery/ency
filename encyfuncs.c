@@ -1639,8 +1639,11 @@ int load_entry_lists (void)
 
 char *get_fnbase (struct st_table *tbl, char *title)
 {
+	char *exception;
 	if (!title)
 		return NULL;
+	if ((exception = get_exception (st_file_type, "LU title", title)))
+		title = exception;
 	while (tbl)
 	{
 		if ((!strcmp (tbl->title, title)))
@@ -1652,8 +1655,11 @@ char *get_fnbase (struct st_table *tbl, char *title)
 
 char *get_title (struct st_table *tbl, char *fnbase)
 {
+	char *exception;
 	if (!fnbase)
 		return NULL;
+	if ((exception = get_exception (st_file_type, "LU fnbase", fnbase)))
+		fnbase = exception;
 	while (tbl)
 	{
 		if (tbl->fnbase)
@@ -1667,8 +1673,11 @@ char *get_title (struct st_table *tbl, char *fnbase)
 
 struct st_table *get_table_entry_by_fnbase (struct st_table *tbl, char *fnbase)
 {
+	char *exception;
 	if (!fnbase)
 		return NULL;
+	if ((exception = get_exception (st_file_type, "LU fnbase", fnbase)))
+		fnbase = exception;
 	while (tbl)
 	{
 		if (!strcasecmp (tbl->fnbase, fnbase))
@@ -1680,11 +1689,14 @@ struct st_table *get_table_entry_by_fnbase (struct st_table *tbl, char *fnbase)
 
 struct st_table *get_table_entry_by_title (struct st_table *tbl, char *title)
 {
+	char *exception;
 	struct st_table *root=tbl;
 	char *temp;
 
 	if (!title)
 		return NULL;
+	if ((exception = get_exception (st_file_type, "LU title", title)))
+		title = exception;
 	while (tbl)
 	{
 		if (!strcasecmp (tbl->title, title))
@@ -1709,8 +1721,11 @@ struct st_table *get_table_entry_by_title (struct st_table *tbl, char *title)
 
 int get_block_id_by_fnbase (struct st_table *tbl, char *fnbase)
 {
+	char *exception;
 	if (!fnbase)
 		return 0;
+	if ((exception = get_exception (st_file_type, "LU fnbase", fnbase)))
+		fnbase = exception;
 	while (tbl)
 		if (!strcasecmp (tbl->fnbase, fnbase))
 			return tbl->block_id;
@@ -1721,8 +1736,11 @@ int get_block_id_by_fnbase (struct st_table *tbl, char *fnbase)
 
 int get_block_id_by_title (struct st_table *tbl, char *title)
 {
+	char *exception;
 	if (!title)
 		return 0;
+	if ((exception = get_exception (st_file_type, "LU title", title)))
+		title = exception;
 	while (tbl)
 	{
 		if (!strcasecmp (tbl->title, title))
@@ -1738,8 +1756,11 @@ int get_block_id_by_title (struct st_table *tbl, char *title)
 
 int get_entry_id_by_fnbase (struct st_table *tbl, char *fnbase)
 {
+	char *exception;
 	if (!fnbase)
 		return 0;
+	if ((exception = get_exception (st_file_type, "LU fnbase", fnbase)))
+		fnbase = exception;
 	while (tbl)
 		if (!strcasecmp (tbl->fnbase, fnbase))
 			return tbl->id;
@@ -1750,8 +1771,11 @@ int get_entry_id_by_fnbase (struct st_table *tbl, char *fnbase)
 
 int get_entry_id_by_title (struct st_table *tbl, char *title)
 {
+	char *exception;
 	if (!title)
 		return 0;
+	if ((exception = get_exception (st_file_type, "LU title", title)))
+		title = exception;
 	while (tbl)
 	{
 		if (!strcmp (tbl->title, title))
@@ -2472,9 +2496,6 @@ struct ency_titles *st_find_fulltext (char *search_string, int section, int opti
 
 		if (!strcasecmp (last, search_string))
 		{
-/* Special case - eentng == "Enterprise Incident, The (TNG)", should be (TOS) */
-			if (!strcasecmp (fl->fnbase, "eentng"))
-				strcpy (fl->fnbase, "eentos");
 			title = get_title (st_ptbls, fl->fnbase);
 			if (title)
 			{

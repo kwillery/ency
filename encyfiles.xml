@@ -91,6 +91,7 @@
       <ptable start="0x5ec550" count="1"/>
       <vtable start="0x70e5a4" count="1" section="1"/>
       <pcaption start="0x7130c6" count="1"/>
+      <exception type="LU fnbase" from="EEntNG" to="EEntOS"/>
   </file>
   <file>
     <name>Unknown encyclopedia</name>

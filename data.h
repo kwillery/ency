@@ -26,4 +26,5 @@ int st_fingerprint (void);
 char *get_name_of_file (int file_type);
 const char *st_fileinfo_get_data (int file, st_filename_type type);
 struct st_part *get_part (int file, int section, int number, int options);
+char *get_exception (int file, char *type, char *from);
 #endif
