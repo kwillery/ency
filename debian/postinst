@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+if [ "$1" = "configure" ]; then
+	if [ -d /usr/doc -a ! -e /usr/doc/ency \
+		-a -d /usr/share/doc/ency ]; then
+			ln -sf ../share/doc/ency /usr/doc/ency
+	fi
+fi
+

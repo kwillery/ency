@@ -1,0 +1,12 @@
+Source: ency
+Section: utils
+Priority: extra
+Maintainer: Robert Mibus <mibus@bigpond.com>
+Standards-Version: 3.1.1
+
+Package: ency
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Star Trek encyclopedia reader
+ ency is a library and set of utilities for searching the various
+ Star Trek encyclopedias and episode guides.
