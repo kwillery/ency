@@ -2323,6 +2323,8 @@ void load_ft_list (int section)
 	while ((part = get_part (st_file_type, section, count++, ST_PART_OPT_FTLIST)))
 	{
 		inp = (FILE *) curr_open (part->start);
+		if (!inp)
+			return NULL;
 
 		for (i=0;i<part->count;i++)
 		{
