@@ -268,6 +268,7 @@ int identify_section (char *section)
 	return 0;
 }
 
+#if 0
 void process_cast_block (FILE *inp, long size)
 {
 	struct part *tmp;
@@ -343,6 +344,127 @@ void process_cast_block (FILE *inp, long size)
 
 	free (block);
 }
+#else
+void process_cast_block (FILE *inp, long size)
+{
+	struct part *tmp;
+	char *block;
+	char *t=NULL;
+	int i;
+
+	printf ("\tFound CASt block");
+
+	if (size < 45)
+	{
+		printf (" - not long enough");
+		fseek (inp, size, SEEK_CUR);
+		return;
+	}
+
+	block = malloc (size * sizeof (char));
+	fread (block, size, 1, inp);
+
+	switch (block[3] + block[6])
+	{
+//	case 0: // STXTs in omni1?
+//	case 6: // 'snd ' in omni1? // DONT WANT
+//	case 9: // ?? in omni1?
+//	case 1: // BITD
+	case 3: // STXT
+//	case 7: // ??
+			break;
+		default:
+		printf (", Ignoring...");
+		free (block);
+		return;
+	}
+
+	tmp = (struct part *) malloc (sizeof (struct part));
+	tmp->name = NULL;
+	tmp->section = 0;
+	tmp->next = NULL;
+
+	if (!parts)
+		parts = tmp;
+	else
+	{
+		if (plast)
+			plast->next = tmp;
+	}
+
+	if (!pcurr)
+		pcurr = tmp;
+
+	plast = tmp;
+
+	if (block[45])
+	{
+		t = block+44;
+		for (i=0;i<block[45];i++)
+			while (*t++ == 0)
+				;
+		tmp->name = (char *) malloc (sizeof (char) * *t + 1);
+	} else if (size > 57 && block[57])
+	{
+		t = block + 56;
+		for (i=0;i<block[57];i++)
+			while (*t++ == 0)
+				if (t - block >= size)
+				{
+					printf (" - ends early!!");
+					tmp->name = strdup ("it ended early!");
+					return;
+				}
+		tmp->name = (char *) malloc (sizeof (char) * *t + 1);
+	} else if (size > 55 && block[55])
+	{
+		t = block + 54;
+		for (i=0;i<block[55];i++)
+			while (*t++ == 0)
+				if (t - block >= size)
+				{
+					printf (" - ends early!!");
+					tmp->name = strdup ("it ended early!");
+					return;
+				}
+		tmp->name = (char *) malloc (sizeof (char) * *t + 1);
+	} else if (size > 58 && block[58])
+	{
+		t = block + 57;
+		for (i=0;i<block[58];i++)
+			while (*t++ == 0)
+				if (t - block >= size)
+				{
+					printf (" - ends early!!");
+					tmp->name = strdup ("it ended early!");
+					return;
+				}
+		tmp->name = (char *) malloc (sizeof (char) * *t + 1);
+	}
+
+	if (tmp->name)
+	{
+		strncpy (tmp->name, t+1, *t);
+		tmp->name[(int)*t] = 0;
+	} else
+		tmp->name = strdup (""); // Damn - can't get the name, Maybe it doesn't have one.
+
+	printf (" (%s)", tmp->name);
+
+//	printf (" [");
+//	for (i=0;i<size;i++)
+//		if (isprint (block[i]))
+//			printf ("%c", block[i]);
+//	printf ("]");
+
+	tmp->section = identify_section (tmp->name);
+	tmp->count = 1;
+	tmp->start_id = 0;
+	tmp->next = NULL;
+
+	free (block);
+}
+#endif
 
 void load_cast_table (FILE *inp, int size)
 {
@@ -363,12 +485,17 @@ void load_cast_table (FILE *inp, int size)
 		if (last)
 			last->next = curr;
 
-		fscanf (inp, "%d: \"", &(curr->id));
-		t = temp;
-		while ((*t++ = getc (inp)) != '\"')
-			;
-		*--t = 0;
-		curr->name = strdup (temp);
+		fscanf (inp, "%d: ", &(curr->id));
+		if (getc (inp) == '\"')
+		{
+			t = temp;
+			while ((*t++ = getc (inp)) != '\"')
+				;
+			*--t = 0;
+			curr->name = strdup (temp);
+		} else
+			curr->name = strdup ("NULL");
+
 		curr->next = NULL;
 		last = curr;
 	}
@@ -411,6 +538,7 @@ void process_noncast_block (FILE *inp, long size)
 	fseek (inp, size, SEEK_CUR);
 }
 
+#if 0
 int ignore_block (char *name, long size)
 {
 	if (strcmp (name, "STXT") && strcmp (name, "BITD"))
@@ -418,7 +546,15 @@ int ignore_block (char *name, long size)
 
 	return 0;
 }
+#else
+int ignore_block (char *name, long size)
+{
+	if (strcmp (name, "STXT"))
+		return 1;
 
+	return 0;
+}
+#endif
 void search_file (FILE *inp, int reverse, FILE *outp, FILE *data)
 {
 	struct block *b=NULL;
