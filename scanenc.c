@@ -31,9 +31,18 @@
 
 /* define QUIET to print only the final total */
 
-FILE *inp;
 int tell = 0;
 long old_ftell;
+
+void save_match (FILE *inp, FILE *outp)
+{
+	int i;
+	fseek (inp,-8, SEEK_CUR);
+	for (i=0;i<16;i++)
+		fprintf (outp, "%2x ", getc(inp));
+	fseek (inp, -8, SEEK_CUR);
+	fprintf (outp, "\n");
+}
 
 int guess_section (char *title, char *text, int last_section)
 {
@@ -75,6 +84,7 @@ int guess_section (char *title, char *text, int last_section)
 
 int main (int argc, char *argv[])
 {
+	FILE *inp=NULL, *outp=NULL;
 	char *sections[3] =
 	{"Encyclopedia", "Episodes", "Chronology"};
 	int counts[3] =
@@ -85,11 +95,26 @@ int main (int argc, char *argv[])
 	int new_section;
 	int last_section = -1;
 	char *filename;
+	char *save_file=NULL;
 	struct ency_titles *entry;
 
 	if (argc > 1)
 	{
-		filename = argv[1];
+		if (strcmp (argv[1], "-s") == 0)
+		{
+			if (argc > 3)
+			{
+				save_file = argv[2];
+				filename = argv[3];
+			}
+			else
+			{
+				printf ("scanenc [-s outfile] scanfile\n");
+				exit (1);
+			}
+		}
+		else
+			filename = argv[1];
 	}
 	else
 	{
@@ -97,6 +122,15 @@ int main (int argc, char *argv[])
 		exit (1);
 	}
 	inp = fopen (filename, "r b");
+	if (save_file)
+	{
+		outp = fopen (save_file, "w");
+		if (!outp)
+		{
+			printf ("Error writing to %s\n",save_file);
+			exit;
+		}
+	}
 	if (inp == 0)
 	{
 		printf ("You must supply the main data file as the first parameter\n");
@@ -108,7 +142,14 @@ int main (int argc, char *argv[])
 		printf ("%x;", getc (inp));
 	printf ("\n");
 #endif
-
+	if (save_file)
+	{
+		rewind(inp);
+		fprintf (outp, "Fingerprint: ");
+		for (i = 0; i < 16; i++)
+			fprintf (outp, "%x;", getc (inp));
+		fprintf (outp, "\n");
+	}
 	st_force_unknown_file (1);
 	st_set_filename (filename);
 	do
@@ -121,16 +162,25 @@ int main (int argc, char *argv[])
 			{
 				new_section = guess_section (entry->title, entry->text, last_section);
 				if (new_section != last_section)
+				{
+					if (save_file)
+						fprintf (outp, "\nNew section (%s)\n", sections[new_section]);
 #ifndef QUIET
 					printf ("\nNew section (%s)\n", sections[last_section = new_section]);
 #else
 					last_section = new_section;
 #endif
+				}
 			}
 			last_start = tolower (*entry->title);
 #ifndef QUIET
 			printf ("found @ 0x%lx:  \t%s\n", ftell (inp), entry->title);
 #endif
+			if (save_file)
+			{
+				fprintf (outp ,"found @ 0x%lx:  \t%s\n", ftell (inp), entry->title);
+				save_match (inp, outp);
+			}
 			counts[last_section]++;
 			st_free_entry (entry);
 			getc (inp);	/* make sure it doesnt pick the same one up again */
@@ -138,7 +188,17 @@ int main (int argc, char *argv[])
 	}
 	while (returned);
 	printf ("Found:\n");
+	if (save_file)
+		fprintf (outp, "Found:\n");
 	for (i = 0; i < 3; i++)
+	{
 		printf ("\t%s\t%d\n", sections[i], counts[i]);
+		if (save_file)
+			fprintf (outp, "\t%s\t%d\n", sections[i], counts[i]);
+	}
+
+	if (outp)
+		fclose (outp);
+
 	return 0;
 }
