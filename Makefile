@@ -3,13 +3,23 @@ CFLAGS = -O3 -g -Wall
 LDFLAGS=
 CC=gcc
 AR=ar
-DOCDIR=/usr/doc
-BINDIR=/usr/bin
-MANDIR=/usr/man
-LIBDIR=/usr/lib
-INCDIR=/usr/include
+prefix=/usr
+DOCDIR=$(prefix)/doc
+BINDIR=$(prefix)/bin
+MANDIR=$(prefix)/man
+LIBDIR=$(prefix)/lib
+INCDIR=$(prefix)/include
+INSTALL_PROGRAM=install
 
-.PHONY: all clean install uninstall
+ifneq (,$(findstring debug,$(DEB_BUILD_OPTIONS)))
+  CFLAGS += -g
+endif
+ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
+  INSTALL_BINOPTS += -s
+endif
+INSTALL_BIN=$(INSTALL_PROGRAM) $(INSTALL_BINOPTS)
+
+.PHONY: all clean distclean install uninstall
 
 all: libency.a(encyfuncs.o) htmlenc findenc scanenc
 
@@ -20,14 +30,22 @@ libency.a(encyfuncs.o): ency.h encyfuncs.c
 findenc htmlenc scanenc: libency.a
 
 clean:
-	rm -f findenc htmlenc encyfuncs.o libency.a core
+	rm -f findenc htmlenc scanenc encyfuncs.o libency.a core
 
-install: findenc htmlenc
-	install -c findenc $(BINDIR)
-	install -c htmlenc $(BINDIR)
-	install -c scanenc $(BINDIR)
-	install -c libency.a $(LIBDIR)
-	install -c ency.h $(INCDIR)
+distclean: clean
+
+install: install-bin install-dev install-doc
+
+install-bin: all
+	$(INSTALL_BIN) findenc $(BINDIR)/findenc
+	$(INSTALL_BIN) htmlenc $(BINDIR)/htmlenc
+	$(INSTALL_BIN) scanenc $(BINDIR)/scanenc
+
+install-doc:
+
+install-dev:
+	$(INSTALL_BIN) -m644 libency.a $(LIBDIR)/libency.a
+	$(INSTALL_PROGRAM) -m644 ency.h $(INCDIR)/ency.h
 
 uninstall:
 	rm -f $(BINDIR)/findenc $(BINDIR)/htmlenc $(LIBDIR)/libency.a $(INCDIR)/ency.h $(BINDIR)/scanenc
