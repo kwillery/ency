@@ -4,11 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ency.h"
+#include "encyfuncs.h"
 #include "data.h"
-
-char *decompressed=NULL;
-char *d=NULL;
-int size=0;
 
 char *matches[256]=
 {
@@ -275,36 +272,26 @@ static char *get_colour (unsigned char c)
 	return matches[c];
 }
 
-static void repeat (unsigned char c, int n)
+static void repeat (unsigned char **d, unsigned char c, int n)
 {
+	unsigned char *e=*d;
 	int i;
 	for (i=0;i<n;i++)
-		if (decompressed)
-			if (d < decompressed+size)
-				*d++ = c;
-	if (!decompressed)
-		size += n;
+		*e++ = c;
+	*d += n;
 }
 
-static void write_n_bytes (FILE *inp, int n)
+static void write_n_bytes (unsigned char **d, FILE *inp, int n)
 {
 	int i;
-	unsigned char c;
+	unsigned char *e=*d;
 
 	for (i=0;i<n;i++)
-	{
-		c = getc (inp);
-		if (feof (inp))
-			return;
-		if (decompressed)
-			if (d < decompressed+size)
-				*d++ = c;
-	}
-	if (!decompressed)
-		size += n;
+		*e++ = getc (inp);
+	*d += n;
 }
 
-void process_bytes (FILE *inp)
+void process_bytes (unsigned char **d, FILE *inp, int max_left)
 {
 	unsigned char c;
 
@@ -313,31 +300,80 @@ void process_bytes (FILE *inp)
 	if (c & 0x80) /* Repeating */
 	{
 		if (!feof (inp))
-			repeat (getc (inp), 0xFF-c+2);
-	} else
-		write_n_bytes (inp, c+1);
+		{
+			if (0xFF-c+2 > max_left)
+				repeat (d, getc (inp), max_left);
+			else
+				repeat (d, getc (inp), 0xFF-c+2);
+		}
+	} else {
+		if (c+1 > max_left)
+			write_n_bytes (d, inp, max_left);
+		else
+			write_n_bytes (d, inp, c+1);
+	}
 }
 
-void write_final_image (FILE *out, long width, long height)
+long get_decompressed_size (FILE *inp, int csize)
 {
+	int i,j;
+	unsigned char c;
+	long dsize=0;
+
+	for (i=0;i<csize;i++)
+	{
+		c = getc (inp);
+		if (c & 0x80)
+		{
+			getc (inp);
+			dsize += 0xFF-c+2;
+			i++;
+		} else {
+			for (j=0;j<c+1;j++)
+				getc (inp);
+			dsize += c+1;
+			i += c+1;
+		}
+	}
+	return dsize;
+}
+
+void write_ppm (FILE *out, unsigned char *img, long width, long height)
+{
+	unsigned char *d;
+	int size = width * height;
+
 	fprintf (out, "P3\n%ld %ld\n255\n", width, height);
 
-	d = decompressed;
-	for (d=decompressed;d<decompressed+size;d++)
+	d = img;
+	for (d=img;d<img+size;d++)
 		fprintf (out, "%s\n", get_colour (*d));
+}
+
+unsigned char *decompress (FILE *inp, int csize, int size)
+{
+	int i;
+	unsigned char *decompressed, *d;
+
+	DBG ((stderr, "Decompressing from %d to %d\n", csize, size));
+	d = decompressed = (char *) malloc (size);
+	for (i=0;i<csize;i++)
+		process_bytes (&d, inp, size-(d-decompressed));
+	return decompressed;
 }
 
 int create_ppm_from_image (char *file, FILE *inp, long width, long height, long csize)
 {
+	unsigned char *decompressed=NULL;
+	int size;
 	FILE *out;
-	int i;
 
 	if (!file || !inp || width<=0 || height <=0)
-		return 3;
+		return 4;
 
 	out = fopen (file, "w b");
 	if (!out)
-		return 3;
+		return 5;
 
 	/* Decompressed size */
 	size = width*height;
@@ -348,13 +384,9 @@ int create_ppm_from_image (char *file, FILE *inp, long width, long height, long 
 		fread (decompressed, size, 1, inp);
 	}
 	else
-	{
-		d = decompressed = (char *) malloc (size);
-		for (i=0;i<csize;i++)
-			process_bytes (inp);
-	}
+		decompressed = decompress (inp, csize, size);
 
-	write_final_image (out, width, height);
+	write_ppm (out, decompressed, width, height);
 	fclose (out);
 
 	return 0;

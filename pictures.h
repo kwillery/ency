@@ -26,5 +26,8 @@
 #define PICTURES_H
 
 int create_ppm_from_image (char *file, FILE *inp, long width, long height, long size);
+int write_ppm (char *file, char *img, int width, int height);
+long get_decompressed_size (FILE *inp, int csize);
+char *decompress (FILE *inp, int csize, int size);
 
 #endif
