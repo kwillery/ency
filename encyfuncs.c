@@ -1407,7 +1407,7 @@ static void add_to_block_cache (int block_id, int id, long filepos)
 
 		while (tmp)
 		{
-			if ((tmp->block_id >= block_id) && (tmp->id > id))
+			if (((block_id == tmp->block_id) && (id < tmp->id)) || (block_id < tmp->block_id))
 				break;
 			otmp = tmp;
 			tmp = tmp->next;
@@ -1427,7 +1427,6 @@ static void add_to_block_cache (int block_id, int id, long filepos)
 	cache_last->title = NULL;
 	cache_last->fmt = NULL;
 	cache_last->text = NULL;
-	cache_last->next = NULL;
 }
 
 static void load_block_cache (int block_id)
