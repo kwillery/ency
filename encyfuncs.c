@@ -1118,7 +1118,7 @@ struct st_media *st_get_media (char *search_string)
     temp_fnbase = malloc (9);
 
     title_with_dot = malloc (strlen (search_string) + 2);
-    snprintf (title_with_dot, strlen (search_string) + 2, "%s.", search_string);
+    sprintf (title_with_dot, "%s.", search_string);
 
 
     while (st_tbls) {
@@ -1126,7 +1126,7 @@ struct st_media *st_get_media (char *search_string)
 	for (i = 0; i < 5; i++) {
 	  if (!media)
 	    media = malloc (sizeof (struct st_media));
-	  snprintf (temp_fnbase, 9, "%s%d", st_tbls->fnbase, i + 1);
+	  sprintf (temp_fnbase, "%s%d", st_tbls->fnbase, i + 1);
 	  media->photos[i] = st_parse_captions (temp_fnbase);
 	  if (strlen(media->photos[i].file)) media_found = 1;
 	}
