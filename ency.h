@@ -38,6 +38,7 @@ struct ency_titles *chro_find_list (char[], int);
 struct ency_titles *chro_get_title (char[]);
 
 struct st_table *st_get_table (void);
+struct st_caption *st_get_captions (void);
 struct ency_titles *get_title_at (long);
 
 struct st_ency_formatting
@@ -63,6 +64,13 @@ struct st_table
     char *title;
     char *fnbase;
     struct st_table *next;
+  };
+
+struct st_caption
+  {
+    char *fnbasen;
+    char *caption;
+    struct st_caption *next;
   };
 
 #endif

@@ -39,6 +39,7 @@ long int file_pos_is = 0;
 int upto = 0;
 
 long int st_table_starts_at = 0x410c4;
+long int st_caption_starts_at = 0x4e5064;
 long int ency_starts_at[3] =
 {0x7bc28, 0x576574, 0};
 long int epis_starts_at[3] =
@@ -61,22 +62,32 @@ int
 st_open ()
 {
   if (curr == 0)		// Defaults to ency
+
     curr_starts_at = ency_starts_at[upto];
 
   if (curr == 1)		// Ency
+
     curr_starts_at = ency_starts_at[upto];
 
   if (curr == 2)		// Epis
+
     curr_starts_at = epis_starts_at[upto];
 
   if (curr == 3)		// Chro
+
     curr_starts_at = chro_starts_at[upto];
 
   if (curr == 4)		// table
+
     curr_starts_at = st_table_starts_at;
 
   if (curr == 5)		// Set value
+
     curr_starts_at = set_starts_at;
+
+  if (curr == 6)
+
+    curr_starts_at = st_caption_starts_at;
 
   return (curr_open ());
 }
@@ -96,7 +107,7 @@ curr_open (void)
 	  strcpy (ency_filename, "Data.cxt");
 	}
     }
-  inp = fopen (ency_filename, "r");
+  inp = fopen (ency_filename, "rb");
 
   if (inp)
     {
@@ -572,8 +583,8 @@ curr_find_list (char title[], int exact)
 	  if (last_title != NULL)
 	    last_title->next = curr_title;
 	  last_title = curr_title;
-	  curr_title = NULL;
-	  ttl = temp_text = text_fmt = NULL;
+	  curr_title = (struct ency_titles *) NULL;
+	  ttl = temp_text = (char *) text_fmt = (struct st_ency_formatting *) NULL;
 // printf("dbg4\n");
 	}
       else
@@ -631,24 +642,24 @@ epis_find_list (char title[], int exact)
   while (epis_lastone[upto] != 0)
     {
       if (current)
-        while (current->next)
-          {
-            current = current->next;
-          }
+	while (current->next)
+	  {
+	    current = current->next;
+	  }
       curr_lastone = epis_lastone[upto];
       if (upto)
-        {
-          temp = (curr_find_list (title, exact));
-          if (current)
-            current->next = temp;
-          else
-            root = current = temp;
-        }
+	{
+	  temp = (curr_find_list (title, exact));
+	  if (current)
+	    current->next = temp;
+	  else
+	    root = current = temp;
+	}
       else
-        {
-          root = (curr_find_list (title, exact));
-          current = root;
-        }
+	{
+	  root = (curr_find_list (title, exact));
+	  current = root;
+	}
       upto++;
     }
   return (root);
@@ -663,24 +674,24 @@ chro_find_list (char title[], int exact)
   while (chro_lastone[upto] != 0)
     {
       if (current)
-        while (current->next)
-          {
-            current = current->next;
-          }
+	while (current->next)
+	  {
+	    current = current->next;
+	  }
       curr_lastone = chro_lastone[upto];
       if (upto)
-        {
-          temp = (curr_find_list (title, exact));
-          if (current)
-            current->next = temp;
-          else
-            root = current = temp;
-        }
+	{
+	  temp = (curr_find_list (title, exact));
+	  if (current)
+	    current->next = temp;
+	  else
+	    root = current = temp;
+	}
       else
-        {
-          root = (curr_find_list (title, exact));
-          current = root;
-        }
+	{
+	  root = (curr_find_list (title, exact));
+	  current = root;
+	}
       upto++;
     }
   return (root);
@@ -933,18 +944,10 @@ st_get_table (void)
   curr = 4;
   if (!st_open ())
     {
-//      return (st_title_error (1));
       return (NULL);
     }
   else
     {
-////  root_tbl = (struct ency_titles *) malloc (sizeof (struct st_table));
-      ////  if (root_tbl == NULL)
-      ////    {
-      ////      printf ("Memory allocation failed\n");
-      ////return(NULL);
-      ////    }
-      ////curr_tbl=root_tbl;
 
       for (i = 0; i < 26; i++)
 	{
@@ -954,11 +957,9 @@ st_get_table (void)
 	      temp_text = malloc (1);
 	      text_size = 0;
 
-// if(!first_time)
 	      curr_tbl = (struct st_table *) malloc (sizeof (struct st_table));
 	      if (curr_tbl == NULL)
 		{
-		  // return (st_title_error (2));
 		  return (NULL);
 		}
 	      if (first_time)
@@ -976,11 +977,9 @@ st_get_table (void)
 		  temp_text = realloc (temp_text, text_size + 2);
 		  if (temp_text == NULL)
 		    {
-//                    return (st_title_error (1));
 		      return (NULL);
 		    }
 		  temp_text[text_size++] = tolower (ency_cleantext (c));
-		  // printf("%c",c);
 		}
 	      temp_text[text_size] = 0;
 	      curr_tbl->fnbase = temp_text;
@@ -988,20 +987,16 @@ st_get_table (void)
 	      text_size = 0;
 
 	      while ((c = egetc ()) != '\"');
-// printf(":");
 	      while ((c = egetc ()) != '\"')
 		{
 		  temp_text = realloc (temp_text, text_size + 2);
 		  if (temp_text == NULL)
 		    {
-		      //            return (st_title_error (1));
 		      return (NULL);
 		    }
 		  temp_text[text_size++] = ency_cleantext (c);
-// printf("%c",c);
 		}
 	      temp_text[text_size] = 0;
-// printf("\n");
 	      curr_tbl->title = temp_text;
 	      if (last_tbl)
 		last_tbl->next = curr_tbl;
@@ -1015,6 +1010,88 @@ st_get_table (void)
   curr_close ();
   return (root_tbl);
 }
+
+struct st_caption *
+st_get_captions (void)
+{
+  int i = 0, first_time;
+  struct st_caption *root_cpt, *curr_cpt, *last_cpt;
+  int c = 0, text_size = 0;
+  char *temp_text;
+
+  last_cpt = NULL;
+  first_time = 1;
+  curr = 6;
+  if (!st_open ())
+    {
+      return (NULL);
+    }
+  else
+    {
+
+      for (i = 0; i < 5; i++)
+        {
+          while ((c = egetc ()) != ']')
+            {                   // main loop
+
+              temp_text = malloc (1);
+              text_size = 0;
+
+              curr_cpt = (struct st_caption *) malloc (sizeof (struct
+	      st_caption));
+              if (curr_cpt == NULL)
+                {
+                  return (NULL);
+                }
+              if (first_time)
+                root_cpt = curr_cpt;
+              first_time = 0;
+              do
+                {
+                  while ((c = egetc ()) != '\"');
+                  c = egetc ();
+                }
+              while (!c);
+              eungetc (c);
+              while ((c = egetc ()) != '\"')
+                {
+                  temp_text = realloc (temp_text, text_size + 2);
+                  if (temp_text == NULL)
+                    {
+                      return (NULL);
+                    }
+                  temp_text[text_size++] = tolower (ency_cleantext (c));
+                }
+              temp_text[text_size] = 0;
+              curr_cpt->fnbasen = temp_text;
+              temp_text = malloc (1);
+              text_size = 0;
+
+              while ((c = egetc ()) != '\"');
+              while ((c = egetc ()) != '\"')
+                {
+                  temp_text = realloc (temp_text, text_size + 2);
+                  if (temp_text == NULL)
+                    {
+                      return (NULL);
+                    }
+                  temp_text[text_size++] = ency_cleantext (c);
+                }
+              temp_text[text_size] = 0;
+              curr_cpt->caption = temp_text;
+              if (last_cpt)
+                last_cpt->next = curr_cpt;
+              last_cpt = curr_cpt;
+              curr_cpt = NULL;
+
+            }                   // main loop
+
+        }
+    }
+  curr_close ();
+  return (root_cpt);
+}
+
 
 struct ency_titles *
 get_title_at (long filepos)

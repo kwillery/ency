@@ -255,7 +255,7 @@ i=0;
 //	  printoff (thingy);
 	  kill_me = thingy;
 	  thingy = thingy->next;
-	  free (kill_me->text);
+//	  free (kill_me->text);
 	  free (kill_me->title);
 	  free (kill_me);
 	  free (full_body->title);
