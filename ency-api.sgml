@@ -464,7 +464,7 @@ int main (int argc, char *argv[])
       }
 
       /* free the returned stuff */
-      st_free_entry_and_advance (&thingy);
+      st_free_entry_and_advance (&amp;thingy);
 
     }
     while (thingy != NULL);
