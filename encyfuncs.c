@@ -101,6 +101,12 @@ const struct st_file_info st_files[] =
    {0x52, 0x49, 0x46, 0x58, 0x0, 0x4C, 0xAE, 0xC4, 0x4D, 0x56, 0x39, 0x33, 0x69, 0x6D, 0x61, 0x70}, 1}
 };
 
+/* internal */
+#define ST_SECT_PTBL 10
+#define ST_SECT_VTBL 11
+#define ST_SECT_PCPT 12
+#define ST_SECT_VCPT 13
+
 /* for pictures */
 static struct st_table *st_ptbls = NULL, *st_oldptbls = NULL;
 static struct st_caption *st_pcpts = NULL, *st_oldpcpts = NULL;
@@ -326,8 +332,8 @@ char *st_fileinfo_get_name (int file_type)
 
 static struct st_part *get_part (int file, int section, int number)
 {
-	int i,curr=0;
-	struct st_part *ret=NULL;
+	int i,tmp=0;
+	struct st_part *ret;
 	long *starts;
 	long *counts;
 
@@ -345,35 +351,50 @@ static struct st_part *get_part (int file, int section, int number)
 			starts = (long *) chro_starts_at;
 			counts = (long *) chro_lastone;
 			break;
+		case ST_SECT_PTBL:
+			starts = (long *) st_table_starts_at;
+			counts = (long *) st_table_lastone;
+			break;
+		case ST_SECT_VTBL:
+			starts = (long *) st_video_table_starts_at;
+			counts = (long *) st_video_table_lastone;
+			break;
+		case ST_SECT_PCPT:
+			starts = (long *) st_caption_starts_at;
+			counts = (long *) st_caption_lastone;
+			break;
+		case ST_SECT_VCPT:
+			starts = (long *) st_video_caption_starts_at;
+			counts = (long *) st_video_caption_lastone;
+			break;
 		default:
 			return NULL;
 	}
 
 	/* find the right file */
 	for (i = 0; i < file; i++) {
-		while (starts[curr] != 0)
-			curr++;
-		curr++;
+		while (starts[tmp] != 0)
+			tmp++;
+		tmp++;
 	}
 
 	/* find the part theyre after */
 	for (i=0;i<number;i++)
 	{
-		if (starts[curr]) curr++;
+		if (starts[tmp]) tmp++;
 	}
 
 	/* if there is one there, return the part data */
-	if (starts[curr])
+	if (starts[tmp])
 	{
 		ret = (struct st_part *) malloc (sizeof (struct st_part));
 		if (!ret) return NULL;
 
-		ret->start = starts[curr];
-		ret->count = counts[curr];
+		ret->start = starts[tmp];
+		ret->count = counts[tmp];
 
 		return ret;
 	}
-	
 	return NULL;
 }
 
@@ -406,35 +427,24 @@ static int curr_open (void)
 static int st_open ()
 {
   switch (curr) {
-//    case 0:                /* Defaults to ency */
-//        curr_starts_at = ency_starts_at[upto];
-//        break;
-//    case 1:                /* Ency */
-//        curr_starts_at = ency_starts_at[upto];
-//        break;
-//    case 2:                /* Epis */
-//        curr_starts_at = epis_starts_at[upto];
-//        break;
-//    case 3:                /* Chro */
-//        curr_starts_at = chro_starts_at[upto];
-//        break;
+    case 0:                /* Defaults to ency */
+    case 1:                /* Ency */
+    case 2:                /* Epis */
+    case 3:                /* Chro */
     case 4:                /* table */
-        curr_starts_at = st_table_starts_at[upto];
         break;
     case 5:                /* Set value */
         curr_starts_at = set_starts_at;
         break;
     case 6:                /* Captions */
-        curr_starts_at = st_caption_starts_at[upto];
         break;
     case 7:                /* video table */
         curr_starts_at = st_video_table_starts_at[upto];
         break;
     case 8:                /* video captions */
-        curr_starts_at = st_video_caption_starts_at[upto];
         break;
     default:
-//        return (0);
+        return (0);
         break;
   }
   return (curr_open ());
@@ -544,29 +554,24 @@ char *st_autofind (int st_file_version, char *base_dir)
 
 /* media stuff */
 
-static struct st_table *st_get_table (void)
+static struct st_table *st_get_table (int section)
 {
   int i,z;
   struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
-  int text_size = 0;
+  struct st_part *part;
+  int text_size = 0, count=0;
   unsigned char c=0;
   char *temp_text = NULL, *str_text = NULL;
 
-  upto = 0;
-
   curr = 4;
-  for (i = 0; i < st_file_type; i++) {
-    while (st_table_starts_at[upto] != 0)
-      upto++;
-    upto++;
-  }
-  if (st_table_starts_at[upto] != 0x1) {
-    while (st_table_starts_at[upto] != 0) {
+
+    while ((part = get_part (st_file_type, ST_SECT_PTBL, count))) {
+      curr_starts_at = part->start;
       if (!st_open ()) {
         return (NULL);
       } else {
 
-        for (i = 0; i < st_table_lastone[upto]; i++) {
+        for (i = 0; i < part->count; i++) {
           while ((c = getc (inp)) != ']') {     /* main loop */
 
             curr_tbl = (struct st_table *) malloc (sizeof (struct st_table));
@@ -628,36 +633,29 @@ static struct st_table *st_get_table (void)
         }
       }
       st_close_file ();
-      upto++;
+      count++;
+      free (part);
     }
-  }
   return (root_tbl);
 }
 
-static struct st_caption *st_get_captions (void)
+static struct st_caption *st_get_captions (int section)
 {
   int i, z;
   struct st_caption *root_cpt = NULL, *curr_cpt = NULL, *last_cpt = NULL;
+  struct st_part *part;
   char c = 0;
-  int text_size = 0;
+  int text_size = 0, count = 0;
   char *temp_text = NULL;
 
   curr = 6;
 
-  upto = 0;
-
-  for (i = 0; i < st_file_type; i++) {
-    while (st_caption_starts_at[upto] != 0)
-      upto++;
-    upto++;
-  }
-  if (st_caption_starts_at[upto] != 0x1) {
-    while (st_caption_starts_at[upto] != 0) {
-
+    while ((part = get_part (st_file_type, section, count))) {
+      curr_starts_at = part->start;
       if (!st_open ()) {
         return (NULL);
       } else {
-        for (i = 0; i < st_caption_lastone[upto]; i++) {
+        for (i = 0; i < part->count; i++) {
           c = getc(inp);
           while (c != ']') {    /* main loop */
             curr_cpt = (struct st_caption *) malloc (sizeof (struct
@@ -683,10 +681,11 @@ static struct st_caption *st_get_captions (void)
             c = 0;
 
             temp_text = malloc (8);
-            text_size = 0;
 
-            fread (temp_text, 1, 8, inp);
-            temp_text[7] = 0;
+            text_size = (section == ST_SECT_PCPT) ? 7 : 6;
+
+            fread (temp_text, 1, text_size, inp);
+            temp_text[text_size] = 0;
 
             z=0;while ((temp_text[z] = tolower(temp_text[z]))) z++;
 
@@ -715,10 +714,10 @@ static struct st_caption *st_get_captions (void)
 
         }
       }
-      upto++;
+      count++;
+      free (part);
       st_close_file ();
     }
-  }
   return (root_cpt);
 }
 
@@ -831,112 +830,19 @@ static struct st_table *st_get_video_table (void)
   return (root_tbl);
 }
 
-static struct st_caption *st_get_video_captions (void)
-{
-  int i, z;
-  struct st_caption *root_cpt = NULL, *curr_cpt = NULL, *last_cpt = NULL;
-  int text_size = 0; 
-  char c=0;
-  char *temp_text = NULL;
-
-  curr = 8;
-
-  upto = 0;
-
-  for (i = 0; i < st_file_type; i++) {
-    while (st_video_caption_starts_at[upto] != 0)
-      upto++;
-    upto++;
-  }
-  if (st_video_caption_starts_at[upto] != 0x1) {
-    while (st_video_caption_starts_at[upto] != 0) {
-
-      if (!st_open ()) {
-        return (NULL);
-      } else {
-        for (i = 0; i < st_video_caption_lastone[upto]; i++) {
-          c = getc(inp);
-          while (c != ']') {    /* main loop */
-            do {
-              while ((c != '\"') && (c != '[') && (c = getc (inp)) != (' '))
-                ;
-
-              c = getc (inp);
-            }
-            while (!c);
-            c = ungetc (c, inp);
-            if ((c = getc (inp)) != ' ')
-              c = ungetc (c, inp);
-            if ((c = getc (inp)) != '\"')
-              c = ungetc (c, inp);
-            if ((c = getc (inp)) != ':') {
-              c = ungetc (c, inp);
-              c = 0;
-    
-              curr_cpt = (struct st_caption *) malloc (sizeof (struct
-                                                                 st_caption));
-    
-              if (curr_cpt == NULL)
-                return (NULL);
-
-              if (!root_cpt)
-                root_cpt = curr_cpt;
-    
-              temp_text = malloc (8);
-              text_size = 0;
-    
-              fread (temp_text, 1, 7, inp); // was 8, inp);
-              temp_text[6] = 0; // was ...[7] = 0;
-    
-              z=0;while ((temp_text[z] = tolower(temp_text[z]))) z++;
-    
-              c = getc(inp);
-    
-              curr_cpt->fnbasen = temp_text;
-    
-              temp_text = malloc (70);
-              text_size = 0;
-
-              while ((c = getc (inp)) != '\"');
-              while ((c = getc (inp)) != '\"')
-                temp_text[text_size++] = st_cleantext (c);
-              temp_text[text_size] = 0;
-
-              curr_cpt->caption = temp_text;
-              c=getc(inp);
-
-              curr_cpt->next = NULL;
-
-              if (last_cpt)
-                last_cpt->next = curr_cpt;
-              last_cpt = curr_cpt;
-              curr_cpt = NULL;
-            }
-          }                     /* end main loop */
-
-        }
-      }
-      upto++;
-      st_close_file ();
-    }
-  }
-  return (root_cpt);
-}
-
-
 int st_load_media (void)
 {
   /*
    * Get the table & captions (if we don't already have them)
    */
   if (!st_ptbls)
-    st_ptbls = st_get_table ();
+    st_ptbls = st_get_table (ST_SECT_PTBL);
   if (!st_pcpts)
-    st_pcpts = st_get_captions ();
+    st_pcpts = st_get_captions (ST_SECT_PCPT);
   if (!st_vtbls)
     st_vtbls = st_get_video_table ();
   if (!st_vcpts)
-    st_vcpts = st_get_video_captions ();
+    st_vcpts = st_get_captions (ST_SECT_VCPT);
 
   return (1);
 }
@@ -1492,10 +1398,11 @@ struct ency_titles *st_find_in_file (int file, int section, char *search_string,
   struct ency_titles *root = NULL, *current = NULL, *temp = NULL;
   struct st_part *part=NULL;
   int first_time = 1;
+  int count=0;
 
   curr = section + 1;
 
-  while ((part = get_part (st_file_type, section, upto))) {
+  while ((part = get_part (st_file_type, section, count))) {
     if (current)
       while (current->next)
 	    current = current->next;
@@ -1512,7 +1419,8 @@ struct ency_titles *st_find_in_file (int file, int section, char *search_string,
   	current = root;
   	first_time = 0;
     }
-    upto++;
+    count++;
+    free (part);
   }
   return (root);
 }
