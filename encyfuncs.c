@@ -505,7 +505,7 @@ static void find_next_stxt_block (FILE *inp)
 	}
 }
 
-inline char *get_text_from_file (FILE *inp)
+static inline char *get_text_from_file (FILE *inp)
 {
 	char c, *text;
 	int size;
@@ -551,7 +551,7 @@ static struct st_table *read_table (FILE *inp, struct st_table *root)
 	struct st_table *root_tbl = NULL;
 	struct st_table *curr_tbl = NULL;
 	struct st_table *last_tbl = NULL;
-	char c, d;
+	char c;
 
 	c = getc (inp);
 
