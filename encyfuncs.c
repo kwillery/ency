@@ -48,9 +48,9 @@ static const long int st_caption_starts_at[] =
 
 /* for videos */
 static const long st_video_table_starts_at[] =
-{0x50e690, 0,0x59baaa,0,1,0,1,0,1,0};
+{0x50e690, 0,0x59baaa,0,0x5b9820,0,1,0,1,0};
 static const long st_video_caption_starts_at[] =
-{0x4FCED6, 0,0x621174,0,1,0,1,0,1,0};
+{0x4FCED6, 0,0x621174,0,0x65860a,0,1,0,1,0};
 
 /* the actual encyclopedia entries */
 static const long int ency_starts_at[] =
@@ -81,7 +81,7 @@ static const long int st_table_lastone[] =
 static const long int st_caption_lastone[] =
 {5, 0, 4, 0, 4, 0, 5, 0, 4, 0};
 
-static const long st_video_table_lastone[] = {26,0,26,0,1,0,1,0,1,0};
+static const long st_video_table_lastone[] = {26,0,26,0,26,0,1,0,1,0};
 static const long st_video_caption_lastone[] = {1,0,1,0,1,0,1,0,1,0};
 
 static long int curr_starts_at, curr_lastone, curr;
