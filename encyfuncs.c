@@ -1583,7 +1583,7 @@ static struct st_ency_formatting *st_return_fmt (void)
 	return (root_fmt);
 }
 
-static char *st_return_text (void)
+static char *st_return_text (int options)
 {
 	long text_starts_at = 0;
 	int text_size = 1;
@@ -1610,6 +1610,8 @@ static char *st_return_text (void)
 			old_c = c;
 			text_size++;
 		}
+		if ((options & ST_OPT_TEXTLEN_MAX32) && (text_size >= 32))
+			bye = 1;
 	}
 
 	temp_text = malloc (text_size + 1);
@@ -1623,7 +1625,7 @@ static char *st_return_text (void)
 	return (temp_text);
 }
 
-static char *st_return_title (void)
+static char *st_return_title ()
 {
 	char c;
 	char *title = NULL;
@@ -1786,7 +1788,7 @@ static struct ency_titles *curr_find_list (int section, char *search_string, int
 				found_any_yet = 1;
 				if (st_return_body)
 				{
-					temp_text = st_return_text ();
+					temp_text = st_return_text (0);
 					/* this is a cheat. step back in the
 					   file to get the formatting. doing
 					   it this way saves time in the
@@ -1871,13 +1873,15 @@ static struct ency_titles *st_find_in_cache (int section, char *search_string, i
 
 static int st_guess_section (char *title, char *text, int last_section)
 {
-	char *episode_starts[5] =
+	char *episode_starts[7] =
 	{
 		"Original Series",
 		"Next Generation",
 		"Deep Space Nine",
 		"Voyager episode",
-		"No episodes"
+		"No episodes",
+		"There are no episodes",
+		"There were no episodes"
 	};
 	int i;
 
@@ -1927,7 +1931,7 @@ static struct ency_titles *st_find_unknown (int section, char *search_string, in
 		{
 			/* st_get_title_at opens the file again, so... */
 			input_temp = inp;
-			curr_title = st_get_title_at (this_one_starts_at = ftell (input_temp));
+			curr_title = st_read_title_at (this_one_starts_at = ftell (input_temp), ST_OPT_NO_FMT | ST_OPT_RETURN_BODY | ST_OPT_TEXTLEN_MAX32);
 			inp = input_temp;
 			getc (inp);	/* make sure we dont get the same entry again */
 
@@ -2072,7 +2076,7 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 	}
 }
 
-struct ency_titles *st_get_title_at (long filepos)
+struct ency_titles *st_read_title_at (long filepos, int options)
 {
 	int return_body_was;
 	char c;
@@ -2098,13 +2102,21 @@ struct ency_titles *st_get_title_at (long filepos)
 	{
 		return (st_title_error (2));
 	}
-	text_fmt = st_return_fmt ();
+
+	if (options & ST_OPT_NO_FMT)
+	{
+		while ((getc (inp) != '@'));
+		getc (inp);
+	} else
+		text_fmt = st_return_fmt ();
 
 	ttl = st_return_title ();
 
 	c = getc (inp);
 
-	temp_text = st_return_text ();
+	if (options & ST_OPT_RETURN_BODY)
+		temp_text = st_return_text (options);
+
 /* copy pointer stuff over */
 	root_title->filepos = filepos;
 	root_title->title = ttl;
@@ -2137,6 +2149,11 @@ struct ency_titles *st_get_title_at (long filepos)
 	}
 
 	return (root_title);
+}
+
+struct ency_titles *st_get_title_at (long filepos)
+{
+	return (st_read_title_at (filepos, ST_OPT_RETURN_BODY));
 }
 
 static struct st_photo st_parse_captions (char *fnbasen)

@@ -46,6 +46,7 @@
 #define ST_OPT_MATCH_SUBSTRING 4
 #define ST_OPT_NO_CACHE 8
 #define ST_OPT_NO_FMT 16
+#define ST_OPT_TEXTLEN_MAX32 32
 
 /* enums/structs */
 typedef enum
@@ -152,6 +153,7 @@ struct ency_titles *ency_find_list (char[], int);
 struct ency_titles *epis_find_list (char[], int);
 struct ency_titles *chro_find_list (char[], int);
 struct ency_titles *st_get_title_at (long);
+struct ency_titles *st_read_title_at (long, int options);
 
 /* Takes an error # & returns a string */
 char *st_nice_error (int);
