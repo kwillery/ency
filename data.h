@@ -54,7 +54,7 @@ struct st_data_filenode
 	struct st_data_filenode *next;
 };
 
-int load_xmlfile_info (char *filename);
+int load_rc_file_info (char *filename);
 void st_data_clear (void);
 int count_files (void);
 int st_fingerprint (void);
@@ -72,6 +72,7 @@ char *get_exception (int file, char *type, char *from);
 void free_exception (struct st_data_exception *ex);
 
 struct st_part *new_part(void);
+struct st_data_exception *new_exception(char *type, char *from, char *to);
 void free_part (struct st_part *part);
 
 #endif

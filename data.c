@@ -13,13 +13,11 @@
 #include <ctype.h>
 #include <string.h>
 
-#include <gnome-xml/parser.h>
-#include <gnome-xml/tree.h>
-
 #include "ency.h"
 #include "encyfuncs.h"
 #include "data.h"
 #include "scan.h"
+#include "rcfile.h"
 
 static char *strdup_if_valid (char *t)
 {
@@ -113,70 +111,6 @@ void st_data_clear (void)
 	}
 }
 
-static xmlDocPtr open_xml_file (char *filename)
-{
-	xmlDocPtr xmlroot;
-	char *temp=NULL;
-	char *home=NULL;
-	char *fn=NULL;
-	int i;
-
-	char *home_locations[] =
-	{
-		"/.ency/encyfiles.xml",
-		"/.encyfiles.xml",
-		NULL
-	};
-
-	char *locations[] = 
-	{
-		"encyfiles.xml",
-		"/etc/encyfiles.xml",
-		"/usr/local/etc/encyfiles.xml",
-		"/usr/share/ency/encyfiles.xml",
-		"/usr/local/share/ency/encyfiles.xml",
-		NULL
-	};
-
-	if (filename)
-	{
-		if ((xmlroot = xmlParseFile (filename)))
-			return xmlroot;
-		else
-			return 0;
-	}
-
-	if ((fn = getenv ("ENCY_XML_FILENAME")))
-	{
-		if ((xmlroot = xmlParseFile (fn)))
-			return xmlroot;
-	}
-
-	home = getenv ("HOME");
-	if (home)
-		for (i=0;home_locations[i];i++)
-		{
-			fn = home_locations[i];
-			temp = malloc (strlen (fn) + strlen (home) + 1);
-			strcpy (temp, home);
-			strcat (temp, fn);
-			if ((xmlroot = xmlParseFile (temp)))
-			{
-				free (temp);
-				return xmlroot;
-			}
-			free (temp);
-		}
-
-	for (i=0;locations[i];i++)
-	{
-		if ((xmlroot = xmlParseFile (locations[i])))
-			return xmlroot;
-	}
-
-	return NULL;
-}
-
 struct st_part *new_part()
 {
 	struct st_part *part=NULL;
@@ -198,82 +132,7 @@ struct st_part *new_part()
 	return part;
 }
 
-static struct st_part *new_part_from_xmlnode (xmlNode *node)
-{
-	struct st_part *part=NULL;
-	char *start=NULL, *start_id=NULL, *bcount=NULL;
-	char *section=NULL, *count=NULL;
-
-	start = xmlGetProp (node, "start");
-
-	if (!start)
-		return NULL;
-
-	part = new_part ();
-	if (!part)
-	{
-		free (start);
-		return NULL;
-	}
-
-	if (!strcmp (node->name, "list"))
-		part->type = ST_BLOCK_ATTRIB;
-	else if (!strcmp (node->name, "ftlist"))
-		part->type = ST_BLOCK_FTLIST;
-	else if (!strcmp (node->name, "ptable"))
-		part->type = ST_SECT_PTBL;
-	else if (!strcmp (node->name, "pcaption"))
-		part->type = ST_SECT_PCPT;
-	else if (!strcmp (node->name, "vtable"))
-		part->type = ST_SECT_VTBL;
-	else if (!strcmp (node->name, "vcaption"))
-		part->type = ST_SECT_VCPT;
-	else if (!strcmp (node->name, "videolist"))
-		part->type = ST_SECT_VLST;
-
-	count = xmlGetProp (node, "count");
-	start_id = xmlGetProp (node, "start_id");
-	bcount = xmlGetProp (node, "bcount");
-	section = xmlGetProp (node, "sect");
-
-	if (strncmp (start, "0x", 2) == 0)
-		sscanf (start, "%lx", &(part->start));
-	else
-		sscanf (start, "%ld", &(part->start));
-	if (count)
-		sscanf (count, "%ld", &(part->count));
-	else
-		part->count = 1;
-
-	if (start_id)
-		sscanf (start_id, "%d", &(part->start_id));
-	else
-		part->start_id = 0;
-
-	if (bcount)
-		sscanf (bcount, "%d", &(part->bcount));
-	else
-		part->bcount = 1;
-
-	if (section)
-		sscanf (section, "%d", &(part->section));
-
-	part->dir = xmlGetProp (node, "dir");
-
-	free (start);
-	if (count)
-		free (count);
-	if (start_id)
-		free (start_id);
-	if (bcount)
-		free (bcount);
-	if (section)
-		free (section);
-
-	return part;
-}
-
-static struct st_data_exception *new_exception (char *type, char *from, char *to)
+struct st_data_exception *new_exception (char *type, char *from, char *to)
 {
 	struct st_data_exception *ex;
 
@@ -285,136 +144,6 @@ static struct st_data_exception *new_exception (char *type, char *from, char *to
 	ex->next = NULL;
 
 	return ex;
-}
-
-static struct st_data_exception *new_exception_from_xmlnode (xmlNode *node)
-{
-	char *type, *from, *to;
-	struct st_data_exception *ex;
-
-	type = xmlGetProp (node, "type");
-	from = xmlGetProp (node, "from");
-	to = xmlGetProp (node, "to");
-
-	ex = new_exception (type, from, to);
-
-	free (type);
-	free (from);
-	free (to);
-
-	return ex;
-}
-
-int load_xmlfile_info (char *filename)
-{
-	xmlDocPtr xmlroot;
-	xmlNode *fnode=NULL;
-	xmlNode *dnode=NULL;
-	xmlNode *snode=NULL;
-	struct st_data_filenode *new_node=NULL;
-	struct st_part *root_parts=NULL, *curr_parts=NULL, *last_parts=NULL;
-	struct st_data_exception *root_ex=NULL, *curr_ex=NULL, *last_ex=NULL;
-	int section=0;
-
-	xmlroot = open_xml_file (filename);
-
-	if (xmlroot)
-	{
-		fnode = xmlroot->root;
-
-		if (!fnode)
-			return 0;
-
-		fnode = fnode->childs;
-
-		if (!fnode)
-			return 0;
-
-		while (fnode)
-		{
-			dnode = fnode->childs;
-			new_node = st_data_new_filenode ();
-
-			if (!new_node)
-				return 0;
-
-			new_node->append_char = 0;
-			while (dnode)
-			{
-				if (!strcmp (dnode->name, "name"))
-					new_node->name = xmlNodeGetContent (dnode);
-				else if (!strcmp (dnode->name, "mainfile"))
-					new_node->mainfile = xmlNodeGetContent (dnode);
-				else if (!strcmp (dnode->name, "datadir"))
-					new_node->datadir = xmlNodeGetContent (dnode);
-				else if (!strcmp (dnode->name, "photodir"))
-					new_node->photodir = xmlNodeGetContent (dnode);
-				else if (!strcmp (dnode->name, "videodir"))
-					new_node->videodir = xmlNodeGetContent (dnode);
-				else if (!strcmp (dnode->name, "videolist") || !strcmp (dnode->name, "ptable") || !strcmp (dnode->name, "pcaption") || !strcmp (dnode->name, "vtable") || !strcmp (dnode->name, "vcaption"))
-				{
-					curr_parts = new_part_from_xmlnode (dnode);
-					if (last_parts)
-						last_parts->next = curr_parts;
-					else
-						last_parts = root_parts = curr_parts;
-					last_parts = curr_parts;
-				}
-				else if (!strcmp (dnode->name, "fingerprint"))
-					new_node->fingerprint = xmlNodeGetContent (dnode);
-				else if (!strcmp (dnode->name, "append_char"))
-					new_node->append_char = 1;
-				else if (!strcmp (dnode->name, "section"))
-				{
-					snode = dnode->childs;
-					while (snode)
-					{
-						curr_parts = new_part_from_xmlnode (snode);
-						if (!curr_parts)
-							break;
-						if (last_parts)
-							last_parts->next = curr_parts;
-						else
-							root_parts = curr_parts;
-						last_parts = curr_parts;
-						curr_parts->section = section;
-						snode = snode->next;
-					}
-					section++;
-				}
-				else if (!strcmp (dnode->name, "needscan"))
-				{
-					curr_parts = new_part ();
-					curr_parts->type = ST_BLOCK_SCAN;
-					if (last_parts)
-						last_parts->next = curr_parts;
-					else
-						root_parts = curr_parts;
-					last_parts = curr_parts;
-				}
-				else if (!strcmp (dnode->name, "exception"))
-				{
-					curr_ex = new_exception_from_xmlnode (dnode);
-					if (last_ex)
-						last_ex->next = curr_ex;
-					else
-						root_ex = curr_ex;
-					last_ex = curr_ex;
-				}
-				dnode = dnode->next;
-			}
-			new_node->parts = root_parts;
-			new_node->exceptions = root_ex;
-			st_data_append_filenode (new_node);
-			root_parts = last_parts = curr_parts = NULL;
-			root_ex = last_ex = curr_ex = NULL;
-			fnode = fnode->next;
-		}
-		xmlFreeDoc (xmlroot);
-		return 1;
-	}	
-
-	return 0;
 }
 
 int count_files (void)
@@ -468,6 +197,11 @@ int st_fingerprint (void)
 		{
 			filenode = get_filenode(i);
 			match_fp = filenode->fingerprint;
+			if (!match_fp)
+			{
+				fprintf (stderr, "No fingerprint for file #%d ('%s')\n", i, filenode->name ? filenode->name : "Unnamed");
+				continue;
+			}
 			if (!strcmp(match_fp, text_fp))
 				return (i);
 		}

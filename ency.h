@@ -133,8 +133,8 @@ int st_set_filename (char *);
 char *st_get_filename (void);
 int st_count_filetypes(void);
 
-/* load the xml file containing file info */
-int st_load_xml_file (char *);
+/* load/unload the rc file containing file info */
+int st_load_rc_file (char *);
 void st_unload_data(void);
 
 /* For checking a directory to see if a data file is there */

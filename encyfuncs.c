@@ -86,8 +86,8 @@ static void st_clear_entry_list (void);
 /* init/de-init stuff */
 int st_init (void)
 {
-	if (count_files() == 0) /* If there isnt an XML file already loaded... */
-		load_xmlfile_info(NULL);
+	if (count_files() == 0) /* If there isnt an RC file already loaded... */
+		load_rc_file_info(NULL);
 	st_file_type = st_fingerprint ();
 	return (st_file_type >= 254 ? 0 : 1);
 }
@@ -385,10 +385,10 @@ char *st_get_filename (void)
 	return (ency_filename);
 }
 
-int st_load_xml_file (char *filename)
+int st_load_rc_file (char *filename)
 {
 	st_data_clear ();
-	return (load_xmlfile_info (filename));
+	return (load_rc_file_info (filename));
 }
 
 char *st_fileinfo_get_name (int file_type)
