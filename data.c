@@ -53,6 +53,26 @@ static struct st_data_filenode *get_filenode (int file_type)
 	return tmp;
 }
 
+struct st_dfile *get_dfile (int file_type, int dfile)
+{
+	struct st_data_filenode *node;
+	struct st_dfile *df;
+
+	node = get_filenode (file_type);
+
+	if (!node)
+		return NULL;
+
+	df = node->dfiles;
+	while (df)
+	{
+		if (df->type == dfile)
+			break;
+		df = df->next;
+	}
+	return df;
+}
+
 /* Frees a block struct and things it points to. */
 void free_block (struct st_block *block)
 {
@@ -92,6 +112,8 @@ void free_data_filenode (struct st_data_filenode *file)
 			block = block->next;
 			free_block (tmp_block);
 		}
+		if (df->filename)
+			free (df->filename);
 		tmp_df = df;
 		df = df->next;
 		free (tmp_df);
@@ -174,6 +196,7 @@ struct st_dfile *new_dfile()
 	if (df)
 	{
 		df->type = 0;
+		df->filename = NULL;
 		df->next = NULL;
 	}
 
@@ -242,7 +265,7 @@ int st_fingerprint (void)
 	unsigned char text_fp[16 * 3 + 1]="";
 	char *match_fp=NULL;
 
-	inp = (FILE *) curr_open (0);
+	inp = (FILE *) curr_open (NULL, 0);
 
 	if (inp)
 	{
@@ -305,12 +328,16 @@ const char *st_fileinfo_get_data (int file, st_filename_type type)
 /* ST_BLOCK_SCAN is a pseudo-block entry. It triggers off
  * a call to scan_file() so that less info needs to be
  * kept in the rcfile. */
-static void data_scan (struct st_block *block)
+static void data_scan (char *filename, struct st_block *block)
 {
 	FILE *inp;
 	struct st_block *tmp=NULL;
 
-	inp = (FILE *) curr_open (0);
+	inp = (FILE *) curr_open (filename, 0);
+
+	if (!inp)
+		return;
+
 	tmp = scan_file (inp);
 	fclose (inp);
 	/* NB. we don't do 
@@ -360,7 +387,7 @@ struct st_block *get_videolist_block (int file, int number)
 	vl = get_vidlist (file, number);
 
 	if (vl && vl->name)
-		return get_block_by_name (file, ST_DFILE_DATA, vl->name);
+		return get_block_by_name (file, ST_DFILE_DATA, vl->name, 0);
 
 	return NULL;
 }
@@ -382,7 +409,6 @@ char *get_videolistblock_dir(int file, int number)
  * is '1', etc.) */
 struct st_block *get_block (int file, int dfiletype, int type, int section, int number, int options)
 {
-	struct st_data_filenode *file_node=NULL;
 	struct st_dfile *df=NULL;
 	struct st_block *block=NULL;
 	int i=0;
@@ -391,18 +417,7 @@ struct st_block *get_block (int file, int dfiletype, int type, int section, int 
 	if (type == ST_SECT_VLST)
 		return get_videolist_block (file, number);
 
-	file_node = get_filenode (file);
-
-	if (!file_node)
-		return NULL;
-
-	df = file_node->dfiles;
-	while (df)
-	{
-		if (df->type == dfiletype)
-			break;
-		df = df->next;
-	}
+	df = get_dfile (file, dfiletype);
 
 	if (!df)
 		return NULL;
@@ -419,7 +434,7 @@ struct st_block *get_block (int file, int dfiletype, int type, int section, int 
 		}
 
 		if (block->type == ST_BLOCK_SCAN)
-			data_scan (block);
+			data_scan (df->filename, block);
 
 		if (block)
 			block = block->next;
@@ -433,22 +448,10 @@ struct st_block *get_block (int file, int dfiletype, int type, int section, int 
  * entry is in. */
 struct st_block *get_block_by_id (int file, int dfiletype, int block_id)
 {
-	struct st_data_filenode *file_node=NULL;
 	struct st_dfile *df=NULL;
 	struct st_block *block=NULL;
 
-	file_node = get_filenode (file);
-
-	if (!file_node)
-		return NULL;
-
-	df = file_node->dfiles;
-	while (df)
-	{
-		if (df->type == dfiletype)
-			break;
-		df = df->next;
-	}
+	df = get_dfile (file, dfiletype);
 
 	if (!df)
 		return NULL;
@@ -461,7 +464,7 @@ struct st_block *get_block_by_id (int file, int dfiletype, int block_id)
 			return block;
 
 		if (block->type == ST_BLOCK_SCAN)
-			data_scan (block);
+			data_scan (df->filename, block);
 
 		block = block->next;
 	}
@@ -472,27 +475,15 @@ struct st_block *get_block_by_id (int file, int dfiletype, int block_id)
 /* Similar to get_block(), but does it by block name.
  * (eg. "LU_A_ENCY"). This is mainly for getting the
  * block a thumbnail is in. */
-struct st_block *get_block_by_name (int file, int dfiletype, char *name)
+struct st_block *get_block_by_name (int file, int dfiletype, char *name, int options)
 {
-        struct st_data_filenode *file_node=NULL;
 	struct st_dfile *df=NULL;
         struct st_block *block=NULL;
 
 	if (!name)
 		return NULL;
 
-        file_node = get_filenode (file);
-
-        if (!file_node)
-                return NULL;
-
-	df = file_node->dfiles;
-	while (df)
-	{
-		if (df->type == dfiletype)
-			break;
-		df = df->next;
-	}
+	df = get_dfile (file, dfiletype);
 
 	if (!df)
 		return NULL;
@@ -502,11 +493,16 @@ struct st_block *get_block_by_name (int file, int dfiletype, char *name)
         while (block)
         {
                 if (block->name)
-			if (!strcasecmp (block->name, name))
-	                        return block;
+			if (options & ST_DATA_OPT_PREFIX)
+			{
+				if (!strncasecmp (block->name, name, strlen (name)))
+					return block;
+			} else
+				if (!strcasecmp (block->name, name))
+					return block;
 
 		if (block->type == ST_BLOCK_SCAN)
-			data_scan (block);
+			data_scan (df->filename, block);
 
                 block = block->next;
         }

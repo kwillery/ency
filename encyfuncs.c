@@ -439,11 +439,28 @@ char *st_fileinfo_get_name (int file_type)
  * seek to 'start'. if ency_filename is NULL, it will
  * try to find an encyclopedia to load.
  * It returns 0 for failure, the file pointer otherwise */
-FILE *curr_open (long start)
+FILE *curr_open (char *filename, long start)
 {
 	FILE *inp;
 	int i = 0;
 	char *temp_fn = NULL;
+
+	if (filename)
+	{
+		inp = fopen (filename, "rb");
+
+		i = 0;
+		if (inp)
+		{
+			i = fseek (inp, start, SEEK_SET);
+			if (i)
+			{
+				fclose (inp);
+				inp = 0;
+			}
+		}
+		return inp;
+	}
 
 	if (ency_filename == NULL)
 	{
@@ -481,13 +498,29 @@ FILE *curr_open (long start)
 	return (inp);
 }
 
-/* Open the file referenced by the block */
-FILE *open_block(struct st_block *block)
+char *get_filename (int file, int dfile)
 {
+	struct st_dfile *df;
+
+	df = get_dfile (file, dfile);
+
+	if (!df)
+		return NULL;
+
+	return df->filename;
+}
+
+/* Open the file referenced by the block */
+FILE *open_block(int dfile, struct st_block *block)
+{
+	char *filename=NULL;
+
 	if (!block)
 		return NULL;
 
-	return curr_open (block->start);
+	filename = get_filename (st_file_type, dfile);
+
+	return curr_open (filename, block->start);
 }
 
 /* Look for a given encyclopedia version in a directory.
@@ -742,7 +775,7 @@ static struct st_table *st_get_table ()
 
 	while ((block = get_block (st_file_type, ST_DFILE_DATA, ST_SECT_PTBL, 0, count, 0)))
 	{
-		if (!(inp = open_block (block)))
+		if (!(inp = open_block (ST_DFILE_DATA, block)))
 			return (NULL);
 
 		fseek (inp, 12, SEEK_CUR);
@@ -831,7 +864,7 @@ static struct st_caption *st_get_captions (int section)
 
 	while ((block = get_block (st_file_type, ST_DFILE_DATA, section, 0, count, 0)))
 	{
-		if (!(inp = open_block (block)))
+		if (!(inp = open_block (ST_DFILE_DATA, block)))
 			return (NULL);
 
 		fseek (inp, 12, SEEK_CUR);
@@ -952,7 +985,7 @@ static struct st_table *st_get_video_table (int section)
 
 	while ((block = get_block (st_file_type, ST_DFILE_DATA, ST_BLOCK_ATTRIB, section, count, 0)))
 	{
-		if (!(inp = open_block (block)))
+		if (!(inp = open_block (ST_DFILE_DATA, block)))
 			return (root_tbl);
 
 		fseek (inp, 12, SEEK_CUR);
@@ -1451,7 +1484,7 @@ struct ency_titles *st_read_title_at (long filepos, int options)
 	FILE *inp;
 	struct ency_titles *ret=NULL;
 
-	inp = curr_open (filepos);
+	inp = curr_open (NULL, filepos);
 	if (!inp)
 	{
 		return (st_title_error (1));
@@ -1524,7 +1557,7 @@ static void load_block_cache (int block_id)
 	if (!block) /* just in case... */
 		return;
 
-	if (!(inp = open_block (block)))
+	if (!(inp = open_block (ST_DFILE_DATA, block)))
 		return;
 
 	fseek (inp, 12, SEEK_CUR);
@@ -1601,7 +1634,7 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 	{
 		if (options & ST_OPT_RETURN_BODY)
 		{
-			inp = curr_open (filepos);
+			inp = curr_open (NULL, filepos);
 			if (!inp)
 				DBG ((stderr, "Oh damn! curr_open() failed for %ld (entry %d:%d)\n(%s)\n", filepos, block_id, id, strerror (errno)));
 			if (!inp)
@@ -1800,7 +1833,7 @@ static void load_ft_list (int section)
 
 	while ((block = get_block (st_file_type, ST_DFILE_DATA, ST_BLOCK_FTLIST, section, count++, 0)))
 	{
-		if (!(inp = open_block (block)))
+		if (!(inp = open_block (ST_DFILE_DATA, block)))
 			return;
 
 		fseek (inp, 12, SEEK_CUR);
@@ -1864,7 +1897,7 @@ static struct st_wl *get_ft_word_at (long filepos)
 	struct st_wl *wl;
 	FILE *inp;
 
-	inp = curr_open (filepos);
+	inp = curr_open (NULL, filepos);
 	if (!inp)
 		return NULL;
 
@@ -2267,7 +2300,7 @@ static int in_simple_list (long filepos, int entrylen, char *match)
 	if (!entry)
 		return 0;
 
-	inp = curr_open (filepos);
+	inp = curr_open (NULL, filepos);
 	fseek (inp, 12, SEEK_CUR);
 
 	while (getc (inp) != ']')
@@ -2491,14 +2524,14 @@ int st_get_picture(char *name, char *file, int dfile_type, long width, long heig
 	if (!name)
 		return 1;
 
-	block = get_block_by_name (st_file_type, dfile_type, name);
+	block = get_block_by_name (st_file_type, dfile_type, name, ST_DATA_OPT_PREFIX);
 
 	if (!block)
-		return 1;
+		return 2;
 
 	DBG ((stderr, "Got block '%s' @ %ld, %ld bytes long.\n", name, block->start, block->size));
 
-	inp = open_block (block);
+	inp = open_block (dfile_type, block);
 	ret = create_ppm_from_image (file, inp, width, height, block->size);
 
 	DBG ((stderr, "Ret: %d\n", ret));
@@ -2510,12 +2543,13 @@ int st_get_picture(char *name, char *file, int dfile_type, long width, long heig
 int st_get_thumbnail(char *name, char *file)
 {
 	char newname[7+6 + 100];
+	int ret;
 
 	if (!name || !file)
 		return 1;
 
 	strcpy (newname, name);
-	strcat (newname, "T.pic");
+	strcat (newname, "T");
 
 	return st_get_picture (newname, file, ST_DFILE_PICON, 60, 40);
 }

@@ -157,7 +157,7 @@ struct st_photo {
 </verb>
 This struct is returned in <tt/<ref id="st_media" name="st_media">/ structs (see <tt/<ref id="st_get_media" name="st_get_media">/)
 <tt/file/ is the first 7 characters of the filename of the photo (or now, video, sound, or swf) is being referred to.
-<tt/file/ should be processed by <tt/<ref id="st_format_filename" name="st_format_filename">/ to get a usable filename.
+<tt/file/ should be processed by <tt/<ref id="st_format_filename" name="st_format_filename">/ to get a usable filename. For pictures and swfs, it is often possible to call <tt/<ref id="st_get_thumbnail" name="st_get_thumbnail"/ to get a 60x40 thumbnail picture.
 
 
 <sect1>st_media<label id="st_media">
@@ -343,6 +343,12 @@ This function converts a 6-letter filename to a full filename. <tt/fnbasen/ is t
 <tt/base_path/ is where the media is located (eg. "/cdrom").
 <tt/media/ is from the <tt/<ref id="media_type" name="media_type">/ enum, and should be set depending on what part of an <tt/<ref id="st_media" name="st_media">/ is being passed.
 
+<sect1>st_get_thumbnail<label id="st_format_filename">
+<p>
+<verb>
+int st_get_thumbnail(char *name, char *file);
+</verb>
+This function takes the 6-character 'fnbasen' part of a filename for a picture or swf and a filename, and writes a decompressed ASCII PPM file. <tt/name/ is the fnbasen (e.g. 'KirksT1'), <tt/file/ is where to write it. If succesful, <tt/st_get_thumbnail()/ returns 0. If an error occurs (the thumbnail doesn't exist or libency can't write to the file), a non-0 int is returned.
 
 <sect1>st_free_entry*<label id="st_free_entry*">
 <p>

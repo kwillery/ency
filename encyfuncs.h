@@ -3,6 +3,6 @@
 
 #include "ency.h"
 
-FILE *curr_open (long start);
+FILE *curr_open (char *filename, long start);
 
 #endif

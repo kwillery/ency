@@ -335,11 +335,11 @@ int create_ppm_from_image (char *file, FILE *inp, long width, long height, long 
 	int i;
 
 	if (!file || !inp || width<=0 || height <=0)
-		return 1;
+		return 3;
 
 	out = fopen (file, "w b");
 	if (!out)
-		return 1;
+		return 3;
 
 	/* Decompressed size */
 	size = width*height;

@@ -377,6 +377,40 @@ void add_videolist (struct st_data_filenode *node, struct rcfile_args *args)
 	node->videolist = vl;
 }
 
+/* Add a data file to an encyclopedia */
+void add_file (struct st_data_filenode *node, struct rcfile_args *args)
+{
+	struct st_dfile *df=NULL;
+	int dfiletype=ST_DFILE_UNKNOWN;
+	char *type=NULL, *filename=NULL;
+
+	type = get_rc_arg (args, "type");
+
+	if (type == NULL)
+		dfiletype = ST_DFILE_UNKNOWN;
+	else if (!strcasecmp (type, "picon"))
+		dfiletype = ST_DFILE_PICON;
+
+	filename = get_rc_arg (args, "filename");
+
+	df = node->dfiles;
+	if (!df)
+	{
+		df = node->dfiles = new_dfile();
+	} else
+	{
+		while (df->next)
+			df = df->next;
+		df->next = new_dfile();
+		df = df->next;
+	}
+
+	df->type = dfiletype;
+	df->filename = strdup(filename);
+	df->blocks = new_block();
+	df->blocks->type = ST_BLOCK_SCAN;
+}
+
 /* Frees an rc argument list. */
 static void free_rc_args (struct rcfile_args *arg)
 {
@@ -434,9 +468,8 @@ static struct st_data_filenode *make_filenode_from_rc_file (FILE *inp)
 			new_node->name = strdup (get_rc_arg (cmd->args, NULL));
 		if (!strcasecmp (cmd->name, "mainfile"))
 			new_node->mainfile = strdup (get_rc_arg (cmd->args, NULL));
-		if (!strcasecmp (cmd->name, "piconfile"))
-		{
-		}
+		if (!strcasecmp (cmd->name, "dfile"))
+			add_file (new_node, cmd->args);
 		if (!strcasecmp (cmd->name, "datadir"))
 			new_node->datadir = strdup (get_rc_arg (cmd->args, NULL));
 		if (!strcasecmp (cmd->name, "photodir"))

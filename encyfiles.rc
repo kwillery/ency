@@ -1,5 +1,6 @@
 file
  name: "Encyclopedia 3.0"
+ dfile: type=picon, filename=Picons.cxt
  mainfile: data99.cxt
  datadir: ENCYprogram/Pro
  photodir: Media99
