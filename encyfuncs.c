@@ -43,7 +43,7 @@ static const long int st_table_starts_at[] =
 {0x410c4, 0, 0x388f2e, 0, 0x3CD470, 0, 0x2BBA98, 0x2BCD9B, 0, 0x322996, 0};
 
 static const long int st_caption_starts_at[] =
-{0x4e5064, 0, 0x615552, 0, 0x646D0A, 0, 0x2C5F2C, 0, 1, 0};
+{0x4e5064, 0, 0x615552, 0, 0x646D0A, 0, 0x2C5F2C, 0, 0x37CB82, 0};
 
 static const long int ency_starts_at[] =
 {0x7bc28, 0x576574, 0, 0x3A9ED8, 0x56BB62, 0, 0x3FC3BE, 0x58B51E, 0x72E89C, 0, 0x1, 0, 0x1, 0};
@@ -69,7 +69,7 @@ static const long int st_table_lastone[] =
 {26, 0, 26, 0, 26, 0, 2, 22, 0, 15, 0};
 
 static const long int st_caption_lastone[] =
-{5, 0, 4, 0, 4, 0, 5, 0, 1, 0};
+{5, 0, 4, 0, 4, 0, 5, 0, 5, 0};
 
 static long int curr_starts_at, curr_lastone, curr;
 
@@ -129,7 +129,7 @@ char *st_get_filename (void)
 
 char *st_fileinfo_get_name (int file_type)
 {
-return (st_files[file_type].name);
+  return (st_files[file_type].name);
 }
 
 int st_load_media (void)
@@ -576,8 +576,7 @@ static char *st_return_title (void)
   return (title);
 }
 
-char *
- st_nice_error (int error_no)
+char *st_nice_error (int error_no)
 {
   switch (error_no) {
   case 1:
@@ -592,8 +591,7 @@ char *
   }
 }
 
-static struct ency_titles *
- st_title_error (int error_no)
+static struct ency_titles *st_title_error (int error_no)
 {
 
   struct ency_titles *return_error = NULL;
@@ -612,8 +610,7 @@ static struct ency_titles *
 }
 
 
-static struct ency_titles *
- curr_find_list (char *search_string, int exact)
+static struct ency_titles *curr_find_list (char *search_string, int exact)
 {
   long this_one_starts_at = 0;
   int found_any_yet = 0;
@@ -723,8 +720,7 @@ static struct ency_titles *
     return (NULL);
 }
 
-struct ency_titles *
- ency_find_list (char *title, int exact)
+struct ency_titles *ency_find_list (char *title, int exact)
 {
   struct ency_titles *root = NULL, *current = NULL, *temp = NULL;
   int i, first_time = 1;
@@ -762,8 +758,7 @@ struct ency_titles *
   return (root);
 }
 
-struct ency_titles *
- epis_find_list (char *title, int exact)
+struct ency_titles *epis_find_list (char *title, int exact)
 {
   struct ency_titles *root = NULL, *current = NULL, *temp = NULL;
   int i, first_time = 1;
@@ -801,8 +796,7 @@ struct ency_titles *
   return (root);
 }
 
-struct ency_titles *
- chro_find_list (char *title, int exact)
+struct ency_titles *chro_find_list (char *title, int exact)
 {
   struct ency_titles *root = NULL, *current = NULL, *temp = NULL;
   int i, first_time = 1;
@@ -840,8 +834,7 @@ struct ency_titles *
   return (root);
 }
 
-struct st_table *
- st_get_table (void)
+struct st_table *st_get_table (void)
 {
   int i = 0, first_time;
   struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
@@ -908,6 +901,7 @@ struct st_table *
 	      }
 	    }
 	    temp_text[text_size] = 0;
+
 	    curr_tbl->title = temp_text;
 	    if (last_tbl)
 	      last_tbl->next = curr_tbl;
@@ -927,8 +921,7 @@ struct st_table *
   return (root_tbl);
 }
 
-struct st_caption *
- st_get_captions (void)
+struct st_caption *st_get_captions (void)
 {
   int i = 0, first_time;
   struct st_caption *root_cpt = NULL, *curr_cpt = NULL, *last_cpt = NULL;
@@ -1019,8 +1012,7 @@ struct st_caption *
 }
 
 
-struct ency_titles *
- get_title_at (long filepos)
+struct ency_titles *get_title_at (long filepos)
 {
   int return_body_was;
   char c;
@@ -1083,46 +1075,58 @@ static struct st_photo st_parse_captions (char *fnbasen)
   return (photo);
 }
 
-struct st_media *
- st_get_media (char *search_string)
+struct st_media *st_get_media (char *search_string)
 {
   int i = 0;
+  int media_found = 0;
   struct st_media *media = NULL;
   char *temp_fnbase = NULL;
   char *title_with_dot = NULL;
   struct st_table *root_tbl = NULL;
   struct st_caption *root_cpt = NULL;
 
-  root_tbl = st_tbls;
-  root_cpt = st_cpts;
-  temp_fnbase = malloc (9);
+  if (st_loaded_media ())
+  {
 
-  title_with_dot = malloc (strlen (search_string) + 2);
-  snprintf (title_with_dot, strlen (search_string) + 2, "%s.", search_string);
+    root_tbl = st_tbls;
+    root_cpt = st_cpts;
+    temp_fnbase = malloc (9);
+
+    title_with_dot = malloc (strlen (search_string) + 2);
+    snprintf (title_with_dot, strlen (search_string) + 2, "%s.", search_string);
 
 
-  while (st_tbls) {
-    if ((!strcmp (st_tbls->title, search_string)) || (!strcmp (st_tbls->title, title_with_dot))) {
-      for (i = 0; i < 5; i++) {
-	if (!i)
-	  media = malloc (sizeof (struct st_media));
-	snprintf (temp_fnbase, 9, "%s%d", st_tbls->fnbase, i + 1);
-	media->photos[i] = st_parse_captions (temp_fnbase);
+    while (st_tbls) {
+      if ((!strcmp (st_tbls->title, search_string)) || (!strcmp (st_tbls->title, title_with_dot))) {
+	for (i = 0; i < 5; i++) {
+	  if (!media)
+	    media = malloc (sizeof (struct st_media));
+	  snprintf (temp_fnbase, 9, "%s%d", st_tbls->fnbase, i + 1);
+	  media->photos[i] = st_parse_captions (temp_fnbase);
+	  if (strlen(media->photos[i].file)) media_found = 1;
+	}
+	goto end_media_search;
       }
+      st_tbls = st_tbls->next;
     }
-    st_tbls = st_tbls->next;
+  
+  end_media_search:
+
+    if (!media_found)
+    {
+      free (media);
+      media = NULL;
+    }
+
+    st_tbls = root_tbl;
+    st_cpts = root_cpt;
+    free (temp_fnbase);
+    free (title_with_dot);
   }
-
-  st_tbls = root_tbl;
-  st_cpts = root_cpt;
-
-  free (temp_fnbase);
-  free (title_with_dot);
   return (media);
 }
 
-char *
- st_format_filename (char *fnbasen, char *base_path, int media)
+char *st_format_filename (char *fnbasen, char *base_path, int media)
 {
 /* media: 0 == pic, 1 == vid */
   char *filename = NULL;
