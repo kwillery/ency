@@ -101,7 +101,14 @@ int count_files ()
 		return 1;
 
 	node = find_xml_node (xmlroot->root, "files");
-	node = node->childs;
+
+	if (!node)
+	{
+		fprintf (stderr, "No <files> section in .xml file!!!\n");
+		exit(1);
+	} else
+		node = node->childs;
+
 	while (node)
 	{
 		find_xml_node (node, "file");
@@ -122,7 +129,14 @@ static xmlNode *get_file_info (int number)
 		load_file_info (NULL);
 	
 	node = find_xml_node (xmlroot->root, "files");
-	node = node->childs;
+
+	if (!node)
+	{
+		fprintf (stderr, "No <files> section in .xml file!!!\n");
+		exit(1);
+	} else
+		node = node->childs;
+
 	if (!node)
 		return NULL;
 
