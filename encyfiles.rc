@@ -1,7 +1,7 @@
 file
  name: "Encyclopedia 3.0"
- dfile: type=picon, filename=Picons.cxt
  mainfile: data99.cxt
+ dfile: type=picon, filename=Picons.cxt
  datadir: ENCYprogram/Pro
  photodir: Media99
  videodir: Video98
@@ -14,6 +14,7 @@ endfile
 file
  name: Encyclopedia
  mainfile: Data.cxt
+ dfile: type=picon, filename=Picons.cxt
  datadir: Ency98
  photodir: media98
  videodir: video98
@@ -24,6 +25,7 @@ endfile
 file
  name: Omnipedia
  mainfile: omni1.dxr
+ dfile: type=picon, filename=omni1.dxr
  datadir: ""
  photodir: media
  videodir: media
@@ -34,6 +36,7 @@ endfile
 file
  name: "Omnipedia (updated)"
  mainfile: omni_v2.dxr
+ dfile: type=picon, filename=omni_v2.dxr
  datadir: startrek
  photodir: media
  videodir: media
@@ -44,6 +47,7 @@ endfile
 file
  name: "TNG Episode guide"
  mainfile: eg_tng.dxr
+ dfile: type=picon, filename=eg_tng.dxr
  datadir: source
  photodir: media
  videodir: media
@@ -54,6 +58,7 @@ endfile
 file
  name: "DS9 Episode guide"
  mainfile: eg_ds9.dxr
+ dfile: type=picon, filename=eg_ds9.dxr
  datadir: ds9
  photodir: media
  videodir: media
@@ -61,7 +66,3 @@ file
  fingerprint: 52;49;46;58;0;4c;ae;c4;4d;56;39;33;69;6d;61;70;
  needscan
 endfile
-
-
-
-
