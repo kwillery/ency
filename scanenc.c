@@ -52,6 +52,13 @@ struct part
 	struct part *next;
 };
 
+struct casttable
+{
+	char *name;
+	int id;
+	struct casttable *next;
+} *casts=NULL;
+
 struct part *parts=NULL;
 struct part *pcurr=NULL;
 struct part *plast=NULL;
@@ -251,6 +258,11 @@ int identify_section (char *section)
 		free (temp);
 		return 9;
 	}
+	if (strstr (temp, "newpatch"))
+	{
+		free (temp);
+		return 9;
+	}
 
 	free (temp);
 	return 0;
@@ -309,6 +321,7 @@ void process_cast_block (FILE *inp, long size)
 	printf (" (%s)", tmp->name);
 
 	tmp->section = identify_section (tmp->name);
+	printf (" [%d]", tmp->section);
 	tmp->count = 1;
 	tmp->start_id = 0;
 	tmp->next = NULL;
@@ -316,16 +329,62 @@ void process_cast_block (FILE *inp, long size)
 	free (block);
 }
 
+void load_cast_table (FILE *inp, int size)
+{
+	long start;
+	struct casttable *curr=NULL, *last=NULL;
+	char temp[256]="";
+	char *t;
+
+	start = ftell (inp);
+
+	fseek (inp, 12, SEEK_CUR);
+
+	while (getc (inp) != ']')
+	{
+		curr = (struct casttable *) malloc (sizeof (struct casttable));
+		if (!casts)
+			casts = curr;
+		if (last)
+			last->next = curr;
+
+		fscanf (inp, "%d: \"", &(curr->id));
+		t = temp;
+		while ((*t++ = getc (inp)) != '\"')
+			;
+		*--t = 0;
+		curr->name = strdup (temp);
+		curr->next = NULL;
+		last = curr;
+	}
+
+	fseek (inp, start, SEEK_SET);
+}
+
 void process_noncast_block (FILE *inp, long size)
 {
+	struct casttable *tmp_casts=NULL;
 	if (pcurr)
 	{
 		printf ("\tCASt says \"%s\"", pcurr->name);
 		if (!strcmp (pcurr->name, "CastTable500"))
+		{
+			load_cast_table (inp, size);
 			curr_id = 500;
-		else
-			if (curr_id)
-				curr_id++;
+		}
+
+		tmp_casts = casts;
+		curr_id++;
+		if (strcmp (pcurr->name, "blank"))
+			while (tmp_casts)
+			{
+				if (!strcasecmp (tmp_casts->name, pcurr->name))
+				{
+					curr_id = tmp_casts->id;
+					break;
+				}
+				tmp_casts = tmp_casts->next;
+			}
 
 		pcurr->start = ftell (inp) + 12;
 		pcurr->start_id = curr_id;
