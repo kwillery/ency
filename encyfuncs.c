@@ -78,6 +78,7 @@ static struct st_table *entrylist_head=NULL;
 /* for pictures */
 static struct st_table *st_ptbls = NULL;
 static struct st_caption *st_pcpts = NULL;
+static struct st_caption *st_pcpts_quick = NULL;
 
 /* for videos */
 static struct st_table *st_vtbls = NULL;
@@ -2020,8 +2021,18 @@ static struct st_photo st_parse_captions (char *fnbasen)
 {
 	struct st_photo photo;
 	struct st_caption *temp_pcpts = NULL;
+	int used_quick = 0;
 
 	temp_pcpts = st_pcpts;
+
+	/* can we start later in the list? */
+	/* (this assumes asciiabetical order :) */
+	if (st_pcpts_quick)
+		if (strcmp (fnbasen, st_pcpts_quick->fnbasen) >= 0)
+		{
+			temp_pcpts = st_pcpts_quick;
+			used_quick = 1;
+		}
 
 	strcpy (photo.file, "");
 	strcpy (photo.caption, "");
@@ -2031,9 +2042,16 @@ static struct st_photo st_parse_captions (char *fnbasen)
 		{
 			strcpy (photo.file, fnbasen);
 			strcpy (photo.caption, temp_pcpts->caption);
+			break;
 		}
 		temp_pcpts = temp_pcpts->next;
 	}
+
+	st_pcpts_quick = temp_pcpts;
+
+	/* just in case the list isnt asciiabetical */
+	if (!strlen (photo.file) && used_quick)
+		return (st_parse_captions (fnbasen));
 
 	return (photo);
 }
