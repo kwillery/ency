@@ -2660,11 +2660,12 @@ struct ency_titles *st_find_fulltext (char *search_string, int section, int opti
 	while (scores)
 	{
 		if (ctbl)
+		{
 			if (strcasecmp (scores->fnbase, ctbl->fnbase) >= 0)
-			{
-				    ctbl = get_table_entry_by_fnbase (ctbl, scores->fnbase);
-			} else
+				ctbl = get_table_entry_by_fnbase (ctbl, scores->fnbase);
+			else
 				ctbl = NULL;
+		}
 
 		if (!ctbl)
 			ctbl = get_table_entry_by_fnbase (st_ptbls, scores->fnbase);
