@@ -225,6 +225,27 @@ void st_free_fmt_and_advance (struct st_ency_formatting **fmt)
 		}
 }
 
+static struct ency_titles *st_new_entry (void)
+{
+	struct ency_titles *entry=NULL;
+
+	entry = (struct ency_titles *) malloc (sizeof (struct ency_titles));
+
+	entry->name = NULL;
+	entry->title = NULL;
+	entry->text = NULL;
+	entry->fmt = NULL;
+	entry->next = NULL;
+	entry->err = 0;
+	entry->section = 0;
+	entry->block_id = entry->id = 0;
+	entry->filepos = 0;
+	entry->length = 0;
+	entry->score = 0;
+
+	return entry;
+}
+
 void st_free_entry (struct ency_titles *entry)
 {
 	if (entry)
@@ -1201,17 +1222,12 @@ static struct ency_titles *st_title_error (int error_no)
 {
 
 	struct ency_titles *return_error = NULL;
-	return_error = (struct ency_titles *) malloc (sizeof (struct ency_titles));
+	return_error = st_new_entry ();
 
 	if (return_error == NULL)
 	{
 		return (NULL);
 	}
-	return_error->title = NULL;
-	return_error->text = NULL;
-	return_error->fmt = NULL;
-	return_error->next = NULL;
-	return_error->name = NULL;
 	return_error->err = error_no;
 
 	return (return_error);
@@ -1339,7 +1355,7 @@ static struct ency_titles *read_entry (FILE *inp, int options)
 
 	filepos = ftell (inp);
 
-	root_title = (struct ency_titles *) malloc (sizeof (struct ency_titles));
+	root_title = st_new_entry ();
 
 	if (root_title == NULL)
 	{
@@ -1414,7 +1430,7 @@ static void add_to_block_cache (int block_id, int id, long filepos)
 			otmp = tmp;
 			tmp = tmp->next;
 		}
-		new_entry = (struct ency_titles *) malloc (sizeof (struct ency_titles));
+		new_entry = st_new_entry ();
 		new_entry->next = tmp;
 		if (otmp)
 			otmp->next = new_entry;
@@ -1423,15 +1439,11 @@ static void add_to_block_cache (int block_id, int id, long filepos)
 		cache_last = new_entry;
 	}
 	else
-		cache_last = cache = (struct ency_titles *) malloc (sizeof (struct ency_titles));
+		cache_last = cache = st_new_entry ();
 
 	cache_last->filepos = filepos;
 	cache_last->block_id = block_id;
 	cache_last->id = id;
-	cache_last->name = NULL;
-	cache_last->title = NULL;
-	cache_last->fmt = NULL;
-	cache_last->text = NULL;
 }
 
 static void load_block_cache (int block_id)
@@ -1529,7 +1541,7 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 			ret = read_entry (input, options);
 			fclose (input);
 		} else {
-			ret = (struct ency_titles *) malloc (sizeof (struct ency_titles));
+			ret = st_new_entry ();
 			if (!ret)
 				return NULL;
 			ret->filepos = filepos;
