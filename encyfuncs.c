@@ -520,30 +520,38 @@ static struct st_ency_formatting *st_return_fmt (void)
 
 static char *st_return_text (void)
 {
-  int text_size = 0;
-  int bye = 0;
+  long text_starts_at = 0;
+  int text_size = 1;
+  int bye = 0, i;
   char c = 0;
   char old_c = 0;
   char *temp_text = NULL;
 
+  text_starts_at = ftell (inp);
+
   while (!bye) {
-    c = st_cleantext (getc (inp));
-    if (c == 0)
-      bye = 1;
-    if ((old_c == '\n') && (c == 0x7E)) {
-      ungetc (c, inp);
-      bye = 1;
-    }
-    if (!bye) {
-      temp_text = realloc (temp_text, text_size + 1);
-      if (temp_text == NULL) {
-	return (NULL);
+    c=getc(inp);
+    if (c == 0) bye=1;
+    else
+      if ((old_c == 0x0D) && (c == 0x7E)) {
+	c = ungetc (c, inp);
+	text_size--;
+	bye = 1;
       }
-      temp_text[text_size++] = c;
-      old_c = c;
-    }
+      else
+	{
+	  old_c = c;
+	  text_size++;
+	}
   }
-  temp_text[text_size - 1] = 0;
+
+  temp_text = malloc (text_size + 1);
+  fseek (inp, text_starts_at, SEEK_SET);
+  
+  for (i=0;i<text_size;i++)
+    temp_text[i] = st_cleantext(getc(inp));
+  temp_text[i] = 0;
+
   return (temp_text);
 }
 
@@ -553,12 +561,10 @@ static char *st_return_title (void)
   char *title = NULL;
   int title_size = 0;
 
-  title = malloc (70);		/* should be 1, not 70. */
-
-/* malloc & realloc calls keep crashing, no idea why. */
+/* TODO: make this 70 autodetected ala st_return_text */
+  title = malloc (70);
 
   while ((c = st_cleantext (getc (inp))) != '@') {
-/*  should be on!  title = realloc(title,title_size+1); */
     if (title == NULL) {
       printf ("Oh, ^$#%%!\n");
       return (NULL);
@@ -863,14 +869,13 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 
 struct st_table *st_get_table (void)
 {
-  int i = 0, first_time;
+  int i = 0;
   struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
   int c = 0, text_size = 0;
   char *temp_text = NULL;
 
   upto = 0;
 
-  first_time = 1;
   curr = 4;
   for (i = 0; i < st_file_type; i++) {
     while (st_table_starts_at[upto] != 0)
@@ -886,25 +891,26 @@ struct st_table *st_get_table (void)
 	for (i = 0; i < st_table_lastone[upto]; i++) {
 	  while ((c = getc (inp)) != ']') {	/* main loop */
 
-	    temp_text = malloc (1);
-	    text_size = 0;
-
 	    curr_tbl = (struct st_table *) malloc (sizeof (struct st_table));
 
 	    if (curr_tbl == NULL) {
 	      return (NULL);
 	    }
-	    if (first_time)
+
+	    if (!root_tbl)
 	      root_tbl = curr_tbl;
-	    first_time = 0;
+
 	    do {
 	      while ((c = getc (inp)) != '\"');
 	      c = getc (inp);
 	    }
 	    while (!c);
 	    ungetc (c, inp);
+
+	    temp_text = malloc (8);
+	    text_size = 0;
+
 	    while ((c = getc (inp)) != '\"') {
-	      temp_text = realloc (temp_text, text_size + 2);
 	      if (temp_text == NULL) {
 		return (NULL);
 	      }
@@ -912,7 +918,9 @@ struct st_table *st_get_table (void)
 	    }
 	    temp_text[text_size] = 0;
 	    curr_tbl->fnbase = temp_text;
-	    temp_text = malloc (1);
+
+/* TODO: make this 70 autodetected ala st_return text */
+	    temp_text = malloc (70);
 	    text_size = 0;
 
 	    while ((c = getc (inp)) != '\"');
@@ -920,7 +928,6 @@ struct st_table *st_get_table (void)
 	      if (c == 0xA5) {
 		getc (inp);
 	      } else {
-		temp_text = realloc (temp_text, text_size + 2);
 		if (temp_text == NULL) {
 		  return (NULL);
 		}
@@ -930,6 +937,8 @@ struct st_table *st_get_table (void)
 	    temp_text[text_size] = 0;
 
 	    curr_tbl->title = temp_text;
+
+	    curr_tbl->next = NULL;
 	    if (last_tbl)
 	      last_tbl->next = curr_tbl;
 	    last_tbl = curr_tbl;
@@ -950,16 +959,15 @@ struct st_table *st_get_table (void)
 
 struct st_caption *st_get_captions (void)
 {
-  int i = 0, first_time;
+  int i = 0;
   struct st_caption *root_cpt = NULL, *curr_cpt = NULL, *last_cpt = NULL;
   int c = 0, text_size = 0;
   char *temp_text = NULL;
 
+  curr = 6;
+
   upto = 0;
 
-  last_cpt = NULL;
-  first_time = 1;
-  curr = 6;
   for (i = 0; i < st_file_type; i++) {
     while (st_caption_starts_at[upto] != 0)
       upto++;
@@ -975,18 +983,15 @@ struct st_caption *st_get_captions (void)
 	for (i = 0; i < st_caption_lastone[upto]; i++) {
 	  while ((c = getc (inp)) != ']') {	/* main loop */
 
-	    temp_text = malloc (1);
-	    text_size = 0;
-
 	    curr_cpt = (struct st_caption *) malloc (sizeof (struct
 							     st_caption));
 
 	    if (curr_cpt == NULL) {
 	      return (NULL);
 	    }
-	    if (first_time)
+	    if (!root_cpt)
 	      root_cpt = curr_cpt;
-	    first_time = 0;
+
 	    do {
 	      while ((c != '\"') && (c != '[') && (c = getc (inp)) != (' '));
 
@@ -1000,8 +1005,10 @@ struct st_caption *st_get_captions (void)
 	      c = ungetc (c, inp);
 	    c = 0;
 
+	    temp_text = malloc (9);
+	    text_size = 0;
+
 	    while (((c = getc (inp)) != ':') && (c != '\"')) {
-	      temp_text = realloc (temp_text, text_size + 2);
 	      if (temp_text == NULL) {
 		return (NULL);
 	      }
@@ -1009,12 +1016,12 @@ struct st_caption *st_get_captions (void)
 	    }
 	    temp_text[text_size] = 0;
 	    curr_cpt->fnbasen = temp_text;
-	    temp_text = malloc (1);
+
+	    temp_text = malloc (70);
 	    text_size = 0;
 
 	    while ((c = getc (inp)) != '\"');
 	    while ((c = getc (inp)) != '\"') {
-	      temp_text = realloc (temp_text, text_size + 2);
 	      if (temp_text == NULL) {
 		return (NULL);
 	      }
@@ -1023,6 +1030,8 @@ struct st_caption *st_get_captions (void)
 	    temp_text[text_size] = 0;
 
 	    curr_cpt->caption = temp_text;
+
+	    curr_cpt->next = NULL;
 	    if (last_cpt)
 	      last_cpt->next = curr_cpt;
 	    last_cpt = curr_cpt;
