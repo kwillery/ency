@@ -55,10 +55,10 @@ static const long st_video_caption_starts_at[] =
 
 /* the actual encyclopedia entries */
 static const long int ency_starts_at[] =
-{0x7bc28, 0x576574, 0, 0x3A9ED8, 0x56BB62, 0, 0x3FC3BE, 0x58B51E, 0x72E89C, 0, 0x2D2A6E, 0, 0x324B34, 0x390C40, 0};
+{0x7bc28, 0x39d0d8, 0x576574, 0, 0x3A9ED8, 0x56BB62, 0, 0x3FC3BE, 0x58B51E, 0x72E89C, 0, 0x2D2A6E, 0, 0x324B34, 0x390C40, 0};
 
 static const long int epis_starts_at[] =
-{0x3b8e20, 0x50431A, 0, 0x5D961A, 0x622AA4, 0, 0x606630, 0x659F9E, 0, 0x1, 0, 0x1, 0};
+{0x3b8e20, 0x397322, 0x50431A, 0, 0x5D961A, 0x622AA4, 0, 0x606630, 0x659F9E, 0, 0x1, 0, 0x1, 0};
 
 static const long int chro_starts_at[] =
 {0x41e32c, 0, 0x62764A, 0, 0x66B9C4, 0, 0x1, 0, 0x1, 0};
@@ -68,10 +68,10 @@ static long int set_starts_at = 0x0;
 
 /* hm. articles or sections or whatever to get */
 static const long int ency_lastone[] =
-{7068, 68, 0, 4092, 491, 0, 3905, 476, 1353, 0, 181, 0, 89, 42, 0};
+{6814, 230, 68, 0, 4092, 491, 0, 3905, 476, 1353, 0, 181, 0, 89, 42, 0};
 
 static const long int epis_lastone[] =
-{402, 3, 0, 261, 25, 0, 262, 93, 0, 0x1, 0, 0x1, 0};
+{402, 23, 3, 0, 261, 25, 0, 262, 93, 0, 0x1, 0, 0x1, 0};
 
 static const long int chro_lastone[] =
 {582, 0, 465, 0, 582, 0, 0x1, 0, 0x1, 0};
