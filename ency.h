@@ -158,8 +158,9 @@ void st_unload_media (void);
 struct st_media *st_get_media (char *);
 char *st_format_filename (char *, char *, media_type);
 
-/* Save a thumbnail to a PPM */
+/* Save a thumbnail or pic to a PPM */
 int st_get_thumbnail(char *name, char *file);
+int st_get_picture(char *name, char *file, int dfile_type, long width, long height);
 
 /* For the actual searches */
 struct ency_titles *st_find (char *, int, int);
