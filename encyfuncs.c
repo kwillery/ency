@@ -81,6 +81,7 @@ static struct ency_titles *cache_last = NULL;
 static struct ency_titles *cache_quick = NULL;
 
 static void st_clear_cache (void);
+static void st_clear_entry_list (void);
 
 /* init/de-init stuff */
 int st_init (void)
@@ -297,6 +298,26 @@ void st_copy_part_entry (struct ency_titles **to, struct ency_titles *from)
 	}
 }
 
+struct st_table *st_new_table ()
+{
+	struct st_table *tbl=NULL;
+
+	tbl = (struct st_table *) malloc (sizeof (struct st_table));
+
+	if (!tbl)
+		return NULL;
+
+	tbl->title = NULL;
+	tbl->fnbase = NULL;
+	tbl->audio = NULL;
+	tbl->section = 0;
+	tbl->block_id = 0;
+	tbl->id = 0;
+	tbl->next = NULL;
+
+	return tbl;
+}
+
 /* cache stuff */
 static void st_clear_cache ()
 {
@@ -306,13 +327,38 @@ static void st_clear_cache ()
 	cache_quick = NULL;
 }
 
+static void st_clear_entry_list ()
+{
+	struct st_table *tbl;
+
+	while (entrylist_head)
+	{
+		tbl = entrylist_head;
+		entrylist_head = entrylist_head->next;
+
+		if (tbl->title)
+			free (tbl->title);
+		if (tbl->fnbase)
+			free (tbl->fnbase);
+		if (tbl->audio)
+			free (tbl->audio);
+
+		free (tbl);
+	}
+
+	st_vtbls = NULL;
+}
+
 /* file stuff */
 int st_set_filename (char *filename)
 {
 	int type;
+
 	if (ency_filename)
 		free (ency_filename);
+
 	ency_filename = strdup (filename);
+
 	if (ency_filename)
 	{
 		type = st_fingerprint();
@@ -320,6 +366,7 @@ int st_set_filename (char *filename)
 		if ((type >= 0) && (type < ST_FILE_TYPES))
 		{
 			st_clear_cache ();
+			st_clear_entry_list ();
 			return (1);
 		}
 		else
@@ -608,12 +655,10 @@ static struct st_table *read_table (FILE *inp, struct st_table *root)
 
 	while (!feof(inp))
 	{
-		curr_tbl = (struct st_table *) malloc (sizeof (struct st_table));
+		curr_tbl = st_new_table ();
 
 		if (curr_tbl == NULL)
-		{
 			return NULL;
-		}
 
 		curr_tbl->fnbase = get_text_from_file_max_length (inp, 10);
 
@@ -623,8 +668,6 @@ static struct st_table *read_table (FILE *inp, struct st_table *root)
 		ungetc (c, inp);
 
 		curr_tbl->title = get_text_from_file (inp);
-
-		curr_tbl->next = NULL;
 
 		if (last_tbl)
 			last_tbl->next = curr_tbl;
@@ -749,13 +792,9 @@ static struct st_caption *st_get_captions (int section)
 		if ((inp = curr_open (part->start)) == 0)
 			return (NULL);
 		else
-		{
 			for (i = 0; i < part->count; i++)
-			{
 				root_cpt = read_captions (inp, root_cpt, section);
 
-			}
-		}
 		count++;
 		fclose (inp);
 	}
@@ -795,22 +834,14 @@ static struct st_table *read_attribs_table (FILE *inp, int section, int count)
 		while (!feof (inp))
 		{	/* main loop */
 
-			curr_tbl = (struct st_table *) malloc (sizeof (struct st_table));
+			curr_tbl = st_new_table ();
 
 			if (curr_tbl == NULL)
-			{
 				return (NULL);
-			}
 
-			curr_tbl->block_id = 0;
-			curr_tbl->id = 0;
-			curr_tbl->fnbase = NULL;
-			curr_tbl->audio = NULL;
 			curr_tbl->section = section;
 
 			curr_tbl->title = get_text_from_file (inp);
-
-			curr_tbl->fnbase = NULL;
 
 			c = getc (inp);
 			if (c == ':')
@@ -983,6 +1014,7 @@ void st_unload_media (void)
 	st_ptbls = NULL;
 	st_pcpts = NULL;
 	st_pcpts_quick = NULL;
+	st_vtbls = NULL;
 	st_vcpts = NULL;
 }
 
@@ -1522,11 +1554,13 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 			if (check_match (search_string, tmp->title, options))
 			{
 				if (tbl)
+				{
 					if (strcmp (tmp->title, tbl->title) >= 0)
-					{
 						tbl = get_table_entry_by_title (tbl, tmp->title);
-					} else
+					else
 						tbl = NULL;
+				}
+
 				if (!tbl)
 					tbl = get_table_entry_by_title (entrylist_head, tmp->title);
 				if (curr)
