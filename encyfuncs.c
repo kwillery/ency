@@ -423,6 +423,8 @@ static struct st_table *st_new_table ()
 	tbl->section = 0;
 	tbl->block_id = 0;
 	tbl->id = 0;
+	tbl->pictures = 0;
+
 	tbl->next = NULL;
 
 	return tbl;
@@ -857,6 +859,7 @@ static struct st_table *read_attribs_table (FILE *inp, int section)
 	char c;
 	int in_quote;
 	int level, commas;
+	int i;
 
 	c = getc (inp);
 
@@ -906,8 +909,17 @@ static struct st_table *read_attribs_table (FILE *inp, int section)
 					switch (commas)
 					{
 					case 1: // # of thumbnails
+						fscanf (inp, "%d", &(curr_tbl->pictures));
 						break;
 					case 2: // List of thumbnail pointers
+						if (curr_tbl->pictures == 0)
+							break;
+						while ((c = getc (inp)) != '[')
+							;
+						for (i=0;i<curr_tbl->pictures;i++)
+							fscanf(inp, "%d, ", &(curr_tbl->picture[i]));
+						while ((c = getc (inp)) != ']')
+							;
 						break;
 					case 4: // Video
 						if (c != '"')
@@ -2205,7 +2217,7 @@ struct st_media *st_get_media (char *search_string)
 		temp_fnbase = malloc (9);
 
 		media = new_media (media);
-
+		
 		if ((ret_fnbase = get_es_slist_data_string (st_LtoS, search_string)))
 		{
 			for (i = 0; i < 6; i++)
@@ -2245,6 +2257,22 @@ struct st_media *st_get_media (char *search_string)
 			}
 			if (ret_tbl->resource)
 				strcpy(media->resource, ret_tbl->resource);
+			if (!ret_fnbase) /* If the entry wasn't in LtoS */
+			{
+				for (i=0;i<ret_tbl->pictures;i++)
+				{
+					struct st_block *b;
+					b = get_block_by_id (st_file_type, ST_DFILE_PICON, ret_tbl->picture[i]);
+					if (!b)
+						continue;
+					strncpy (temp_fnbase, b->name, 7);
+					temp_fnbase[7] = 0;
+					media->photos[i] = st_parse_captions (st_pcpts, temp_fnbase);
+					if (strlen (media->photos[i].file))
+						media_found = 1;
+				}
+			}
+
 			if (strlen (media->video.file) || strlen (media->audio.file) || strlen(media->resource))
 				media_found = 1;
 		}

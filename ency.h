@@ -113,6 +113,10 @@ struct st_table
 	char *fnbase;
 	char *audio;
 	char *resource;
+
+	int pictures;
+	int picture[7];
+
 	int section;
 	int block_id;
 	int id;
