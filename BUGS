@@ -1,5 +1,13 @@
+* The 'Sorry, my fault' list of bugs:
+
+None known :-)
+
 Email me with any bug reports or patches or anything to better my code.
 Please?
+
+* The 'Not-my-fault' list of bugs:
+ - XAnim won't play some .mov files, like the episode guide ones :(
+ - the episode guides have to be mounted as root with '-o unhide'.
 
 --
 Robert Mibus
