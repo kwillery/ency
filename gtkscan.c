@@ -125,7 +125,7 @@ void redisplay_image (int w, int h, int autodc)
 
 	inp = fopen (fn, "r b");
 	fseek (inp, b->start, SEEK_SET);
-	printf ("start:%ld\n",b->start);
+
 	create_ppm_from_image (file, inp, w, h, b->size);
 	fclose (inp);
 
@@ -331,7 +331,10 @@ void load (char *fn)
 	gtk_clist_thaw (GTK_CLIST(lst));
 
 	if (!is_cmap_loaded())
-		printf ("Warning, no colourmap loaded\n");
+	{
+		printf ("Warning, no colourmap loaded\nLoading default\n");
+		reset_cmap ();
+	}
 }
 
 /*********
