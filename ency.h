@@ -128,11 +128,13 @@ int st_fingerprint (void);
 char *st_autofind (int, char *);
 
 /* dealing w/ structs */
-int st_free_entry (struct ency_titles *);
-int st_free_entry_tree (struct ency_titles *);
-int st_free_entry_and_advance (struct ency_titles **);
-int st_free_fmt (struct st_ency_formatting *);
-int st_free_fmt_tree (struct st_ency_formatting *);
-int st_free_fmt_and_advance (struct st_ency_formatting **);
+void st_free_entry (struct ency_titles *);
+void st_free_entry_tree (struct ency_titles *);
+void st_free_entry_and_advance (struct ency_titles **);
+void st_free_fmt (struct st_ency_formatting *);
+void st_free_fmt_tree (struct st_ency_formatting *);
+void st_free_fmt_and_advance (struct st_ency_formatting **);
+
+void st_copy_part_entry (struct ency_titles **, struct ency_titles *);
 
 #endif
