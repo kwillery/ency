@@ -800,15 +800,6 @@ static struct st_caption *st_get_video_captions (void)
         for (i = 0; i < st_video_caption_lastone[upto]; i++) {
           c = getc(inp);
           while (c != ']') {    /* main loop */
-            curr_cpt = (struct st_caption *) malloc (sizeof (struct
-                                                             st_caption));
-
-            if (curr_cpt == NULL) {
-              return (NULL);
-            }
-            if (!root_cpt)
-              root_cpt = curr_cpt;
-
             do {
               while ((c != '\"') && (c != '[') && (c = getc (inp)) != (' '))
                 ;
@@ -821,40 +812,49 @@ static struct st_caption *st_get_video_captions (void)
               c = ungetc (c, inp);
             if ((c = getc (inp)) != '\"')
               c = ungetc (c, inp);
-            if ((c = getc (inp)) != ':')
-              { c = ungetc (c, inp);
-            c = 0;
+            if ((c = getc (inp)) != ':') {
+              c = ungetc (c, inp);
+              c = 0;
+    
+              curr_cpt = (struct st_caption *) malloc (sizeof (struct
+                                                                 st_caption));
+    
+              if (curr_cpt == NULL)
+                return (NULL);
 
-            temp_text = malloc (8);
-            text_size = 0;
+              if (!root_cpt)
+                root_cpt = curr_cpt;
+    
+              temp_text = malloc (8);
+              text_size = 0;
+    
+              fread (temp_text, 1, 7, inp); // was 8, inp);
+              temp_text[6] = 0; // was ...[7] = 0;
+    
+              z=0;while ((temp_text[z] = tolower(temp_text[z]))) z++;
+    
+              c = getc(inp);
+    
+              curr_cpt->fnbasen = temp_text;
+    
+              temp_text = malloc (70);
+              text_size = 0;
 
-            fread (temp_text, 1, 7, inp); // was 8, inp);
-            temp_text[6] = 0; // was ...[7] = 0;
+              while ((c = getc (inp)) != '\"');
+              while ((c = getc (inp)) != '\"')
+                temp_text[text_size++] = st_cleantext (c);
+              temp_text[text_size] = 0;
 
-            z=0;while ((temp_text[z] = tolower(temp_text[z]))) z++;
+              curr_cpt->caption = temp_text;
+              c=getc(inp);
 
-            c = getc(inp);
+              curr_cpt->next = NULL;
 
-            curr_cpt->fnbasen = temp_text;
-
-            temp_text = malloc (70);
-            text_size = 0;
-
-            while ((c = getc (inp)) != '\"');
-            while ((c = getc (inp)) != '\"') {
-              temp_text[text_size++] = st_cleantext (c);
+              if (last_cpt)
+                last_cpt->next = curr_cpt;
+              last_cpt = curr_cpt;
+              curr_cpt = NULL;
             }
-            temp_text[text_size] = 0;
-
-            curr_cpt->caption = temp_text;
-            c=getc(inp);
-
-            curr_cpt->next = NULL;
-
-            if (last_cpt)
-              last_cpt->next = curr_cpt;
-            last_cpt = curr_cpt;
-            curr_cpt = NULL;} else {free (root_cpt); root_cpt = NULL;}
           }                     /* end main loop */
 
         }
