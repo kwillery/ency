@@ -110,7 +110,7 @@ int printoff (struct ency_titles *stuff, FILE *output)
 
 void print_usage (void)
 {
-  printf (" htmlenc - Searches the Star Trek encyclopedias\n http://users.bigpond.com/mibus/ency.html\n Usage: htmlenc -[c|e] [-m]\n   -c: searches chronology\n   -e: searches episodes\n    (default: search encyclopedia)\n   -m: displays associated media (photos etc.)\n");
+  printf (" htmlenc - Searches the Star Trek encyclopedias\n http://users.bigpond.com/mibus/ency/\n Usage: htmlenc -[c|e] [-m]\n   -c: searches chronology\n   -e: searches episodes\n    (default: search encyclopedia)\n   -m: displays associated media (photos etc.)\n");
   exit (0);
 }
 
@@ -198,7 +198,7 @@ int main (int argc, char *argv[])
     printf ("No matches<br>\n");
 
   printf ("<hr>\nThe Star Trek ency reader: ");
-  printf ("<a href=\"http://users.bigpond.com/mibus/ency.html\">http://users.bigpond.com/mibus/ency.html</a><br>\n");
+  printf ("<a href=\"http://users.bigpond.com/mibus/ency/\">http://users.bigpond.com/mibus/ency/</a><br>\n");
   printf ("Queries, comments, and flames, to <a href=\"mailto:mibus@bigpond.com\">Robert Mibus &lt;mibus@bigpond.com&gt;</a>");
 
   printf ("</html>\n");

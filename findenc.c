@@ -33,7 +33,7 @@ extern int optind;
 
 void print_usage (void)
 {
-  printf (" findenc - Searches the Star Trek encyclopedias\n http://users.bigpond.com/mibus/ency.html\n Usage: findenc -[c|e]\n  -c: searches chronology\n  -e: searches episodes\n   (default: search encyclopedia)\n  -m: displays associated media\n");
+  printf (" findenc - Searches the Star Trek encyclopedias\n http://users.bigpond.com/mibus/ency/\n Usage: findenc -[c|e]\n  -c: searches chronology\n  -e: searches episodes\n   (default: search encyclopedia)\n  -m: displays associated media\n");
   exit(0);
 }
 
