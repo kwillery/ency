@@ -31,6 +31,7 @@
 #define ST_FILE_OMNI2 2
 #define ST_FILE_TNG1 3
 #define ST_FILE_DS91 4
+#define ST_FILE_CURR -1
 
 /* Options to st_find() */
 #define ST_SECT_ENCY 0

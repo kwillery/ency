@@ -131,7 +131,10 @@ char *st_get_filename (void)
 
 char *st_fileinfo_get_name (int file_type)
 {
-  return (st_files[file_type].name);
+  if (file_type == ST_FILE_CURR)
+    return (st_files[st_file_type].name);
+  else
+    return (st_files[file_type].name);
 }
 
 int st_load_media (void)
