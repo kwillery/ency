@@ -15,9 +15,9 @@ struct st_part
 	long count;
 };
 
-void load_file_info (void);
+int load_file_info (char *filename);
 int count_files (void);
-
+void free_xml_doc (void);
 int st_fingerprint (void);
 char *get_name_of_file (int file_type);
 const char *st_fileinfo_get_data (int file, st_filename_type type);

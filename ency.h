@@ -137,6 +137,9 @@ int st_finish (void);
 int st_set_filename (char *);
 char *st_get_filename (void);
 
+/* load the xml file containing file info */
+int st_load_xml_file (char *);
+
 /* forces opening of unsupported file */
 void st_force_unknown_file (int);
 

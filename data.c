@@ -118,6 +118,9 @@ static xmlNode *get_file_info (int number)
 {
 	xmlNode *node;
 
+	if (!xmlroot)
+		load_file_info (NULL);
+	
 	node = find_xml_node (xmlroot->root, "files");
 	node = node->childs;
 	if (!node)
@@ -128,7 +131,7 @@ static xmlNode *get_file_info (int number)
 	return (node);
 }
 
-void load_file_info()
+int load_file_info(char *filename)
 {
 	char *temp=NULL;
 	char *home=NULL;
@@ -155,10 +158,18 @@ void load_file_info()
 		NULL
 	};
 
+	if (filename)
+	{
+		if ((xmlroot = xmlParseFile (filename)))
+			return 1;
+		else
+			return 0;
+	}
+
 	if ((fn = getenv ("ENCY_XML_FILENAME")))
 	{
 		if ((xmlroot = xmlParseFile (fn)))
-			return;
+			return 1;
 	}
 
 	home = getenv ("HOME");
@@ -172,7 +183,7 @@ void load_file_info()
 			if ((xmlroot = xmlParseFile (temp)))
 			{
 				free (temp);
-				return;
+				return 1;
 			}
 			free (temp);
 		}
@@ -180,12 +191,18 @@ void load_file_info()
 	for (i=0;locations[i];i++)
 	{
 		if ((xmlroot = xmlParseFile (locations[i])))
-			return;
+			return 1;
 	}
 
 	fprintf (stderr, "Can\'t find the encyfiles.xml file!\n");
 	fprintf (stderr, "Dying...\n");
 	exit (1);
+}
+
+void free_xml_doc (void)
+{
+	if (xmlroot)
+		xmlFreeDoc (xmlroot);
 }
 
 static char *get_text_fingerprint (xmlNode *file_data)

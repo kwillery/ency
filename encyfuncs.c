@@ -148,7 +148,7 @@ static void st_clear_cache (void);
 int st_init (void)
 {
 #ifndef DONT_USE_XML
-	load_file_info();
+	load_file_info(NULL);
 #endif
 	st_fingerprint ();
 	return (st_file_type >= 254 ? force_unknown : 1);
@@ -161,6 +161,9 @@ int st_finish (void)
 	if (ency_filename)
 		free (ency_filename);
 	st_clear_cache ();
+#ifndef DONT_USE_XML
+	free_xml_doc();
+#endif
 	return (1);
 }
 
@@ -511,6 +514,14 @@ char *st_get_filename (void)
 {
 	return (ency_filename);
 }
+
+#ifndef DONT_USE_XML
+int st_load_xml_file (char *filename)
+{
+	free_xml_doc();
+	return (load_file_info (filename));
+}
+#endif
 
 #ifdef DONT_USE_XML
 char *st_fileinfo_get_name (int file_type)
