@@ -9,7 +9,7 @@ BINDIR=$(prefix)/bin
 MANDIR=$(prefix)/man
 LIBDIR=$(prefix)/lib
 INCDIR=$(prefix)/include
-ETCDIR=/etc
+DATDIR=$(prefix)/share/ency
 
 INSTALL_PROGRAM=install
 
@@ -48,7 +48,7 @@ install-bin: all
 	$(INSTALL_BIN) scanenc $(BINDIR)/scanenc
 
 install-data:
-	$(INSTALL_PROGRAM) encyfiles.xml $(ETCDIR)/encyfiles.xml
+	$(INSTALL_PROGRAM) encyfiles.xml $(DATADIR)/encyfiles.xml
 
 install-doc:
 
@@ -57,7 +57,7 @@ install-dev:
 	$(INSTALL_PROGRAM) -m644 ency.h $(INCDIR)/ency.h
 
 uninstall:
-	rm -f $(BINDIR)/findenc $(BINDIR)/htmlenc $(LIBDIR)/libency.a $(INCDIR)/ency.h $(BINDIR)/scanenc $(ETCDIR)/encyfiles.xml
+	rm -f $(BINDIR)/findenc $(BINDIR)/htmlenc $(LIBDIR)/libency.a $(INCDIR)/ency.h $(BINDIR)/scanenc $(DATADIR)/encyfiles.xml
 
 doc: ency-api.txt ency-api.html
 

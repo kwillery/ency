@@ -133,11 +133,8 @@ static xmlDocPtr open_xml_file (char *filename)
 		"encyfiles.xml",
 		"/etc/encyfiles.xml",
 		"/usr/local/etc/encyfiles.xml",
-		"/usr/local/etc/encyfiles.xml",
 		"/usr/share/ency/encyfiles.xml",
-		"/usr/lib/ency/encyfiles.xml",
 		"/usr/local/share/ency/encyfiles.xml",
-		"/usr/local/lib/ency/encyfiles.xml",
 		NULL
 	};
 

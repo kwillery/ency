@@ -43,6 +43,7 @@ binary-arch:	checkroot build
 		-d debian/tmp/usr/share/doc/$(package)\
 		-d debian/tmp/usr/share/man \
 		-d debian/tmp/usr/share/man/man1 \
+		-d debian/tmp/usr/share/$(package) \
 		-d debian/tmp/usr/bin\
 		-d debian/tmp/usr/include\
 		-d debian/tmp/usr/lib
@@ -52,7 +53,7 @@ binary-arch:	checkroot build
 	$(MAKE) INSTALL_PROGRAM='install -c' \
 		prefix=`pwd`/debian/tmp/usr/share install-doc
 	$(MAKE) INSTALL_PROGRAM='install -c -m 0644' \
-		ETCDIR=`pwd`/debian/tmp/etc install-data
+		prefix=`pwd`/debian/tmp/usr install-data
 	dpkg-shlibdeps findenc htmlenc scanenc
 	dpkg-gencontrol
 	chown -R root.root debian/tmp
