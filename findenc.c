@@ -41,7 +41,7 @@ void print_usage (void)
 int main (int argc, char *argv[])
 {
 	int i = 0;
-	char search_string[256];
+	char search_string[256]="";
 	char *temp_fn = NULL;
 	struct ency_titles *thingy = NULL;
 	struct st_media *media = NULL;
@@ -57,8 +57,6 @@ int main (int argc, char *argv[])
 		{"chronology", 0, 0, 'c'},
 		{"fulltext", 0, 0, 'f'},
 		{0, 0, 0, 0}};
-
-	strcpy (search_string, "");
 
 	while ((i = getopt_long (argc, argv, "echmf", long_opts, 0)) != EOF)
 	{

@@ -117,7 +117,7 @@ void print_usage (void)
 
 int main (int argc, char *argv[])
 {
-	char search_string[256];
+	char search_string[256]="";
 	char *temp_fn = NULL;
 	struct ency_titles *thingy = NULL, *full_body = NULL;
 	struct st_media *media = NULL;
