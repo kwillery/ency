@@ -81,6 +81,7 @@ main (int argc, char *argv[])
 	  do
 	    {
 	      printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
+	      kill_me = thingy;
 	      thingy = thingy->next;
 	      free (kill_me);
 	    }
