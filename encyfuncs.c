@@ -23,7 +23,6 @@
 /*****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <malloc.h>
 #define __USE_ISOC99 /* For isblank() in ctype.h */
 #include <ctype.h>
