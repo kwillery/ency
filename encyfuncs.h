@@ -4,7 +4,7 @@
 #include "ency.h"
 
 FILE *curr_open (char *filename, long start);
-char *get_ency_dir ();
+FILE *open_file (char *fn, long start);
 
 #define free(A) {if (A) free (A); A=NULL;}
 #ifdef DEBUG

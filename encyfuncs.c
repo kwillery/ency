@@ -37,7 +37,8 @@
 #ifndef __GNUC__
 #define inline
 #endif
-static char *ency_filename = NULL;
+
+static char *ency_directory = NULL;
 
 static int st_file_type = 0;
 
@@ -89,40 +90,28 @@ static void st_clear_entry_list (void);
 /* init/de-init stuff */
 int st_init (void)
 {
-	char *temp_fn = NULL;
-	int i;
+	char *temp = NULL;
 
 	if (count_files() == 0) /* If there isnt an RC file already loaded... */
 		load_rc_file_info(NULL);
 	if (!count_files())
 		fprintf (stderr, "ency: Warning - could not load RC file\n");
 
-	temp_fn = getenv ("ENCY_FILENAME");
-	if (temp_fn == NULL)
-	{
-		for (i=0;i<ST_FILE_TYPES;i++)
-		{
-			if ((temp_fn = st_autofind (i,".")))
-			{
-				st_set_filename (temp_fn);
-				free (temp_fn);
-				break;
-			}
-		}
-	}
+	temp = getenv ("ENCY_DIR");
+	if (temp)
+		st_open_ency (temp);
 	else
-		st_set_filename (temp_fn);
+		st_open_ency (".");
 
-	st_file_type = st_fingerprint ();
-	return (st_file_type >= 254 ? 0 : 1);
+	return ((st_file_type >= 0) ? 1 : 0);
 }
 
 int st_finish (void)
 {
 	if (st_loaded_media ())
 		st_unload_media ();
-	if (ency_filename)
-		free (ency_filename);
+	if (ency_directory)
+		free (ency_directory);
 	st_clear_cache ();
 	st_data_clear();
 
@@ -453,42 +442,42 @@ static void st_clear_entry_list ()
 	st_vtbls = NULL;
 }
 
-/* try and set the filename libency will use
- * NB this will fail & return 0 if the file
+/* try and set the directory libency will use
+ * NB this will fail & return 0 if the main file
  * can't be identified by st_fingerprint() */
-int st_set_filename (char *filename)
+int st_open_ency (char *directory)
 {
-	int type;
+	int i;
 
-	if (ency_filename)
-		free (ency_filename);
+	DBG((stderr,"st_open_ency: Opening '%s'...", directory));
 
-	ency_filename = strdup (filename);
+	if (ency_directory)
+		free (ency_directory);
 
-	if (ency_filename)
+	ency_directory = strdup (directory);
+
+	if (ency_directory)
 	{
-		type = st_fingerprint();
-		st_file_type = type;
-		if ((type >= 0) && (type < ST_FILE_TYPES))
+		for (i=0;i<ST_FILE_TYPES;i++)
 		{
-			st_clear_cache ();
-			st_clear_entry_list ();
-			return (1);
+			if (st_is_ency (i,directory))
+			{
+				st_file_type = i;
+				st_clear_cache ();
+				st_clear_entry_list ();
+				return (1);
+			}
 		}
-		else
-		{
-			free (ency_filename);
-			ency_filename = NULL;
-			st_file_type = 255;
-			return (0);
-		}
+		free (ency_directory);
+		ency_directory = NULL;
+		st_file_type = 255;
 	}
 	return (0);
 }
 
-char *st_get_filename (void)
+char *st_get_directory (void)
 {
-	return (ency_filename);
+	return (ency_directory);
 }
 
 int st_load_rc_file (char *filename)
@@ -510,25 +499,25 @@ char *st_fileinfo_get_name (int file_type)
 	return get_name_of_file (file_type);
 }
 
-/* try to open the currently selected file, and
- * seek to 'start'. if ency_filename is NULL, it will
- * try to find an encyclopedia to load.
+/* try to open the selected file, and
+ * seek to 'start'.
  * It returns 0 for failure, the file pointer otherwise */
 FILE *curr_open (char *filename, long start)
 {
 	FILE *inp;
+	char *fn=NULL;
 	int i = 0;
 
-	DBG ((stderr, "curr_open: %s, %ld (ency_filename = %s)\n", filename, start, ency_filename));
+	DBG ((stderr, "curr_open: %s, %ld (ency_directory = %s)\n", filename, start, ency_directory));
 
-	if (!filename && !ency_filename)
+	if (!filename)
 	{
 		DBG ((stderr, "curr_open: no filenames available\n"));
 		return NULL;
 	}
 
-	if (!filename)
-		filename = ency_filename;
+	fn = malloc (strlen(ency_directory) + strlen (filename) + 2);
+	sprintf (fn, "%s/%s", ency_directory ? ency_directory : "", filename);
 
 	inp = fopen (filename, "rb");
 
@@ -557,29 +546,46 @@ char *get_filename (int file, int dfile)
 	return df->filename;
 }
 
-char *get_ency_dir ()
+/* Prepend the ency directory to a filename then
+ * open it. */
+FILE *open_file (char *fn, long start)
 {
-	char *dir=NULL, *t=NULL;;
+	char *path=NULL;
+	char *new_fn=NULL, *t=NULL;
+	FILE *ret=NULL;
 
-	/* Try to figure out what directory it's in */
-	/* (Hackish, I know :) */
-	if (ency_filename && (t = strrchr (ency_filename, '/')))
+	if (!fn)
+		return NULL;
+
+	path = st_get_directory ();
+
+	new_fn = malloc (strlen (path) + strlen (fn) + 2);
+	strcpy (new_fn, path);
+	strcat (new_fn, "/");
+	strcat (new_fn, fn);
+
+	ret = curr_open (new_fn, start);
+
+	/* lowercase filename maybe? */
+	if (!ret)
 	{
-		dir = malloc (t - ency_filename + 2);
-		strncpy (dir, ency_filename, t - ency_filename + 1);
-		dir[t - ency_filename + 1] = 0;
-	} else
-	    dir = strdup ("");
+		t = st_lcase (fn);
+		strcpy (new_fn, path);
+		strcat (new_fn, "/");
+		strcat (new_fn, t);
+		ret = curr_open (new_fn, start);
+		free (t);
+	}
 
-	return dir;
+	free (new_fn);
+
+	return ret;
 }
 
 /* Open the file referenced by the block */
 FILE *open_block(int dfile, struct st_block *block)
 {
-	char *filename=NULL, *path=NULL;
-	char *new_fn=NULL, *t=NULL;
-	FILE *ret=NULL;
+	char *filename=NULL;
 
 	if (!block)
 		return NULL;
@@ -587,126 +593,78 @@ FILE *open_block(int dfile, struct st_block *block)
 	/* Get 'Picon.cxt' or 'Data99.cxt' etc. */
 	filename = get_filename (st_file_type, dfile);
 
-	/* curr_open() defaults to the main data file so this is OK */
-	if (!filename)
-		return (curr_open (NULL, block->start));
-
-	path = get_ency_dir ();
-
-	new_fn = malloc (strlen (path) + strlen (filename) + 1);
-	strcpy (new_fn, path);
-	strcat (new_fn, filename);
-
-	ret = curr_open (new_fn, block->start);
-
-	/* lowercase filename maybe? */
-	if (!ret)
-	{
-		strcpy (new_fn, path);
-		strcat (new_fn, t = st_lcase (filename));
-		free (t);
-		ret = curr_open (new_fn, block->start);
-	}
-
-	/* Clean up - don't remove 'filename' as it is directly 
-	 * out of a data struct */
-	free (path);
-	free (new_fn);
-
-	return ret;
+	return open_file (filename, block->start);
 }
 
-/* Look for a given encyclopedia version in a directory.
+/* Look to see if a directory contains a certain encyclopedia
  * Try lowering the case of the directory, etc. etc.
- * This will also work if 'base_dir' is the actual
- * filename */
-char *st_autofind (int st_file_version, char *base_dir)
+ */
+int st_is_ency (int st_file_version, char *base_dir)
 {
 	char *test_filename = NULL;
-	char *ency_fn_backup = NULL;
 	const char *datadir = NULL, *filename = NULL;
 	char *lc_data_dir = NULL, *lc_filename = NULL;
 
-	if ((st_file_version < ST_FILE_TYPES) && (st_file_version >= 0))
+	datadir = st_fileinfo_get_data (st_file_version,data_dir);
+	filename = st_fileinfo_get_data (st_file_version,mainfilename);
+
+	lc_data_dir = st_lcase ((char *)datadir);
+	lc_filename = st_lcase ((char *)filename);
+
+	test_filename = malloc (safe_strlen (base_dir) + safe_strlen (datadir) + safe_strlen (filename) + 3);
+
+	sprintf (test_filename, "%s/%s", base_dir, filename);
+	if (st_fingerprint (test_filename) == st_file_version)
 	{
-
-		datadir = st_fileinfo_get_data (st_file_version,data_dir);
-		filename = st_fileinfo_get_data (st_file_version,mainfilename);
-
-		lc_data_dir = st_lcase ((char *)datadir);
-		lc_filename = st_lcase ((char *)filename);
-
-		ency_fn_backup = ency_filename;
-		test_filename = malloc (safe_strlen (base_dir) + safe_strlen (datadir) + safe_strlen (filename) + 3);
-		ency_filename = test_filename;
-
-		sprintf (test_filename, "%s", base_dir);
-		if (st_fingerprint () == st_file_version)
-		{
-			free (lc_data_dir);
-			free (lc_filename);
-			ency_filename = ency_fn_backup;
-			return (test_filename);
-		}
-
-		sprintf (test_filename, "%s/%s", base_dir, filename);
-		if (st_fingerprint () == st_file_version)
-		{
-			free (lc_data_dir);
-			free (lc_filename);
-			ency_filename = ency_fn_backup;
-			return (test_filename);
-		}
-
-		sprintf (test_filename, "%s/%s/%s", base_dir, datadir, filename);
-		if (st_fingerprint () == st_file_version)
-		{
-			free (lc_data_dir);
-			free (lc_filename);
-			ency_filename = ency_fn_backup;
-			return (test_filename);
-		}
-
-		sprintf (test_filename, "%s/%s", base_dir, lc_filename);
-		if (st_fingerprint () == st_file_version)
-		{
-			free (lc_data_dir);
-			free (lc_filename);
-			ency_filename = ency_fn_backup;
-			return (test_filename);
-		}
-
-		sprintf (test_filename, "%s/%s/%s", base_dir, lc_data_dir, lc_filename);
-		if (st_fingerprint () == st_file_version)
-		{
-			free (lc_data_dir);
-			free (lc_filename);
-			ency_filename = ency_fn_backup;
-			return (test_filename);
-		}
-
-		sprintf (test_filename, "%s/%s/%s", base_dir, datadir, lc_filename);
-		if (st_fingerprint () == st_file_version)
-		{
-			free (lc_data_dir);
-			free (lc_filename);
-			ency_filename = ency_fn_backup;
-			return (test_filename);
-		}
-
-		sprintf (test_filename, "%s/%s/%s", base_dir, lc_data_dir, lc_filename);
-		if (st_fingerprint () == st_file_version)
-		{
-			free (lc_data_dir);
-			free (lc_filename);
-			ency_filename = ency_fn_backup;
-			return (test_filename);
-		}
-
-		free (lc_filename);
 		free (lc_data_dir);
+		free (lc_filename);
+		return 1;
 	}
-	return (NULL);
+
+	sprintf (test_filename, "%s/%s/%s", base_dir, datadir, filename);
+	if (st_fingerprint (test_filename) == st_file_version)
+	{
+		free (lc_data_dir);
+		free (lc_filename);
+		return 1;
+	}
+
+	sprintf (test_filename, "%s/%s", base_dir, lc_filename);
+	if (st_fingerprint (test_filename) == st_file_version)
+	{
+		free (lc_data_dir);
+		free (lc_filename);
+		return 1;
+	}
+
+	sprintf (test_filename, "%s/%s/%s", base_dir, lc_data_dir, lc_filename);
+	if (st_fingerprint (test_filename) == st_file_version)
+	{
+		free (lc_data_dir);
+		free (lc_filename);
+		return 1;
+	}
+
+	sprintf (test_filename, "%s/%s/%s", base_dir, datadir, lc_filename);
+	if (st_fingerprint (test_filename) == st_file_version)
+	{
+		free (lc_data_dir);
+		free (lc_filename);
+		return 1;
+	}
+
+	sprintf (test_filename, "%s/%s/%s", base_dir, lc_data_dir, lc_filename);
+	if (st_fingerprint (test_filename) == st_file_version)
+	{
+		free (lc_data_dir);
+		free (lc_filename);
+		return 1;
+	}
+
+	free (lc_filename);
+	free (lc_data_dir);
+
+	return 0;
 }
 
 /* Read in a small block of text.
@@ -1576,8 +1534,13 @@ struct ency_titles *st_read_title_at (long filepos, int options)
 {
 	FILE *inp;
 	struct ency_titles *ret=NULL;
+	char *filename;
 
-	inp = curr_open (NULL, filepos);
+	/* Get 'Picon.cxt' or 'Data99.cxt' etc. */
+	filename = get_filename (st_file_type, ST_DFILE_DATA);
+
+	inp = open_file (filename, filepos);
+
 	if (!inp)
 	{
 		return (st_title_error (1));
@@ -1714,6 +1677,7 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 	static struct ency_titles *ret;
 	FILE *inp;
 	long filepos;
+	char *filename;
 
 	if (!block_id || !id)
 		return NULL;
@@ -1727,9 +1691,12 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 	{
 		if (options & ST_OPT_RETURN_BODY)
 		{
-			inp = curr_open (NULL, filepos);
+			/* Get 'Picon.cxt' or 'Data99.cxt' etc. */
+			filename = get_filename (st_file_type, ST_DFILE_DATA);
+			inp = open_file (filename, filepos);
+
 			if (!inp)
-				DBG ((stderr, "Oh damn! curr_open() failed for %ld (entry %d:%d)\n(%s)\n", filepos, block_id, id, strerror (errno)));
+				DBG ((stderr, "Oh damn! open_file() failed for %ld (entry %d:%d)\n(%s)\n", filepos, block_id, id, strerror (errno)));
 			if (!inp)
 				return NULL;
 
@@ -1989,8 +1956,12 @@ static struct st_wl *get_ft_word_at (long filepos)
 {
 	struct st_wl *wl;
 	FILE *inp;
+	char *filename;
 
-	inp = curr_open (NULL, filepos);
+	/* Get 'Picon.cxt' or 'Data99.cxt' etc. */
+	filename = get_filename (st_file_type, ST_DFILE_DATA);
+	inp = open_file (filename, filepos);
+
 	if (!inp)
 		return NULL;
 
@@ -2391,14 +2362,17 @@ static struct st_media *new_media (struct st_media *old_media)
 static int in_simple_list (long filepos, int entrylen, char *match)
 {
 	FILE *inp;
-	char *entry;
+	char *entry, *filename;
 
 	entry = malloc (entrylen + 1);
 
 	if (!entry)
 		return 0;
 
-	inp = curr_open (NULL, filepos);
+	/* Get 'Picon.cxt' or 'Data99.cxt' etc. */
+	filename = get_filename (st_file_type, ST_DFILE_DATA);
+	inp = open_file (filename, filepos);
+
 	fseek (inp, 12, SEEK_CUR);
 
 	while (getc (inp) != ']')

@@ -34,7 +34,8 @@ extern "C" {
 #define ST_FILE_TYPES st_count_filetypes()
 
 #define ST_FILE_CURR -1
-#define ST_FILE_UNKNOWN 254
+#define ST_FILE_UNKNOWN -11
+#define ST_FILE_ERROR -10
 
 /* Options to st_find() */
 /* NB. ST_SECT_EPIS_SORTED is equivalent to
@@ -140,16 +141,16 @@ int st_init (void);
 int st_finish (void);
 
 /* For controlling what file is opened */
-int st_set_filename (char *);
-char *st_get_filename (void);
+int st_open_ency (char *directory);
+char *st_get_directory (void);
 int st_count_filetypes(void);
 
 /* load/unload the rc file containing file info */
 int st_load_rc_file (char *);
 void st_unload_data(void);
 
-/* For checking a directory to see if a data file is there */
-char *st_autofind (int, char *);
+/* For checking a directory to see if a certain encyclopedia is there */
+int st_is_ency (int, char *);
 
 /* For getting a description of a file type */
 char *st_fileinfo_get_name (int);

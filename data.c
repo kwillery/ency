@@ -250,11 +250,11 @@ static void make_text_fingerprint (unsigned char fp[16], unsigned char text_fp[1
 	}
 }
 
-/* Compares the currently active file to all known
- * encyclopediae. It returns the file node's number
- * if it is recognised, else 254 or 255.
- * (unrecognised or unopenable respectively.) */
-int st_fingerprint (void)
+/* Compares the file to all known encyclopediae.
+ * It returns the file node's number
+ * if it is recognised, else ST_FILE_ERROR or ST_FILE_UNKNOWN.
+ * (unopenable or unrecognised respectively.) */
+int st_fingerprint (char *filename)
 {
 	int i = 0;
 	FILE *inp;
@@ -263,9 +263,9 @@ int st_fingerprint (void)
 	unsigned char text_fp[16 * 3 + 1]="";
 	char *match_fp=NULL;
 
-	DBG((stderr, "Beginning fingerprint...\n"));
+	DBG((stderr, "Beginning fingerprint on '%s'...\n", filename));
 
-	inp = (FILE *) curr_open (NULL, 0);
+	inp = fopen (filename, "r b");
 
 	if (inp)
 	{
@@ -283,14 +283,17 @@ int st_fingerprint (void)
 				continue;
 			}
 			if (!strcmp(match_fp, text_fp))
+			{
+				DBG ((stderr, "Found match (%d)\n", i));
 				return (i);
+			}
 		}
 	} else {
 		DBG((stderr, "... couldn't open file\n"));
-		return (255);
+		return ST_FILE_ERROR;
 	}
 	DBG((stderr, "... unknown file\n"));
-	return 254;
+	return ST_FILE_UNKNOWN;
 }
 
 /* Gets the 'nice' name from a data node.
@@ -338,28 +341,8 @@ static void data_scan (char *filename, struct st_block *block)
 {
 	FILE *inp=NULL;
 	struct st_block *tmp=NULL;
-	char *path=NULL, *fn=NULL, *t=NULL;
 
-	if (filename)
-	{
-		/* Hackish, similar to open_block() in encyfuncs.c */
-		path = get_ency_dir();
-		fn = malloc (strlen (path) + strlen (filename) + 1);
-		strcpy (fn, path);
-		strcat (fn, filename);
-		inp = curr_open (fn, 0);
-		/* lowercase filename maybe? */
-		if (!inp)
-		{
-			strcpy (fn, path);
-			strcat (fn, t = st_lcase (filename));
-			free (t);
-			inp = (FILE *) curr_open (fn, 0);
-		}
-		free (fn);
-		free (path);
-	} else
-		inp = (FILE *) curr_open (filename, 0);
+	inp = open_file (filename, 0);
 
 	if (!inp)
 		return;

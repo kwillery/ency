@@ -80,7 +80,7 @@ struct st_data_filenode
 int load_rc_file_info (char *filename);
 void st_data_clear (void);
 int count_files (void);
-int st_fingerprint (void);
+int st_fingerprint (char *filename);
 
 struct st_data_filenode *st_data_new_filenode (void);
 void free_data_filenode (struct st_data_filenode *file);
