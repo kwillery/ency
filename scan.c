@@ -310,35 +310,55 @@ static void load_cast_table (FILE *inp)
 
 static void sort_blocks ()
 {
-	struct st_block *p=NULL, *l=NULL, *t=NULL;
-	int need_sort=1;
+	struct st_block *root=NULL, *tail=NULL, *curr=NULL;
+	struct st_block *b=NULL, *t=NULL;
 
-	while (need_sort)
+	b = blocks;
+	while (b)
 	{
-		need_sort = 0;
-		p = blocks;
-		l = NULL;
-		while (p)
+		t = b;
+		b = b->next;
+
+		/* Put it in its place */
+		if (!root)
 		{
-			t=p->next;
-			if (t)
-			{
-				if (p->start > t->start)
+			/* First block */
+			root = tail = curr = t;
+			t->next = NULL;
+		} else {
+			if (t->start < root->start) {
+				/* Before the others */
+				t->next = root;
+				root = t;
+			} else if (t->start > tail->start) {
+				/* Last one */
+				tail->next = t;
+				t->next = NULL;
+				tail = t;
+			} else if (curr->next && (t->start > curr->start && t->start < curr->next->start)) {
+				/* After curr */
+				t->next = curr->next;
+				curr->next = t;
+			} else {
+				/* Find it the hard way */
+				if (t->start < curr->start)
+					curr = root;
+				while (curr)
 				{
-					if (l)
-						l->next = t;
-					else
-						blocks = t;
-					p->next = t->next;
-					t->next = p;
-					need_sort = 1;
+					if (curr->next && (t->start > curr->start && t->start < curr->next->start)) {
+						t->next = curr->next;
+						curr->next = t;
+						break;
+					}
+					curr = curr->next;
 				}
+				if (!curr)
+					fprintf (stderr, "sort_blocks: no place for block starting at %ld!\n", t->start);
 			}
-			l=p;
-			p=p->next;
 		}
 	}
-	
+
+	blocks = root;
 }
 
 static void add_block (FILE *inp, int reverse, char *bname, long block_ind, long cast_ind)
