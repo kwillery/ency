@@ -1905,23 +1905,26 @@ static struct ency_titles *st_find_fulltext (char *search_string, int section, i
 			tbl = get_table_entry_by_title (tbl, title);
 			if (!tbl)
 				tbl = get_table_entry_by_title (entrylist_head, title);
-			bad = 0;
-			if (curr)
+			if (tbl)
 			{
-				curr->next = get_entry_by_id (tbl->block_id, tbl->id, options);
-				if (curr->next)
-					curr = curr->next;
+				bad = 0;
+				if (curr)
+				{
+					curr->next = get_entry_by_id (tbl->block_id, tbl->id, options);
+					if (curr->next)
+						curr = curr->next;
+					else
+						bad = 1;
+				}
 				else
-					bad = 1;
-			}
-			else
-				curr = root = get_entry_by_id (tbl->block_id, tbl->id, options);
+					curr = root = get_entry_by_id (tbl->block_id, tbl->id, options);
 
-			if (curr && !bad)
-			{
-				curr->name = strdup (title);
-				curr->score = scores->score + ((float) scores->score / ((float)curr->length / (float)1000 + 1));
-				curr->next = NULL;
+				if (curr && !bad)
+				{
+					curr->name = strdup (title);
+					curr->score = scores->score + ((float) scores->score / ((float)curr->length / (float)1000 + 1));
+					curr->next = NULL;
+				}
 			}
 		}
 		last_score = scores;

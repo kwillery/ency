@@ -213,6 +213,38 @@ struct st_part *new_part_from_xmlnode (xmlNode *node)
 	return part;
 }
 
+struct st_data_exception *new_exception (char *type, char *from, char *to)
+{
+	struct st_data_exception *ex;
+
+	ex = malloc (sizeof (struct st_data_exception));
+
+	ex->type = strdup (type);
+	ex->from = strdup (from);
+	ex->to = strdup (to);
+	ex->next = NULL;
+
+	return ex;
+}
+
+struct st_data_exception *new_exception_from_xmlnode (xmlNode *node)
+{
+	char *type, *from, *to;
+	struct st_data_exception *ex;
+
+	type = xmlGetProp (node, "type");
+	from = xmlGetProp (node, "from");
+	to = xmlGetProp (node, "to");
+
+	ex = new_exception (type, from, to);
+
+	free (type);
+	free (from);
+	free (to);
+
+	return ex;
+}
+
 int load_xmlfile_info (char *filename)
 {
 	xmlDocPtr xmlroot;
@@ -221,6 +253,7 @@ int load_xmlfile_info (char *filename)
 	xmlNode *snode=NULL;
 	struct st_data_filenode *new_node=NULL;
 	struct st_part *root_parts=NULL, *curr_parts=NULL, *last_parts=NULL;
+	struct st_data_exception *root_ex=NULL, *curr_ex=NULL, *last_ex=NULL;
 	int section=0;
 
 	xmlroot = open_xml_file (filename);
@@ -299,11 +332,22 @@ int load_xmlfile_info (char *filename)
 						root_parts = curr_parts;
 					last_parts = curr_parts;
 				}
+				else if (!strcmp (dnode->name, "exception"))
+				{
+					curr_ex = new_exception_from_xmlnode (dnode);
+					if (last_ex)
+						last_ex->next = curr_ex;
+					else
+						root_ex = curr_ex;
+					last_ex = curr_ex;
+				}
 				dnode = dnode->next;
 			}
 			new_node->parts = root_parts;
+			new_node->exceptions = root_ex;
 			st_data_append_filenode (new_node);
 			root_parts = last_parts = curr_parts = NULL;
+			root_ex = last_ex = curr_ex = NULL;
 			fnode = fnode->next;
 		}
 
