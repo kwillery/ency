@@ -204,36 +204,14 @@ st_open ()
 
 
 int
-curr_close (void)
+st_close_file (void)
 {
   fclose (inp);
   return (0);
 }
 
-
-int
-ency_close (void)
-{
-  return (curr_close ());
-}
-
-
-int
-epis_close (void)
-{
-  return (curr_close ());
-}
-
-
-int
-chro_close (void)
-{
-  return (curr_close ());
-}
-
-
 char
-ency_cleantext (unsigned char c)
+st_cleantext (unsigned char c)
 {
   switch (c)
     {
@@ -286,6 +264,16 @@ ency_cleantext (unsigned char c)
 }
 
 
+char *st_lcase(char *mcase)
+{
+char *lcase=NULL;
+int i=0;
+lcase = malloc (strlen(mcase)+1);
+//strcpy (lcase, mcase);
+while(lcase[i] = tolower(mcase[i])) i++;
+return(lcase);
+}
+
 int
 st_fingerprint (void)
 {
@@ -316,23 +304,23 @@ st_fingerprint (void)
 // printf("%d\n",good);
 	  if (good == 16)
 	    {
-	      curr_close ();
+	      st_close_file ();
 	      return i;
 	    }
 	}
-      curr_close ();
+      st_close_file ();
       return (254);
     }
   else
     {
-      curr_close ();
+      st_close_file ();
       return (255);
     }
 }
 
 
 struct st_ency_formatting *
-curr_return_fmt (void)
+st_return_fmt (void)
 {
   struct st_ency_formatting *root_fmt, *last_fmt, *curr_fmt;
   int first_time = 1;
@@ -432,29 +420,8 @@ curr_return_fmt (void)
   return (root_fmt);
 }
 
-
-struct st_ency_formatting *
-ency_return_fmt (void)
-{
-  return (curr_return_fmt ());
-}
-
-struct st_ency_formatting *
-epis_return_fmt (void)
-{
-  return (curr_return_fmt ());
-}
-
-struct st_ency_formatting *
-chro_return_fmt (void)
-{
-  return (curr_return_fmt ());
-}
-
-
-
 int
-curr_find_start (void)
+st_find_start (void)
 {
   int c = 0;
   int oldc = 0;
@@ -486,41 +453,20 @@ start_find_start:
     }
 }
 
-
-int
-ency_find_start (void)
-{
-  return (curr_find_start ());
-}
-
-int
-epis_find_start (void)
-{
-  return (curr_find_start ());
-}
-
-int
-chro_find_start (void)
-{
-  return (curr_find_start ());
-}
-
-
-
 char *
-curr_return_text (void)
+st_return_text (void)
 {
   int text_size = 0;
   int bye = 0;
   char c = 0;
   char old_c = 0;
-  char *temp_text;
+  char *temp_text=NULL;
 
-  temp_text = malloc (1);
+  // temp_text = malloc (1);
 
   while (!bye)
     {
-      c = ency_cleantext (getc (inp));
+      c = st_cleantext (getc (inp));
       if (c == 0)
 	bye = 1;
       if ((old_c == '\n') && (c == 0x7E))
@@ -545,75 +491,35 @@ curr_return_text (void)
 }
 
 char *
-ency_return_text (void)
-{
-  return (curr_return_text ());
-}
-
-char *
-epis_return_text (void)
-{
-  return (curr_return_text ());
-}
-
-char *
-chro_return_text (void)
-{
-  return (curr_return_text ());
-}
-
-
-
-char *
-curr_return_title (void)
+st_return_title (void)
 {
   char c;
-  char *titl = NULL;
+  char *title = NULL;
   int title_size = 0;
 
-  titl = malloc (70);		// should be 1, not 70.
+   title = malloc (70);		// should be 1, not 70.
 
 // malloc & realloc calls keep crashing, no idea why.
 
-  while ((c = ency_cleantext (getc (inp))) != '@')
+  while ((c = st_cleantext (getc (inp))) != '@')
 
     {
 
-// /* should be on! */ titl = realloc(titl,title_size+1);
-      /*
-         if (titl == NULL)
+// /* should be on! */ title = realloc(title,title_size+1);
+      
+         if (title == NULL)
          {
          printf("Oh, ^$#%%!\n");
          return (NULL);
          }
-       */
-      titl[title_size++] = c;
+       
+      title[title_size++] = c;
 
     }
 
-  titl[title_size] = 0;
-  return (titl);
+  title[title_size] = 0;
+  return (title);
 }
-
-
-char *
-ency_return_title (void)
-{
-  return (curr_return_title ());
-}
-
-char *
-epis_return_title (void)
-{
-  return (curr_return_title ());
-}
-
-char *
-chro_return_title (void)
-{
-  return (curr_return_title ());
-}
-
 
 char *
 st_nice_error (int error_no)
@@ -655,7 +561,7 @@ st_title_error (int error_no)
 
 
 struct ency_titles *
-curr_find_list (char title[], int exact)
+curr_find_list (char *search_string, int exact)
 {
   long this_one_starts_at = 0;
   int found_any_yet = 0;
@@ -663,12 +569,14 @@ curr_find_list (char title[], int exact)
   char c;
   int i = 0;
   int found = 0;
-  char ttl2[70], title2[70];
+  char *lc_title = NULL, *lc_search_string = NULL;
   struct ency_titles *root_title, *curr_title, *last_title;
   int no_so_far = 0;
-  char *ttl = 0, *temp_text = 0;
+  char *title = NULL, *temp_text = NULL;
   struct st_ency_formatting *text_fmt, *kill_fmt;
 
+  lc_search_string = st_lcase(search_string);
+  
   root_title = curr_title = last_title = NULL;
 
   if (!st_open ())
@@ -676,63 +584,50 @@ curr_find_list (char title[], int exact)
       return (st_title_error (1));
     };
 
-/*
-   root_title = (struct ency_titles *) malloc (sizeof (struct ency_titles));
-
-   if (root_title == NULL)
-   {
-   return (st_title_error (2));
-   }
-
-   curr_title = root_title;
- */
   do
     {
       if (!first_time)
-		ency_find_start ();
+		st_find_start ();
       this_one_starts_at = ftell (inp);
 
       first_time = 0;
-      text_fmt = ency_return_fmt ();
+      text_fmt = st_return_fmt ();
       i = 0;
       no_so_far++;
-      ttl = ency_return_title ();
-
-      /* Title & number:  printf ("%d:%s\n", no_so_far, ttl); */
+      title = st_return_title ();
+             
+      /* Title & number:  printf ("%d:%s\n", no_so_far, title); */
       c = getc (inp);
 
-      /* lowerise ttl > ttl2, title > title2 */
-      while ((ttl2[i++] = tolower (ttl[i])));
-      ttl2[i] = 0;
-      i = 0;
-      while ((title2[i++] = tolower (title[i])));
-      title2[i] = 0;
-      i = 0;
+      lc_title = st_lcase(title);
       /* */
 
       found = 0;
 
       /* Is this the one we want?? */
-      if ((!exact) && strstr (ttl, title))
+      if ((!exact) && strstr (title, search_string))
 	found = 1;
-      if ((exact == 1) && (!strcmp (ttl, title)))
+      if ((exact == 1) && (!strcmp (title, search_string)))
 	found = 1;
       if (exact == 2)
 	found = 1;
       if (st_ignore_case)
 	{
-	  if ((!exact) && (strstr (ttl2, title2)))
+	  if ((!exact) && (strstr (lc_title, lc_search_string)))
 	    found = 1;
-	  if ((exact == 1) && (!strcasecmp (ttl, title)))
+	  if ((exact == 1) && (!strcasecmp (title, search_string)))
 	    found = 1;
 	}
       /* */
+
+free (lc_title);
 
       if (found)		/* If yes... */
 	{
 	  found_any_yet = 1;
 	  if (st_return_body)
-	    temp_text = ency_return_text ();
+	    temp_text = st_return_text ();
+
 	  /* define the pointer */
 /*        if (curr_title != root_title) */
 	  {
@@ -749,7 +644,7 @@ curr_find_list (char title[], int exact)
 /* copy pointer stuff over */
 	  curr_title->err = 0;
 	  curr_title->filepos = this_one_starts_at;
-	  curr_title->title = ttl;
+	  curr_title->title = title;
 	  curr_title->next = NULL;
 	  if (st_return_body)
 	    {
@@ -760,13 +655,13 @@ curr_find_list (char title[], int exact)
 	    last_title->next = curr_title;
 	  last_title = curr_title;
 	  curr_title = (struct ency_titles *) NULL;
-	  ttl = temp_text = (char *) text_fmt = (struct st_ency_formatting *) NULL;
+	  title = temp_text = (char *) text_fmt = (struct st_ency_formatting *) NULL;
 /* */
 	}
       else
 	/* It's not the one we want */
 	{
-	  free (ttl);
+	  free (title);
 	  while (text_fmt)
 	    {
 	      kill_fmt = text_fmt;
@@ -777,7 +672,8 @@ curr_find_list (char title[], int exact)
 
     }
   while (no_so_far != curr_lastone);
-  curr_close ();
+  st_close_file ();
+
   if (found_any_yet)
     return (root_title);
   else
@@ -979,7 +875,7 @@ st_get_table (void)
 			    {
 			      return (NULL);
 			    }
-			  temp_text[text_size++] = tolower (ency_cleantext (c));
+			  temp_text[text_size++] = tolower (st_cleantext (c));
 			}
 		      temp_text[text_size] = 0;
 		      curr_tbl->fnbase = temp_text;
@@ -994,7 +890,7 @@ st_get_table (void)
 			    {
 			      return (NULL);
 			    }
-			  temp_text[text_size++] = ency_cleantext (c);
+			  temp_text[text_size++] = st_cleantext (c);
 			}
 		      temp_text[text_size] = 0;
 		      curr_tbl->title = temp_text;
@@ -1006,7 +902,7 @@ st_get_table (void)
 
 		}
 	    }
-	  curr_close ();
+	  st_close_file ();
 	  upto++;
 	}
 
@@ -1085,7 +981,7 @@ st_get_captions (void)
 			    {
 			      return (NULL);
 			    }
-			  temp_text[text_size++] = tolower (ency_cleantext (c));
+			  temp_text[text_size++] = tolower (st_cleantext (c));
 			}
 		      temp_text[text_size] = 0;
 		      curr_cpt->fnbasen = temp_text;
@@ -1100,7 +996,7 @@ st_get_captions (void)
 			    {
 			      return (NULL);
 			    }
-			  temp_text[text_size++] = ency_cleantext (c);
+			  temp_text[text_size++] = st_cleantext (c);
 			}
 		      temp_text[text_size] = 0;
 
@@ -1114,7 +1010,7 @@ st_get_captions (void)
 		}
 	    }
 	  upto++;
-	  curr_close ();
+	  st_close_file ();
 	}
     }
   return (root_cpt);
@@ -1148,14 +1044,14 @@ get_title_at (long filepos)
     {
       return (st_title_error (2));
     }
-  text_fmt = ency_return_fmt ();
+  text_fmt = st_return_fmt ();
   i = 0;
 
-  ttl = ency_return_title ();
+  ttl = st_return_title ();
 
   c = getc (inp);
 
-  temp_text = ency_return_text ();
+  temp_text = st_return_text ();
 // copy pointer stuff over
   root_title->filepos = filepos;
   root_title->title = ttl;
@@ -1163,7 +1059,7 @@ get_title_at (long filepos)
   root_title->next = NULL;
   root_title->fmt = text_fmt;
   st_return_body = return_body_was;
-  curr_close ();
+  st_close_file ();
   return (root_title);
 }
 
