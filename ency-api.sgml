@@ -183,7 +183,7 @@ There are six <tt/<ref id="st_photo" name="st_photo">/ structs in <tt/photos/. T
 <verb>
 int st_init (void);
 </verb>
-<tt/st_init/ should be the first <tt/ency/ function run in programs, as it initialises important parts of the library.
+<tt/st_init/ should usually be the first <tt/ency/ function run in programs, as it initialises important parts of the library.
 
 
 <sect1>st_finish<label id="st_finish">
@@ -251,8 +251,9 @@ void st_unload_data(void);
 <item><tt>/usr/share/ency/encyfiles.xml</tt></item>
 <item><tt>/usr/local/share/ency/encyfiles.xml</tt></item>
 </itemize>
-
 </p>
+<p>
+<em>Note that <tt/st_load_xml_file()/ needs to be run before <tt/st_init()/, unless of course you run <tt/st_unload_data()/ first.</em>
 </sect1>
 
 <sect1>st_find<label id="st_find">
