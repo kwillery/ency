@@ -15,10 +15,11 @@ findenc and htmlenc both can take a switch of either "-e" or "-c" to search the 
 you can also pass a search string on the command line.
 eg:
   findenc -e emissary
+  showm kirk
 
 That's about it.
 
-You need to either be in a directory with the Data.cxt file (case sensitive) or
+You need to either be in a directory with a data file (see below) or
 set the ENCY_FILENAME environment variable.
 eg in sh/bash/etc:
  export ENCY_FILENAME=/dose/ency98/Data.cxt
@@ -26,7 +27,7 @@ or in csh/tcsh/etc:
  setenv ENCY_FILENAME /dose/ency98/Data.cxt
 (suiting filenames to match :)
 
-Other files to look for:
+--Data files--
  eg_tng.dxr
  eg_ds9.dxr
  omni1.dxr
