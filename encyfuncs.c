@@ -313,9 +313,11 @@ char *st_get_filename (void)
 
 char *st_fileinfo_get_name (int file_type)
 {
-  if (file_type == ST_FILE_CURR)
+  if (file_type == ST_FILE_CURR) {
+    if (st_file_type == ST_FILE_UNKNOWN)
+      return (("Unknown encyclopedia"));
     return (st_files[st_file_type].name);
-  else
+  } else
     return (st_files[file_type].name);
 }
 
@@ -959,9 +961,11 @@ static int check_match (char *search_string, char *title, int exact)
         lc_title = st_lcase (title);
         lc_search_string = st_lcase (search_string);
 	    if ((!exact) && (strstr (lc_title, lc_search_string)))
-	found = 1;
-      if ((exact == 1) && (!strcasecmp (title, search_string)))
-	found = 1;
+	        found = 1;
+        if ((exact == 1) && (!strcasecmp (title, search_string)))
+    	found = 1;
+    	free (lc_title);
+    	free (lc_search_string);
     }
 return found;
 }
@@ -1060,6 +1064,8 @@ static struct st_ency_formatting *st_return_fmt (void)
     }
 
     i = 0;
+    
+    if (c == '~') c = getc(inp);
 
     while (c != ':') {
       if ((c != 20) && (c != ',') && (st_return_body))
@@ -1521,6 +1527,13 @@ struct ency_titles *st_find_unknown (char *search_string, int exact)
                 if (last_title)
                     last_title->next = curr_title;
                 last_title = curr_title;
+                if (!st_return_body)
+                {
+                    st_free_fmt_tree (curr_title->fmt);
+                    curr_title->fmt = NULL;
+                    free (curr_title->text);
+                    curr_title->text = NULL;
+                }
             } else {
                 st_free_entry (curr_title);
             }
