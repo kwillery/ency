@@ -32,120 +32,78 @@ extern int st_ignore_case;
 extern int st_return_body;
 extern int optind;		/* for getopt() */
 
-int remove_fmt = 0;
 int words = 0;
-int exact = 0;
 
-int loopies (char *txt, struct st_ency_formatting *fmt)
+struct st_ency_formatting *loopies (char *txt, struct st_ency_formatting *fmt, FILE *output)
 {
-  struct st_ency_formatting *fmt2;
-  int i = 0, z = 0;
+  struct st_ency_formatting *kill_fmt;
+  int word_finish = 0;
   char smeg[50];
-  int print_br = 0;
 
-  while ((txt[0] == 32) || (txt[0] == 10)) {
-    printf ("%c", txt[0]);
-    txt++;
-  }
-
-  while ((fmt) && (fmt->firstword < words + 1)) {
-    fmt2 = fmt;
-    fmt = fmt->next;
-    if (remove_fmt)
-      free (fmt2);
-  }
-  while (strlen (txt)) {
-    z = sscanf (txt, "%s", smeg);
+  while (strlen (txt))
     {
+      sscanf (txt, "%s", smeg);
       words++;
 
-      if ((*(txt + strlen (smeg)) == 0x0a) || (*(txt + strlen (smeg) + 1) == 0x0a)) {
-	print_br = 1;
-      }
-      if (fmt != NULL)
-	if (words == fmt->firstword) {
+      if (fmt)
+	if (fmt->firstword == words)
+	  {
+	    if (fmt->bold)
+	      fprintf (output, "<b>");
+	    if (fmt->italic)
+	      fprintf (output, "<i>");
+	    if (fmt->underline)
+	      fprintf (output, "<u>");
 
-	  if (fmt->bold)
-	    printf ("<b>");
-
-	  if (fmt->italic)
-	    printf ("<i>");
-
-	  if (fmt->underline)
-	    printf ("<u>");
-
-	  printf ("%s", smeg);
-
-	  for (i = 0; i < fmt->words - 1; i++) {
-	    txt += (strlen (smeg) + 1);
-	    while ((txt[0] == 32) || (txt[0] == 10))
-	      txt++;
-	    printf (" ");
-	    if (sscanf (txt, "%s", smeg) == -1)
-	      i = fmt->words;
-	    if (i < fmt->words)
-	      printf ("%s", smeg);
+	    word_finish = words + fmt->words - 1;
 	  }
-	  words--;
-	  words += fmt->words;
 
+      fprintf (output, "%s", smeg);
+
+      if (words == word_finish)
+	{
 	  if (fmt->underline)
-	    printf ("</u>");
-
+	    fprintf (output, "</u>");
 	  if (fmt->italic)
-	    printf ("</i>");
-
+	    fprintf (output, "</i>");
 	  if (fmt->bold)
-	    printf ("</b>");
+	    fprintf (output, "</b>");
 
-	  fmt2 = fmt;
+	  kill_fmt = fmt;
 	  fmt = fmt->next;
-	  if (remove_fmt)
-	    free (fmt2);
-	  z = 0;
+	  free (kill_fmt);
 	}
-      if (z) {
-	printf ("%s", smeg);
-      }
-      if (print_br) {
-	printf ("<br>\n");
-	print_br = 0;
-      }
+
+      txt += strlen (smeg);
+      while ((txt[0] == '\n') || (txt[0] == ' '))
+	{
+	  if (txt[0] == '\n') fprintf (output, "<br>");
+	  fprintf (output, "%c", *(txt++));
+	}
     }
-    txt += (strlen (smeg));
-    if (strlen (txt))
-      while ((txt[0] == 32) || (txt[0] == '\n')) {
-	if (txt[0] == 32)
-	  printf ("%c", txt[0]);
-	else
-	  printf ("<br>\n");
-	txt++;
-      }
-  }
-  return (0);
+
+  return (fmt);
 }
 
-int printoff (struct ency_titles *stuff)
+int printoff (struct ency_titles *stuff, FILE *output)
 {
   char *tmp;
   struct st_ency_formatting *fmt1;
 
-  printf ("<hr>\n");
-  remove_fmt = 0;
+  fprintf (output, "<hr>\n");
   tmp = stuff->title;
   fmt1 = stuff->fmt;
   words = 0;
 
-  loopies (tmp, fmt1);
+  fprintf (output, "<h2>");
+  fmt1 = loopies (tmp, fmt1, output);
+  fprintf (output, "</h2>");
 
-  remove_fmt = 1;
-  printf ("<br>\n");
   tmp = stuff->text;
 
-  loopies (tmp, fmt1);
+  loopies (tmp, fmt1, output);
 
-  printf ("<br>\n");
-  printf ("<br>\n");
+  fprintf (output, "<br>\n");
 
   return (0);
 }
@@ -205,13 +163,13 @@ int main (int argc, char *argv[])
   i = 0;
   printf ("<html>\n");
   printf ("<head><title>Search results for: %s</title></head>", search_string);
-  printf ("<h1>Star Trek Encyclopedia</h1>\n");
+  printf ("<h1>Star Trek %s</h1>\n", st_fileinfo_get_name (ST_FILE_CURR));
   printf ("You searched for <b>%s</b>.\n", search_string);
   if ((thingy != NULL) && (thingy->title != NULL)) {
     do {
       full_body = get_title_at (thingy->filepos);
 
-      printoff (full_body);
+      printoff (full_body, stdout);
 
       media = st_get_media(thingy->title);
 
@@ -239,9 +197,9 @@ int main (int argc, char *argv[])
   } else
     printf ("No matches<br>\n");
 
-  printf ("<hr>\nMibus' ency reader<br>\n");
+  printf ("<hr>\nThe Star Trek ency reader: ");
   printf ("<a href=\"http://users.bigpond.com/mibus/ency.html\">http://users.bigpond.com/mibus/ency.html</a><br>\n");
-  printf ("queries, comments, flames, to <a href=\"mailto:mibus@bigpond.com\">Robert Mibus (mibus@bigpond.com)</a>");
+  printf ("Queries, comments, and flames, to <a href=\"mailto:mibus@bigpond.com\">Robert Mibus &lt;mibus@bigpond.com&gt;</a>");
 
   printf ("</html>\n");
 
