@@ -38,7 +38,8 @@ text = the body of the entry
 fmt = formatting info
 next = the next returned entry
 err = the error code (see encyfuncs.c for now)
-filepos = used soon, i promise!!! (very alpha now, will be used for post search getting of text, etc)
+filepos = position in Data.cxt of info; use get_title_at() to retrieve the info.
+(eg. have (st_return_body = 0), build list using ency_find_list(), and get_title_at() to get data when clicked/selected)
 
 ---------
 functions
@@ -71,7 +72,7 @@ returns a list of all encyclopedia (ency,epis, and chro) titles, and file name b
 
 struct ency_titles *get_title_at (long filepos)
 returns title & text of entry at file position filepos
-(will be used later)
+use filepos variable returned with the ency_titles structure.
 
 ---------
 Robert Mibus

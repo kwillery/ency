@@ -54,7 +54,7 @@ main ()
     {
       do
 	{
-	  printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
+	  printf ("\n%d:%s\n\n%s\n\n", thingy->filepos, thingy->title, thingy->text);
 /*        thingyz = ency_get_title (thingy->title);
  *        printf ("%s\n\n", thingyz->text);
  *        free (thingyz->fmt);
