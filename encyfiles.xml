@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<files>
+  <file>
+    <name>Encyclopedia 2.0</name>
+    <mainfile>Data.cxt</mainfile>
+    <datadir>Ency98</datadir>
+    <photodir>media98</photodir>
+    <videodir>video98</videodir>
+    <append_char/>
+    <prepend_year/>
+    <append_series/>
+    <fingerprint>52;49;46;58;0;99;d7;6e;4d;43;39;35;69;6d;61;70;</fingerprint>
+    <ptable start="0x410c4" count="26"/>
+    <pcaption start="0x4e5064" count="5"/>
+    <vtable start="0x50e690" count="26"/>
+    <vcaption start="0x4FCED6" count="1"/>
+    <section name="Encyclopedia">
+      <part start="0x7bc28" count="6814"/>
+      <part start="0x39d0d8" count="230"/>
+      <part start="0x576574" count="68"/>
+    </section>
+    <section name="Episodes">
+    </section>
+    <section name="Chronology">
+    </section>
+  </file>
+  <file>
+    <name>Encyclopedia 3.0</name>
+    <mainfile>Data99.cxt</mainfile>
+    <datadir>ENCYprogram/Pro</datadir>
+    <photodir>media99</photodir>
+    <videodir>video98</videodir>
+    <append_char/>
+    <prepend_year/>
+    <append_series/>
+    <section name="Encyclopedia">
+      <part start="0xbf5b4" count="6827"/>
+      <part start="0x3e260a" count="230"/>
+      <part start="0x5b42e2" count="1504"/>
+      <part start="0x70d05e" count="6"/>
+    </section>
+    <section name="Episodes">
+      <part start="0x3dc854" count="23"/>
+      <part start="0x3fe352" count="400"/>
+      <part start="0x531c14" count="3"/>
+      <part start="0x6fa2f1" count="74"/>
+    </section>
+    <section name="Chronology">
+      <part start="0x4638e0" count="582"/>
+    </section>
+    <fingerprint>58;46;49;52;12;a;bc;0;33;39;56;4d;70;61;6d;69;</fingerprint>
+  </file>
+</files>

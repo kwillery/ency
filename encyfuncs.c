@@ -30,6 +30,10 @@
 #include <string.h>
 #include "ency.h"
 
+#ifndef DONT_USE_XML
+#include "data.h"
+#endif
+
 static FILE *inp;
 
 static char *ency_filename = NULL;
@@ -39,6 +43,7 @@ int st_ignore_case = 0;
 static int force_unknown = 0;
 static int st_file_type = 0;
 
+#ifdef DONT_USE_XML
 /* for pictures */
 static const long int st_table_starts_at[] =
 {0x410c4, 0, 0x388f2e, 0, 0x3CD470, 0, 0x2BBA98, 0x2BCD9B, 0, 0x322996, 0};
@@ -62,9 +67,6 @@ static const long int epis_starts_at[] =
 static const long int chro_starts_at[] =
 {0x41e32c, 0, 0x62764A, 0, 0x66B9C4, 0, 0x1, 0, 0x1, 0};
 
-/* for use w/ st_get_title_at() */
-static long int set_starts_at = 0x0;
-
 /* hm. articles or sections or whatever to get */
 static const long int ency_lastone[] =
 {6814, 230, 68, 0, 4092, 491, 0, 3904, 476, 1347, 0, 181, 0, 89, 42, 0};
@@ -86,8 +88,6 @@ static const long st_video_table_lastone[] =
 
 static const long st_video_caption_lastone[] =
 {1, 0, 1, 0, 1, 0, 24, 0, 15, 0};
-
-static long int curr_starts_at, curr_lastone, curr;
 
 struct st_file_info
 {
@@ -116,6 +116,12 @@ const struct st_file_info st_files[] =
 	{"DS9 Episode guide", "eg_ds9.dxr", "ds9", "media", "media", 1, 0, 0,
 	 {0x52, 0x49, 0x46, 0x58, 0x0, 0x4C, 0xAE, 0xC4, 0x4D, 0x56, 0x39, 0x33, 0x69, 0x6D, 0x61, 0x70}, 1}
 };
+#endif
+
+/* for use w/ st_get_title_at() */
+static long int set_starts_at = 0x0;
+
+static long int curr_starts_at, curr_lastone, curr;
 
 /* internal */
 #define ST_SECT_PTBL 10
@@ -142,6 +148,9 @@ static void st_clear_cache (void);
 /* init/de-init stuff */
 int st_init (void)
 {
+#ifndef DONT_USE_XML
+	load_file_info();
+#endif
 	st_fingerprint ();
 	return (st_file_type >= 254 ? force_unknown : 1);
 }
@@ -248,6 +257,13 @@ static char *st_lcase (char *mcase)
 
 	return (lcase);
 }
+
+#ifndef DONT_USE_XML
+int st_count_filetypes(void)
+{
+	return count_files();
+}
+#endif
 
 /* struct manipulation */
 void st_free_fmt (struct st_ency_formatting *fmt)
@@ -489,6 +505,7 @@ char *st_get_filename (void)
 	return (ency_filename);
 }
 
+#ifdef DONT_USE_XML
 char *st_fileinfo_get_name (int file_type)
 {
 	if (file_type == ST_FILE_CURR)
@@ -627,9 +644,20 @@ static struct st_part *get_part (int file, int section, int number)
 	}
 	return NULL;
 }
+#else
+char *st_fileinfo_get_name (int file_type)
+{
+	if (file_type > ST_FILE_TYPES)
+		return "Unknown";
 
+	if (file_type == -1)
+		file_type = st_file_type;
 
-static int curr_open (void)
+	return get_name_of_file (file_type);
+}
+#endif
+
+int curr_open (long start)
 {
 	int i = 0;
 	char *temp_fn = NULL;
@@ -664,7 +692,7 @@ static int curr_open (void)
 	i = 0;
 	if (inp)
 	{
-		i = fseek (inp, curr_starts_at, SEEK_SET);
+		i = fseek (inp, start, SEEK_SET);
 	}
 	return (i == 0 ? (int) inp : 0);
 }
@@ -690,7 +718,7 @@ static int st_open ()
 		return (0);
 		break;
 	}
-	return (curr_open ());
+	return (curr_open (curr_starts_at));
 }
 
 static int st_close_file (void)
@@ -699,6 +727,7 @@ static int st_close_file (void)
 	return (0);
 }
 
+#ifdef DONT_USE_XML
 int st_fingerprint (void)
 {
 	int i = 0, z = 0;
@@ -734,6 +763,7 @@ int st_fingerprint (void)
 		return (255);
 	}
 }
+#endif
 
 char *st_autofind (int st_file_version, char *base_dir)
 {
@@ -756,13 +786,16 @@ char *st_autofind (int st_file_version, char *base_dir)
 		test_filename = malloc (strlen (base_dir) + strlen (datadir) + strlen (filename) + 3);
 		ency_filename = test_filename;
 
-		sprintf (test_filename, "%s", base_dir);
-		if (st_fingerprint () == st_file_version)
+		if (strcmp (base_dir, "."))
 		{
-			free (lc_data_dir);
-			free (lc_filename);
-			ency_filename = ency_fn_backup;
-			return (test_filename);
+			sprintf (test_filename, "%s", base_dir);
+			if (st_fingerprint () == st_file_version)
+			{
+				free (lc_data_dir);
+				free (lc_filename);
+				ency_filename = ency_fn_backup;
+				return (test_filename);
+			}
 		}
 
 		sprintf (test_filename, "%s/%s", base_dir, filename);

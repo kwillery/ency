@@ -1,6 +1,6 @@
-SHELL=/bin/sh
-CFLAGS=-O3 -g -Wall
-LDFLAGS=-lxml
+SHELL = /bin/sh
+CFLAGS = -O3 -g -Wall -DDONT_USE_XML
+LDFLAGS=
 CC=gcc
 AR=ar
 prefix=/usr
@@ -23,11 +23,9 @@ INSTALL_BIN=$(INSTALL_PROGRAM) $(INSTALL_BINOPTS)
 
 all: libency.a htmlenc findenc scanenc
 
-libency.a: libency.a(encyfuncs.o) libency.a(data.o)
+libency.a: libency.a(encyfuncs.o)
 
-libency.a(encyfuncs.o): ency.h encyfuncs.c data.h
-
-libency.a(data.o): data.h data.c ency.h
+libency.a(encyfuncs.o): ency.h encyfuncs.c
 
 findenc htmlenc scanenc: libency.a
 

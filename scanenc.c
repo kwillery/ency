@@ -45,7 +45,7 @@ int is_all_ascii (char *string)
 
 int ends_in_number (char *string, int expected_length)
 {
-	return (isdigit(string[expected_length]));
+	return (isdigit(string[expected_length]) || (string[expected_length] == 'F'));
 }
 int ends_in_quote (char *string, int expected_length)
 {
@@ -112,6 +112,8 @@ void check_for_captions (FILE *inp, FILE *outp, FILE *data)
 					printf ("found cpt @ 0x%lx\t%s\n", found_at, fnbase);
 					if (outp)
 						fprintf (outp, "found cpt @ 0x%lx\t%s\n", found_at, fnbase);
+					if (data)
+						fprintf (data, "<pcaption \"0x%lx\" count=\"1\"/>\n", found_at);
 					fseek (inp, found_at, SEEK_SET);
 					return;
 				}
@@ -274,6 +276,7 @@ int main (int argc, char *argv[])
 	char last_start = 0;
 	int new_section;
 	int last_section = -1;
+	int this_count=0;
 	char *filename;
 	char *save_file=NULL;
 	char *save_data=NULL;
@@ -319,7 +322,7 @@ int main (int argc, char *argv[])
 	if (save_data)
 	{
 		data = fopen (save_data, "w");
-		if (!outp)
+		if (!data)
 		{
 			printf ("Error writing to %s\n", save_data);
 			exit;
@@ -344,6 +347,7 @@ int main (int argc, char *argv[])
 			fprintf (outp, "%x;", getc (inp));
 		fprintf (outp, "\n");
 	}
+	st_init();
 	st_force_unknown_file (1);
 	st_set_filename (filename);
 	printf ("Scanning for entries...\n");
@@ -360,13 +364,18 @@ int main (int argc, char *argv[])
 				new_section = guess_section (entry->title, entry->text, last_section);
 				if (new_section != last_section)
 				{
+					if ((save_file) && (this_count))
+						fprintf (outp, "Total for this part: %d\n", this_count);
 					if (save_file)
 						fprintf (outp, "\nNew section (%s)\n", sections[new_section]);
 #ifndef QUIET
+					if (this_count)
+						printf ("Total for this part: %d\n", this_count);
 					printf ("\nNew section (%s)\n", sections[last_section = new_section]);
 #else
 					last_section = new_section;
 #endif
+					this_count = 0;
 				}
 			}
 			last_start = tolower (*entry->title);
@@ -379,11 +388,17 @@ int main (int argc, char *argv[])
 				save_match (inp, outp);
 			}
 			counts[last_section]++;
+			this_count++;
 			st_free_entry (entry);
 			getc (inp);	/* make sure it doesnt pick the same one up again */
 		}
 	}
 	while (returned);
+	if ((save_file) && (this_count))
+		fprintf (outp, "Total for this part: %d\n", this_count);
+	if (this_count)
+		printf ("Total for this part: %d\n", this_count);
+
 	printf ("Found entries:\n");
 	if (save_file)
 		fprintf (outp, "Found entries:\n");
