@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <getopt.h>
 #include "ency.h"
 
 extern int optind;		/* for getopt() */
@@ -104,7 +105,7 @@ int printoff (struct ency_titles *stuff, FILE *output)
 
 void print_usage (void)
 {
-  printf (" htmlenc - Searches the Star Trek encyclopedias\n http://users.bigpond.com/mibus/ency/\n Usage: htmlenc -[c|e] [-m]\n   -c: searches chronology\n   -e: searches episodes\n    (default: search encyclopedia)\n   -m: displays associated media (photos etc.)\n");
+  printf (" htmlenc - Searches the Star Trek encyclopedias\nUsage: htmlenc [OPTION...] [search string]\n\n  --chronology\t(-c)\tSearches the chronology section\n  --episode\t(-e)\tSearches the episode guide section\n   (Default: Search the encyclopedia section)\n  --media\t(-m)\tDisplays associated media\n");
   exit (0);
 }
 
@@ -120,67 +121,92 @@ int main (int argc, char *argv[])
   int use_media = 0;
   int search_what = 0;
   int section = ST_SECT_ENCY;
+  FILE *out=stdout;
+  char *filename = NULL;
 
-  while ((i = getopt (argc, argv, "ecmh")) != EOF) 
+  static struct option long_opts[] = {
+    {"help", 0, 0, 'h'},
+    {"media", 0, 0, 'm'},
+    {"episode", 0, 0, 'e'},
+    {"chronology", 0, 0 ,'c'},
+    {"save", 0, 0, 's'},
+    {0, 0, 0, 0}};
+
+  while ((i = getopt_long (argc, argv, "ecmhs:", long_opts, 0)) != EOF) 
     switch (i)
-  {
-  case 'm':
-    use_media = 1;
-    break;
-  case 'e':
-    section = ST_SECT_EPIS;
-    break;
-  case 'c':
-    section = ST_SECT_CHRO;
-    break;
-  default:
-    print_usage ();
+      {
+      case 'm':
+	use_media = 1;
+	break;
+      case 'e':
+	section = ST_SECT_EPIS;
+	break;
+      case 'c':
+	section = ST_SECT_CHRO;
+	break;
+      case 's':
+	filename = optarg;
+	break;
+      case 'h':
+      default:
+	print_usage ();
   }
   
+  if (!st_init ())
+  {
+    printf ("Error opening data file.\n");
+    exit (1);
+  }
+
+  if (use_media)
+    st_load_media ();
+
+  if (filename)
+    if (!(out = fopen (filename, "w")))
+    {
+      perror ("Error opening file");
+      exit (1);
+    }
+
   if (argc > optind) {
-    if (!strcmp(argv[optind],"--help")) print_usage();
     strcpy (search_string, argv[optind]);
   } else {
     printf ("Enter search string :");
     scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
   }
 
-  st_init ();
-  if (use_media)
-    st_load_media ();
-
   thingy = st_find (search_string, section, ST_OPT_MATCH_SUBSTRING);
-  
+
   i = 0;
-  printf ("<html>\n");
-  printf ("<head><title>Search results for: %s</title></head>", search_string);
-  printf ("<h1>Star Trek %s</h1>\n", st_fileinfo_get_name (ST_FILE_CURR));
-  printf ("You searched for <b>%s</b>.\n", search_string);
+  fprintf (out,"<html>\n");
+  fprintf (out,"<head><title>Search results for: %s</title></head>", search_string);
+  fprintf (out,"<h1>Star Trek %s</h1>\n", st_fileinfo_get_name (ST_FILE_CURR));
+  fprintf (out,"You searched for <b>%s</b>.\n", search_string);
   if ((thingy != NULL) && (thingy->title != NULL)) {
     do {
       full_body = get_title_at (thingy->filepos);
 
-      printoff (full_body, stdout);
+      printoff (full_body, out);
 
       media = st_get_media(thingy->title);
 
       if (media)
       {
-	printf("<b>Associated media</b>\n<ul>");
+	fprintf(out,"<b>Associated media</b>\n<ul>");
 	for (i = 0; i < 5; i++)
 	  if (strlen (media->photos[i].file)) {   /* if there is photos #i */
             temp_fn = st_format_filename (media->photos[i].file, base_path, 0);
-            printf ("<li><a href=\"%s\">%s</a> (picture)\n</li>", temp_fn, media->photos[i].caption);
+            fprintf (out,"<li><a href=\"%s\">%s</a> (picture)\n</li>", temp_fn, media->photos[i].caption);
 	    free (temp_fn);
 	  }
 	if (strlen(media->video.file)) {
           temp_fn = st_format_filename (media->video.file, base_path, 1);
-          printf ("<li><a href=\"%s\">%s</a> (video)\n</li>\n", temp_fn, media->video.caption);
+          fprintf (out,"<li><a href=\"%s\">%s</a> (video)\n</li>\n", temp_fn, media->video.caption);
           free (temp_fn);
         }
         free (media); media = NULL;
 
-	printf ("</ul>");
+	fprintf (out,"</ul>");
       }
 
       st_free_entry_and_advance (&thingy);
@@ -188,13 +214,13 @@ int main (int argc, char *argv[])
     }
     while (thingy != NULL);
   } else
-    printf ("No matches<br>\n");
+    fprintf (out,"No matches<br>\n");
 
-  printf ("<hr>\nThe Star Trek ency reader: ");
-  printf ("<a href=\"http://users.bigpond.com/mibus/ency/\">http://users.bigpond.com/mibus/ency/</a><br>\n");
-  printf ("Queries, comments, and flames, to <a href=\"mailto:mibus@bigpond.com\">Robert Mibus &lt;mibus@bigpond.com&gt;</a>");
+  fprintf (out,"<hr>\nThe Star Trek ency reader: ");
+  fprintf (out,"<a href=\"http://users.bigpond.com/mibus/ency/\">http://users.bigpond.com/mibus/ency/</a><br>\n");
+  fprintf (out,"Queries, comments, and flames, to <a href=\"mailto:mibus@bigpond.com\">Robert Mibus &lt;mibus@bigpond.com&gt;</a>");
 
-  printf ("</html>\n");
+  fprintf (out,"</html>\n");
 
   st_unload_media ();
   st_finish ();
