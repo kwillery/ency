@@ -40,11 +40,35 @@ just set the ENCY_FILENAME variable to one of these, eg:
  setenv ENCY_FILENAME /dose/tng_ep/eg_tng.dxr
 (if you are using csh, tcsh, etc.)
 
-If you use the eg_tng.dxr or eg_ds9.dxr (episode guide) files, you will need to look in the EPISODE section, ie:
-  findenc -e emissary
+If you use the eg_tng.dxr or eg_ds9.dxr (episode guide) files, you will need to look in the ENCYCLOPEDIA section, ie:
+  findenc emissary
 or:
-  htmlenc -e yesterday
+  htmlenc yesterday
 
+--Unknown files--
+With ency 0.7.10 on, unknown files with a file format similar to the ones used here can be opened. The file in question is usually the biggest one on the CD/whatever, often in the root directory of the CD. They usually have extentions like ".cxt" or ".dxr".
+
+To see if your 'unknown file' would work, run 'scanenc' over it:
+  scanenc /dose/trek/Reference/Data.cxt
+You would probably want to look at it through 'less':
+  scanenc /dose/trek/Reference/Data.cxt | less
+
+You should (after a while) see a list of entry titles, along with their position in the file. If this appears to work, do this:
+
+1) Set the ENCY_FILENAME environment variable to the name of your file.
+    eg in sh/bash/etc:
+      export ENCY_FILENAME=/dose/ency98/Data.cxt
+    or in csh/tcsh/etc:
+      setenv ENCY_FILENAME /dose/ency98/Data.cxt
+
+2) use the '-u' argument with findenc or htmlenc
+    eg
+      findenc -u kirk
+      htmlenc -u picard
+
+Note though that all entries are in the 'Encylopedia' section, regardless of where they belong.
+
+--NOTE--
 BUT MOST IMPORTANTLY:
 dont forget - if you can't get it to work, dont hesitate to mail me.
 
@@ -57,7 +81,7 @@ ie (as root):
 or in your fstab:
   /dev/cdrom   /cdrom   defaults,noauto,ro,unhide  0 0
 
-Also, the videos for these aren't supported by xanim (AFAIK).
+Also, the videos for these aren't yet supported by xanim (AFAIK).
 
 --
 Robert Mibus
