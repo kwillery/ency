@@ -2524,6 +2524,7 @@ char *st_format_filename (char *fnbasen, char *base_path, media_type media)
 int st_get_picture(char *name, char *file, long width, long height)
 {
 	struct st_part *part=NULL;
+	int ret;
 	FILE *inp=NULL;
 
 	if (!name)
@@ -2537,13 +2538,23 @@ int st_get_picture(char *name, char *file, long width, long height)
 	DBG ((stderr, "Got part '%s' @ %ld, %ld bytes long.\n", name, part->start, part->size));
 
 	inp = open_part (part);
+	ret = create_ppm_from_image (file, inp, width, height, part->size)
 
-	DBG ((stderr, "Ret: %d\n", create_ppm_from_image (file, inp, width, height, part->size)));
+	DBG ((stderr, "Ret: %d\n", ret));
+	fclose (inp);
 
-	return 1;
+	return ret;
 }
 
 int st_get_thumbnail(char *name, char *file)
 {
-	return st_get_picture (name, file, 60, 40);
+	char newname[7+6 + 100];
+
+	if (!name || !file)
+		return 1;
+
+	strcpy (newname, name);
+	strcat (newname, "T.pic");
+
+	return st_get_picture (newname, file, 60, 40);
 }
