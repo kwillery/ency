@@ -1210,12 +1210,15 @@ void st_unload_media (void)
 static int check_match (char *search_string, char *title, int options)
 {
 	int found = 0;
+	char *tmp;
 
 	st_ultraclean_string (title = strdup(title));
 
 	if (!(options & ST_OPT_CASE_SENSITIVE))
 	{
+		tmp = title;
 		title = st_lcase (title);
+		free (tmp); /* The strdup()'ed one */
 		search_string = st_lcase (search_string);
 
 	}
