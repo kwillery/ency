@@ -20,6 +20,19 @@ or in csh/tcsh/etc:
  setenv ENCY_FILENAME /dose/ency98/Data.cxt
 (suiting filenames to match :)
 
+Other files to look for:
+eg_tng.dxr
+eg_ds9.dxr
+omni1.dxr
+omni_v2.dxr
+
+just set the ENCY_FILENAME variable to one of these, eg:
+ setenv ENCY_FILENAME /dose/tng_ep/eg_tng.dxr
+if you are using (t)csh
+
+BUT MOST IMPORTANTLY:
+dont forget - if you can't get it to work, dont hesitate to mail me.
+
 --
 Robert Mibus
 beemer@picknowl.com.au
