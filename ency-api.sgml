@@ -4,24 +4,33 @@
 <author>Robert Mibus, <tt/mibus@bigpond.com/
 <!-- date --><!-- v1.0, 28 March 1994 -->
 <abstract>
-This document explains the 'ency' API
+This document explains the libency API
 </abstract>
 
 <toc>
-<sect>Introduction
 
+
+
+<sect>Introduction
 <p>
 The 'ency' library currently supports five encyclopedias
 <itemize>
-<item>The original Omnipedia
-<item>The updated Omnipedia
-<item>The Star Trek Encyclopedia
-<item>The TNG Episode Guide
-<item>The DS9 Episode Guide
-<item>The Star Trek Encyclopedia v3.0
+<item>The original Omnipedia</item>
+<item>The updated Omnipedia</item>
+<item>The Star Trek Encyclopedia</item>
+<item>The TNG Episode Guide</item>
+<item>The DS9 Episode Guide</item>
+<item>The Star Trek Encyclopedia v3.0</item>
 </itemize>
 
+<p><em/Note that libency currently needs libxml 1.8.x to compile./</p>
+</sect>
+
+
+
 <sect>Defines &amp; enums
+
+
 <sect1>ST_FILE_*<label id="ST_FILE_*">
 <p>
 These are the different file types ency supports.
@@ -29,17 +38,16 @@ These are the different file types ency supports.
 #define ST_FILE_TYPES st_count_filetypes()
 #define ST_FILE_CURR -1
 </verb>
-
 <p>
 TYPES is how many types there are, 0 to (TYPES-1). This calls st_count_filetypes(), you can use either. (It exists primarily for compatibility.
 <p>
 CURR is the last one loaded/used, and is only used with <tt/<ref id="st_fileinfo_get_name" name="st_fileinfo_get_name()"> /
 <p>
 
+
 <sect1>ST_SECT_*<label id="ST_SECT_*">
 <p>
 These are the different sections of each encyclopedia.
-
 <verb>
 #define ST_SECT_ENCY 0
 #define ST_SECT_EPIS 1
@@ -133,10 +141,10 @@ struct ency_titles
 <tt/name/ is the entry's actual title.
 <tt/title/ is the entry's title that is written as part of the entry.
 <tt/text/ is the entry's text (body).
-<tt/fmt/ is the entry's formatting information. (see <ref id="st_ency_formatting" name="st_ency_formatting">)
+<tt/fmt/ is the entry's formatting information. (see <tt/<ref id="st_ency_formatting" name="st_ency_formatting">/)
 <tt/next/ leads to the next returned entry (<tt/NULL/ if this is the last one).
-<tt/err/ is a returned error code (see <ref id="st_nice_error" name="st_nice_error">). (N.B. that this is rarely used).
-<tt/filepos/ is the # of bytes into the data file the information starts. (see <ref id="st_get_title_at" name="st_get_title_at">). It should be free'd with one of the <ref id="st_free_entry*" name="st_free_entry*"> functions
+<tt/err/ is a returned error code (see <tt/<ref id="st_nice_error" name="st_nice_error">/). (N.B. that this is rarely used).
+<tt/filepos/ is the # of bytes into the data file the information starts. (see <tt/<ref id="st_get_title_at" name="st_get_title_at">/). It should be free'd with one of the <tt/<ref id="st_free_entry*" name="st_free_entry">/ functions.
 <tt/score/ is used when doing fulltext searches. (See <tt/<ref id="st_find" name="st_find()">/ and <tt/<ref id="ST_OPT_*" name="ST_OPT_FT">/. It is a number out of 100, but is *not* a percentage. (Well...).
 <p>
 The difference between <tt/name/ and <tt/title/ may be hard to understand; <tt/name/ is what the 'official' software puts in the listbox at the top of the screen. <tt/title/ is the first piece of bold text to be placed in the text box at the bottom. (Also, -&gt;name changes when <tt/<ref id="ST_OPT_*" name="ST_OPT_SORTEPIS">/ is used, whereas <tt/title/ never does.
@@ -149,15 +157,15 @@ struct st_photo {
   char caption[50];
 };
 </verb>
-This struct is returned in <ref id="st_media" name="st_media"> structs (see <ref id="st_get_media" name="st_get_media">)
+This struct is returned in <tt/<ref id="st_media" name="st_media">/ structs (see <tt/<ref id="st_get_media" name="st_get_media">/)
 <tt/file/ is the first 7 characters of the filename of the photo (or now, video, sound, or swf) is being referred to.
-<tt/file/ should be processed by <ref id="st_format_filename" name="st_format_filename"> to get a usable filename.
+<tt/file/ should be processed by <tt/<ref id="st_format_filename" name="st_format_filename">/ to get a usable filename.
 
 
 <sect1>st_media<label id="st_media">
 
 <p>
-Returned by <ref id="st_get_media" name="st_get_media">.
+Returned by <tt/<ref id="st_get_media" name="st_get_media">/.
 <verb>
 struct st_media {
   struct st_photo photos[6];
@@ -166,7 +174,7 @@ struct st_media {
   struct st_photo swf;
 };
 </verb>
-There are six <ref id="st_photo" name="st_photo"> structs in <tt/photos/. The <tt/video/, <tt/audio/, and <tt/swf/ structs are the same, but holds the video, audio, and 'flash' references instead.
+There are six <tt/<ref id="st_photo" name="st_photo">/ structs in <tt/photos/. The <tt/video/, <tt/audio/, and <tt/swf/ structs are the same, but holds the video, audio, and 'flash' references instead.
 
 <sect>Functions
 
@@ -193,7 +201,7 @@ int st_finish (void);
 int st_set_filename (char *filename);
 </verb>
 This function sets the filename which is to be opened.
-Often used in conjunction with <ref id="st_autofind" name="st_autofind">
+Often used in conjunction with <tt/<ref id="st_autofind" name="st_autofind">/.
 <p>
 If the filename is not set, ency will check for an environment variable called <tt/ENCY_FILENAME/. Failing that, ency will attempt to look for known files itself.
 
@@ -205,13 +213,15 @@ char *st_get_filename (void);
 Returns the currently stored filename.
 <p><em/NOTE/: Do <em/not/ free the returned pointer.
 
+<sect1>st_count_filetypes<label id="st_count_filetypes">
+
 
 <sect1>st_fileinfo_get_name<label id="st_fileinfo_get_name">
 <p>
 <verb>
 char *st_fileinfo_get_name (int filetype);
 </verb>
-This returns a descriptive string for a given <ref id="ST_FILE_*" name="ST_FILE_*"> type.
+This returns a descriptive string for a given encyclopedia's name.
 Use either <tt/0/ to <tt/<ref id="st_count_filetypes" name="st_count_filetypes()">/-1, or <tt/<ref id="ST_FILE_*" name="ST_FILE_CURR">/.
 
 <sect1>st_autofind<label id="st_autofind">
@@ -221,8 +231,30 @@ char *st_autofind (int filetype, char *directory);
 </verb>
 This function locates a data file in a directory.
 <p>
-<tt/filetype/ is a <ref id="ST_FILE_*" name="ST_FILE_*"> definition.
+<tt/filetype/ is a unique number identifying an encyclopedia to libency; N.B. that these numbers can change. Usually you just loop for each possible encyclopedia (see <tt/<ref id="st_count_filetypes" name="st_count_filetypes()">/), or just one picked by a user by it's name (see <tt/<ref id="st_fileinfo_get_name" name="st_fileinfo_get_name()">/).
 <tt/directory/ is the base directory to look in for the data file. If one is found, the full filename is returned, else <tt/NULL/ is returned. <ref id="st_set_filename" name="st_set_filename"> can then be used with the string.
+
+<sect1>xml files<label id="xml files">
+<p>
+<verb>
+int st_load_xml_file (char *);
+void st_unload_data(void);
+</verb></p>
+<p>
+<tt/st_load_xml_file()/ loads a specified XML file for use by libency. Any encyclopedia definitions in it will be added to any lists already loaded, with preference given to file(s) loaded earlier. <tt/st_unload_data()/ clears this internal list. (I recommend <em/*against*/ giving it files it won't understand :-). By default, libency will try to load encyfiles.xml from these locations:
+<itemize>
+<item>Where the environment variable <tt/ENCY_XML_FILENAME/ points</item>
+<item><tt>$HOME/.ency/encyfiles.xml</tt></item>
+<item><tt>$HOME/.encyfiles.xml</tt></item>
+<item><tt>./encyfiles.xml</tt></item>
+<item><tt>/etc/encyfiles.xml</tt></item>
+<item><tt>/usr/local/etc/encyfiles.xml</tt></item>
+<item><tt>/usr/share/ency/encyfiles.xml</tt></item>
+<item><tt>/usr/local/share/ency/encyfiles.xml</tt></item>
+</itemize>
+
+</p>
+</sect1>
 
 <sect1>st_find<label id="st_find">
 <p>
@@ -231,39 +263,27 @@ This is the preferred method for doing a search.
 struct ency_titles *st_find (char *search_string, int section, int options)
 </verb>
 <p>
-<tt/search_string/ is the string to search for. <tt/section/ is the <ref id="ST_SECT_*" name="ST_SECT_*"> define. <tt/options/ come from the <ref id="ST_OPT_*" name="ST_OPT_*"> defines.
+<tt/search_string/ is the string to search for. <tt/section/ is the <tt/<ref id="ST_SECT_*" name="ST_SECT_*">/ define. <tt/options/ come from the <tt/<ref id="ST_OPT_*" name="ST_OPT_*">/ defines.
 <p>
 Example usage:
 <verb>
  results = st_find ("Kirk", ST_SECT_ENCY, ST_OPT_MATCH_SUBSTRING | ST_OPT_RETURN_BODY);
 </verb>
 <p>
-Only one section can be specified, but multiple options can be used with the '|' (binary "OR") symbol.
+Only one section can be specified, but multiple options can be used with the '|' (bitwise "OR") symbol. It returns linked list of <tt/<ref id="ency_titles" name="ency_titles">/ structs, which should be free'd with one of the <tt/<ref id="st_free_entry*" name="st_free_entry">/ functions.
 <p>
-More on this later; It is a new function and may (probably will) change.
 
-<sect1>st_force_unknown_file<label id="st_force_unknown_file">
+<sect1>st_read_title_at<label id="st_read_title_at">
 <p>
 <verb>
-void st_force_unknown_file (int true)
+struct ency_titles *st_read_title_at (long filepos, int options);
 </verb>
 <p>
-If <tt/true/ is 1, then a call to st_open (whether made by you or another function you called) will not fail if the file is unrecognised. 0 sets it back to the default value of only opening recognised files.
-
-<sect1>*_find_list<label id="*_find_list">
-<p>
-<em/NOTE/ These are being phased out in favour of <ref id="st_find" name="st_find"> and may disappear soon.
-<p>
-These functions start searches on the three sections of the data file (Encyclopedia, Episode, Chronology).
-<verb>
-struct ency_titles *ency_find_list (char[] search_string, int exact);
-struct epis_titles *ency_find_list (char[] search_string, int exact);
-struct chro_titles *ency_find_list (char[] search_string, int exact);
-</verb>
-<tt/search_string/ is exactly that, the string to look for.
-If <tt/exact/ is set to 0, *_find_list will match substrings (eg. "James" in "Kirk, James T."). If 1, it only accepts exact matches. If it is 2, it will match all entries, regardless of the search string.
-<ref id="st_return_body" name="st_return_body"> and <ref id="st_ignore_case" name="st_ignore_case"> can be used with these functions.
-
+<tt/st_read_title_at()/ returns a single entry at the position indicated by filepos in the current encyclopedia's main data file. The <tt/<ref id="ST_OPT_*" name="ST_OPT">/ options that affect it are:
+<itemize>
+		<item>ST_OPT_NO_FMT</item>
+		<item>ST_OPT_RETURN_BODY</item>
+</itemize>
 
 <sect1>st_get_title_at<label id="st_get_title_at">
 <p>
@@ -272,7 +292,7 @@ struct ency_titles *st_get_title_at (long filepos);
 </verb>
 </p>
 <p>
-This function returns an <ref id="ency_titles" name="ency_titles"> struct of an entry at a certain byte position in the file. The position is returned with <ref id="*_find_list" name="*_find_list"> searches.</p><p><em/Note:/ This used to be called simply get_title_at(), renamed to fit the rest of the function names.</p>
+This function returns an <tt/<ref id="ency_titles" name="ency_titles">/ struct of an entry at a certain byte position in the file. The position is returned with most <tt/<ref id="st_find" name="st_find()">/ searches.</p><p><em/Note:/ This currently calls <tt/<ref id="st_read_title_at" name="st_read_title_at()">/ with ST_OPT_RETURN_BODY for an option.</p>
 
 <sect1>st_nice_error<label id="st_nice_error">
 <p>
@@ -280,15 +300,15 @@ This function returns an <ref id="ency_titles" name="ency_titles"> struct of an 
 char *st_nice_error (int err);
 </verb>
 This returns an informative error message when given an error number as an argument.
-
+<em/This function is used as often as the <tt/-&gt;err/ part of the <tt/<ref id="ency_titles" name="ency_titles">/ struct, i.e. rarely/
 
 <sect1>st_load_media<label id="st_load_media">
 <p>
 <verb>
 int st_load_media (void);
 </verb>
-This tells 'ency' to load the media lookup tables. It should be run once per file. <ref id="st_get_media" name="st_get_media"> can then be used.
-
+This tells 'ency' to load the media lookup tables. It should be run once per file. <tt/<ref id="st_get_media" name="st_get_media">/ can then be used.
+If you want to load another file later (to change encyclopedias), run <tt/<ref id="st_unload_media" name="st_unload_media()">/ first.
 
 <sect1>st_loaded_media<label id="st_loaded_media">
 <p>
@@ -303,7 +323,7 @@ This checks to see if the media lookup tables are loaded - 1 is returned if they
 <verb>
 int st_unload_media (void)
 </verb>
-This function unloads the media lookup tables loaded by <ref id="st_load_media" name="st_load_media">
+This function unloads the media lookup tables loaded by <tt/<ref id="st_load_media" name="st_load_media">/
 
 
 <sect1>st_get_media<label id="st_get_media">
@@ -311,45 +331,19 @@ This function unloads the media lookup tables loaded by <ref id="st_load_media" 
 <verb>
 struct st_media *st_get_media (char *search_string);
 </verb>
-This function is for matching titles of entries with media (photos, videos). <tt/search_string/ is matched exactly against a list of all media (loaded by <ref id="st_load_media" name="st_load_media">)
-It returns an <ref id="st_media" name="st_media"> struct if a match is found, else <tt/NULL/
+This function is for matching titles of entries with media (photos, videos). <tt/search_string/ is matched exactly against a list of all media (loaded by <tt/<ref id="st_load_media" name="st_load_media">/)
+It returns an <tt/<ref id="st_media" name="st_media">/ struct if a match is found, else <tt/NULL/
 
 
 <sect1>st_format_filename<label id="st_format_filename">
 <p>
 <verb>
-char *st_format_filename (char *fnbasen, char *base_path, int media)
+char *st_format_filename (char *fnbasen, char *base_path, media_type media)
 </verb>
-This function converts a 6-letter filename to a full filename. <tt/fnbasen/ is the <tt/file/ section from the <ref id="st_photo" name="st_photo"> structs in an <ref id="st_media" name="st_media"> struct.
+This function converts a 6-letter filename to a full filename. <tt/fnbasen/ is the <tt/file/ section from the <tt/<ref id="st_photo" name="st_photo">/ structs in an <tt/<ref id="st_media" name="st_media">/ struct.
 <tt/base_path/ is where the media is located (eg. "/cdrom").
-<tt/media/ is 0 for a picture, or 1 for a video.
+<tt/media/ is from the <tt/<ref id="media_type" name="media_type">/ enum, and should be set depending on what part of an <tt/<ref id="st_media" name="st_media">/ is being passed.
 
-
-<sect1>st_get_table<label id="st_get_table">
-<p>
-This function is not used outside of ency itself.
-<verb>
-struct st_table *st_get_table (void);
-</verb>
-This function returns a linked list of <ref id="st_table" name="st_table"> structs.
-
-
-<sect1>st_get_captions<label id="st_get_captions">
-<p>
-This function is not used outside of ency itself.
-<verb>
-struct st_caption *st_get_captions(void);
-</verb>
-This function returns a linked list of <ref id="st_caption" name="st_caption"> structs.
-
-
-<sect1>st_fingerprint<label id="st_fingerprint">
-<p>
-This function is rarely used outside of ency itself.
-<verb>
-int st_fingerprint (void);
-</verb>
-This function checks the currently set file, and returns an <ref id="ST_FILE_*" name="ST_FILE_*"> number.
 
 <sect1>st_free_entry*<label id="st_free_entry*">
 <p>
@@ -359,26 +353,18 @@ int st_free_entry (struct ency_titles *);
 int st_free_entry_tree (struct ency_titles *);
 int st_free_entry_and_advance (struct ency_titles **);
 </verb>
-<tt/st_free_entry/ frees a single <ref id="ency_titles" name="ency_titles"> struct. <tt/st_free_entry_tree/ does that, but also removes all after it (referenced by the '->next'). <tt/st_free_entry_and_advance/ frees a single entry, then progresses to the next. (note the **, this means you will probably need a '&amp;' before the argument).
-
-<sect1>st_find_start<label id="st_find_start">
-<p>
-<tt/st_find_start/ is used to locate the beginning of the next entry in a data file.
-<verb>
-int st_find_start (FILE *);
-</verb>
-<tt/FILE/ is the open file to search in.
-<p>
-<tt/st_find_start/ returns 0 if it reaches the end of the file, else 1.
+<tt/st_free_entry/ frees a single <tt/<ref id="ency_titles" name="ency_titles">/ struct. <tt/st_free_entry_tree/ does that, but also removes all after it (referenced by the '->next'). <tt/st_free_entry_and_advance/ frees a single entry, then progresses to the next. (note the **, this means you will probably need a '&amp;' before the argument).
 
 <sect>Example Implementation
 <p>
+<em/libency needs libxml 1.8.x to compile./
+<p>
 Compile the following program as such:
-  <tt/gcc -o test test.c encyfuncs.c/
+  <tt/gcc -o test test.c libency.a -lxml/
 (assuming you have the ency source in this directory, and have called this program 'test.c')
 or (more likely)
-  <tt/gcc -o test test.c -lency/
-(assuming you have libency.a in /usr/lib, ency.h in /usr/include, and have named this program test.c)
+  <tt/gcc -o test test.c -lency -lxml/
+(assuming you have libency.a in /usr/lib, ency.h in /usr/include, and have named this program test.c, yada yada yada - your options may vary.)
 <p>
 <verb>
 #include <stdio.h>
@@ -386,8 +372,6 @@ or (more likely)
 #include <string.h>
 #include <unistd.h>
 #include "ency.h"
-
-extern int st_ignore_case;
 
 int main (int argc, char *argv[])
 {
@@ -399,7 +383,7 @@ int main (int argc, char *argv[])
   struct st_ency_formatting *fmt = NULL, *kill_fmt = NULL;
   struct st_media *media = NULL;
   char base_path[] = "/cdrom";
-
+  int options = ST_OPT_MATCH_SUBSTRING | ST_OPT_RETURN_BODY;
   printf ("Enter search string :");
   scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
 
@@ -413,9 +397,6 @@ int main (int argc, char *argv[])
   /* tell ency to load the media lookup tables */
   st_load_media ();
 
-  /* make the search *not* case sensitive */
-  st_ignore_case = 1;
-
   /* if you want to manually set the filename
    *   st_set_filename ("/dose/trek/Reference/eg_tng.dxr");
    * if you want to look for an ency version in a directory,
@@ -424,30 +405,35 @@ int main (int argc, char *argv[])
    * it is *not* a full search.
    * else it defaults to "./Data.cxt" */
 
-    thingy = st_find (search_string, ST_SECT_ENCY, ST_OPT_MATCH_SUBSTRING | ST_OPT_RETURN_BODY);
-
-/* Other possibilities:
-    thingy = epis_find_list (search_string, 0);
-    thingy = chro_find_list (search_string, 0);
-*/
+    thingy = st_find (search_string, ST_SECT_ENCY, options);
 
   if ((thingy != NULL) && (thingy->title != NULL)) {
     do {
       /* print the returned text */
-      printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
+      printf ("\n--<%s>--\n%s\n%s\n\n", thingy->name, thingy->title, thingy->text);
       media = st_get_media(thingy->title);
 
       if (media)
       {
         printf ("Associated media:\n");
-        for (i = 0; i < 5; i++)
+        for (i = 0; i < 6; i++)
           if (strlen (media->photos[i].file)) {   /* if there is photos #i */
-            temp_fn = st_format_filename (media->photos[i].file, base_path, 0);
+            temp_fn = st_format_filename (media->photos[i].file, base_path, picture);
             printf ("%s: %s\n", temp_fn, media->photos[i].caption);
             free (temp_fn);
           }
         if (strlen(media->video.file)) {   /* if there is a video */
-          temp_fn = st_format_filename (media->video.file, base_path, 1);
+          temp_fn = st_format_filename (media->video.file, base_path, video);
+          printf ("%s: %s\n", temp_fn, media->video.caption);
+          free (temp_fn);
+        }
+        if (strlen(media->audio.file)) {
+          temp_fn = st_format_filename (media->video.file, base_path, audio);    
+          printf ("%s: %s\n", temp_fn, media->video.caption);
+          free (temp_fn);
+        }
+        if (strlen(media->swf.file)) {
+          temp_fn = st_format_filename (media->video.file, base_path, swf);
           printf ("%s: %s\n", temp_fn, media->video.caption);
           free (temp_fn);
         }
