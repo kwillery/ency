@@ -175,6 +175,6 @@ void st_copy_part_entry (struct ency_titles **, struct ency_titles *);
 
 /* lower-level functions */
 char st_cleantext (unsigned char c);
-void st_cleanstring (char *string);
+unsigned char *st_cleanstring (unsigned char *string);
 
 #endif

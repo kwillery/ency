@@ -174,10 +174,45 @@ char st_cleantext (unsigned char c)
 	}
 }
 
-void st_cleanstring (char *string)
+unsigned char *st_cleanstring (unsigned char *string)
 {
-	while ((*string = st_cleantext (*string)))
-		string++;
+	unsigned char *new_string=NULL, *s, *t;
+	int append=0;
+
+	if (!string)
+		return NULL;
+
+	/* Find out if we need to length the string */
+	s = string;
+	while (*s)
+		if (*s++ == 0x85)
+			append+=2;
+
+	s = string;
+	if (append) /* We need to lengthen then clean */
+	{
+		t = new_string = malloc (strlen(s) + append + 1);
+		while (*s)
+		{
+			if (*s == 0x85) /* 0x85 is '...' */
+			{
+				strcpy (t, "...");
+				t += 3;
+			}
+			else
+				*t++ = st_cleantext(*s);
+			s++;
+		}
+		*t = 0;
+		free (string);
+		return new_string;
+	} else { /* We can clean it in-string */
+		while ((*s = st_cleantext(*s)))
+			s++;
+		return string;
+	}
+
+	return NULL;
 }
 
 static char *st_lcase (char *mcase)
@@ -735,7 +770,7 @@ static inline char *get_text_from_file_max_length (FILE *inp, int length)
 	return text;
 }
 
-/* Reads an attrib table from 'inp' and appends
+/* Reads a LU table from 'inp' and appends
  * it to 'root' */
 static struct st_table *read_table (FILE *inp, struct st_table *root)
 {
@@ -780,8 +815,7 @@ static struct st_table *read_table (FILE *inp, struct st_table *root)
 		} while ((c == ' ') || (c == ':'));
 		ungetc (c, inp);
 
-		curr_tbl->title = get_text_from_file (inp);
-		st_cleanstring (curr_tbl->title);
+		curr_tbl->title = st_cleanstring(get_text_from_file (inp));
 
 		if (last_tbl)
 			last_tbl->next = curr_tbl;
@@ -865,8 +899,7 @@ static struct st_caption *read_captions (FILE *inp, struct st_caption *root)
 		} while ((c == ' ') || (c == ':'));
 		ungetc (c, inp);
 
-		curr_cpt->caption = get_text_from_file (inp);
-		st_cleanstring (curr_cpt->caption);
+		curr_cpt->caption = st_cleanstring (get_text_from_file (inp));
 
 		curr_cpt->next = NULL;
 		if (last_cpt)
@@ -948,7 +981,7 @@ static struct st_table *read_attribs_table (FILE *inp, int section)
 
 			curr_tbl->section = section;
 
-			curr_tbl->title = get_text_from_file (inp);
+			curr_tbl->title = st_cleanstring (get_text_from_file (inp));
 
 			c = getc (inp);
 			if (c == ':')
@@ -974,9 +1007,9 @@ static struct st_table *read_attribs_table (FILE *inp, int section)
 										{
 											ungetc (c, inp);
 											if (commas == 4)
-												curr_tbl->fnbase = get_text_from_file_max_length (inp, 20);
+												curr_tbl->fnbase = st_cleanstring (get_text_from_file_max_length (inp, 20));
 											else
-												curr_tbl->audio = get_text_from_file_max_length (inp, 20);
+												curr_tbl->audio = st_cleanstring (get_text_from_file_max_length (inp, 20));
 											c=0;
 										}
 									if (commas == 8) /* Block ID */
@@ -989,9 +1022,6 @@ static struct st_table *read_attribs_table (FILE *inp, int section)
 						}
 				}
 
-			if (curr_tbl->fnbase)
-				st_cleanstring (curr_tbl->fnbase);
-			st_cleanstring (curr_tbl->title);
 			curr_tbl->next = NULL;
 			if (last_tbl)
 				last_tbl->next = curr_tbl;
@@ -1240,7 +1270,7 @@ static char *st_return_text (FILE *inp)
 {
 	long text_starts_at = 0;
 	int text_size = 1;
-	int bye = 0, i;
+	int bye = 0;
 	char c = 0;
 	char old_c = 0;
 	char *temp_text = NULL;
@@ -1269,11 +1299,9 @@ static char *st_return_text (FILE *inp)
 	fseek (inp, text_starts_at, SEEK_SET);
 	fread (temp_text, 1, text_size, inp);
 
-	for (i = 0; i < text_size; i++)
-		temp_text[i] = st_cleantext (temp_text[i]);
-	temp_text[i] = 0;
+	temp_text[text_size] = 0;
 
-	return (temp_text);
+	return (st_cleanstring (temp_text));
 }
 
 /* Read an entry's title in from 'inp' */
@@ -1285,19 +1313,17 @@ static char *st_return_title (FILE *inp)
 
 /* TODO: make this 70 autodetected ala st_return_text */
 	title = malloc (70);
-
-	while ((c = st_cleantext (getc (inp))) != '@')
+	if (title == NULL)
 	{
-		if (title == NULL)
-		{
-			printf ("Oh, ^$#%%!\n");
-			return (NULL);
-		}
-		title[title_size++] = c;
+		printf ("Oh, ^$#%%!\n");
+		return (NULL);
 	}
 
+	while ((c = getc (inp)) != '@')
+		title[title_size++] = c;
+
 	title[title_size] = 0;
-	return (title);
+	return (st_cleanstring(title));
 }
 
 /* This formats ency_titles' ->err to be a
