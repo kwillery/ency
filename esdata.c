@@ -25,8 +25,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <ctype.h> /* tolower() */
 #include "esdata.h"
+
+/*
+  es_list
+*/
 
 struct es_list *es_list_new ()
 {
@@ -54,7 +58,7 @@ void es_list_add_entry (struct es_list *list, struct es_list_entry *entry)
 	int curr_diff, next_diff;
 
 	if (list->curr && list->curr->next)
-		if (strcmp (entry->index, list->curr->index) >= 0 && strcmp (entry->index, list->curr->next->index) < 0)
+		if (strcasecmp (entry->index, list->curr->index) >= 0 && strcasecmp (entry->index, list->curr->next->index) < 0)
 		{
 			/* Immediately after list->curr */
 			entry->next = list->curr->next;
@@ -70,7 +74,7 @@ void es_list_add_entry (struct es_list *list, struct es_list_entry *entry)
 		list->curr = entry;
 		return;
 	}
-	if (strcmp (entry->index, list->head->index) < 0)
+	if (strcasecmp (entry->index, list->head->index) < 0)
 	{
 		/* Before the first item */
 		entry->next = list->head;
@@ -78,7 +82,7 @@ void es_list_add_entry (struct es_list *list, struct es_list_entry *entry)
 		list->curr = entry;
 		return;
 	}
-	if (strcmp (entry->index, list->tail->index) >= 0)
+	if (strcasecmp (entry->index, list->tail->index) >= 0)
 	{
 		/* After the last item */
 		list->tail->next = entry;
@@ -88,13 +92,13 @@ void es_list_add_entry (struct es_list *list, struct es_list_entry *entry)
 	}
 
 	/*  Find it the long way. */
-	if (!list->head || strcmp (entry->index, list->curr->index) < 0)
+	if (!list->head || strcasecmp (entry->index, list->curr->index) < 0)
 		list->curr = list->head;
 
-	curr_diff = strcmp (entry->index, list->curr->index);
+	curr_diff = strcasecmp (entry->index, list->curr->index);
 	while (list->curr->next)
 	{
-		next_diff = strcmp (entry->index, list->curr->next->index);
+		next_diff = strcasecmp (entry->index, list->curr->next->index);
 		if (list->curr->next && curr_diff > 0 && next_diff <= 0)
 		{
 			entry->next = list->curr->next;
@@ -186,20 +190,20 @@ struct es_list_entry *es_list_get (struct es_list *list, char *index)
 		return NULL;
 
 	/* Before first entry */
-	if (strcmp (index, list->head->index) < 0)
+	if (strcasecmp (index, list->head->index) < 0)
 		return NULL;
 
 	/* After last entry */
-	if (strcmp (index, list->tail->index) > 0)
+	if (strcasecmp (index, list->tail->index) > 0)
 		return NULL;
 
-	if (!list->curr || strcmp (index, list->curr->index) < 0)
+	if (!list->curr || strcasecmp (index, list->curr->index) < 0)
 		list->curr = list->head;
 
 	while (list->curr)
 	{
 		int diff;
-		diff = strcmp (index, list->curr->index);
+		diff = strcasecmp (index, list->curr->index);
 		if (diff == 0)
 			return list->curr;
 		else if (diff < 0)
@@ -207,4 +211,75 @@ struct es_list_entry *es_list_get (struct es_list *list, char *index)
 		list->curr = list->curr->next;
 	}
 	return NULL;
+}
+
+/*
+  es_slist
+*/
+
+static int es_slist_list_number (char c)
+{
+	char d;
+
+	d = tolower (c);
+
+	/* 0-25 if it's a letter */
+	if (d >= 'a' && d <= 'z')
+		return d - 'a';
+
+	/* 26 if it's not */
+	return (26);
+}
+
+struct es_slist *es_slist_new (void)
+{
+	struct es_slist *list;
+	int i;
+
+	list = (struct es_slist *) malloc (sizeof (struct es_slist));
+
+	for (i=0;i<27;i++)
+		list->lists[i] = es_list_new();
+
+	return list;
+}
+
+void es_slist_add (struct es_slist *list, char *index, void *data, long pos)
+{
+	es_list_add(list->lists[es_slist_list_number (*index)],index,data,pos);
+}
+
+void es_slist_free (struct es_slist *list)
+{
+	int i;
+
+	for (i=0;i<27;i++)
+		es_list_free(list->lists[i]);
+	free (list);
+}
+
+void es_slist_free_data (struct es_slist *list, int free_index, int free_data)
+{
+	int i;
+
+	for (i=0;i<27;i++)
+		es_list_free_data (list->lists[i], free_index, free_data);
+
+	free (list);
+}
+
+void es_slist_dump (struct es_slist *list)
+{
+	int i;
+	printf ("Beginning slist dump\n");
+	for (i=0;i<27;i++)
+	{
+		printf ("slist %d:\n", i);
+		es_list_dump (list->lists[i]);
+	}
+}
+
+struct es_list_entry *es_slist_get (struct es_slist *list, char *index)
+{
+	return es_list_get(list->lists[es_slist_list_number (*index)],index);
 }
