@@ -254,14 +254,20 @@ struct st_part *append_part_from_rc_file (struct st_part *part_root, struct rcfi
 
 	/* NB name & dir are the only ones which we
 	   want to keep, the others hold numbers */
-	name = strdup (get_rc_arg (arg, "name"));
+	if (get_rc_arg (arg, "name"))
+		name = strdup (get_rc_arg (arg, "name"));
+	else
+		name = NULL;
 	type = get_rc_arg (arg, "type");
 	section = get_rc_arg (arg, "section");
 	start = get_rc_arg (arg, "start");
 	count = get_rc_arg (arg, "count");
 	start_id = get_rc_arg (arg, "start_id");
 	bcount = get_rc_arg (arg, "bcount");
-	dir = strdup (get_rc_arg (arg, "dir"));
+	if (get_rc_arg (arg, "dir"))
+		dir = strdup (get_rc_arg (arg, "dir"));
+	else
+		dir = NULL;
 
 	if (type == NULL || start == NULL)
 	{
