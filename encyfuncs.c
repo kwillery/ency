@@ -162,16 +162,16 @@ static char st_cleantext (unsigned char c)
     return ('-');
     break;
   case 0xD2:
-    return (34);
+    return ('\"');
     break;
   case 0xD3:
-    return (34);
+    return ('\"');
     break;
   case 0xD4:
-    return (39);
+    return ('\'');
     break;
   case 0xD5:
-    return (39);
+    return ('\'');
     break;
   default:
     return (c);
