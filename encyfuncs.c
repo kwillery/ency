@@ -94,7 +94,7 @@ static void st_clear_cache (void);
 int st_init (void)
 {
 	load_xmlfile_info(NULL);
-	st_fingerprint ();
+	st_file_type = st_fingerprint ();
 	return (st_file_type >= 254 ? 0 : 1);
 }
 
@@ -298,9 +298,9 @@ int st_set_filename (char *filename)
 	if (ency_filename)
 	{
 		type = st_fingerprint();
+		st_file_type = type;
 		if ((type >= 0) && (type < ST_FILE_TYPES))
 		{
-			st_file_type = type;
 			st_clear_cache ();
 			return (1);
 		}
@@ -1394,10 +1394,35 @@ struct ency_titles *st_get_title_at (long filepos)
 
 static void add_to_block_cache (int block_id, int id, long filepos)
 {
+	struct ency_titles *new_entry=NULL, *tmp=NULL, *otmp=NULL;
+
 	if (cache)
 	{
-		cache_last->next = (struct ency_titles *) malloc (sizeof (struct ency_titles));
-		cache_last = cache_last->next;
+//		if ((block_id < cache_last->block_id) || ((block_id == cache_last->block_id) && (id < cache_last->id)))
+//		{
+			tmp = cache;
+			while (tmp)
+			{
+				if ((tmp->block_id >= block_id) && (tmp->id > id))
+					break;
+				otmp = tmp;
+				tmp = tmp->next;
+			}
+			new_entry = (struct ency_titles *) malloc (sizeof (struct ency_titles));
+			new_entry->next = tmp;
+			otmp->next = new_entry;
+			cache_last = new_entry;
+//		}
+//		else if ((block_id > cache_last->block_id) || (block_id == cache_last->block_id) && (id > cache_last->id))
+//		{
+//			new_entry = (struct ency_titles *) malloc (sizeof (struct ency_titles));
+//			new_entry->next = cache_last->next;
+//			cache_last->next = new_entry;
+//			cache_last = new_entry;
+//		} else if (block_id > cac
+//		{
+//			tmp = cache
+//		}
 	}
 	else
 		cache_last = cache = (struct ency_titles *) malloc (sizeof (struct ency_titles));
@@ -1412,49 +1437,45 @@ static void add_to_block_cache (int block_id, int id, long filepos)
 	cache_last->next = NULL;
 }
 
-static void load_block_cache (void)
+static void load_block_cache (int block_id)
 {
 	char c;
-	int n=0, i;
+	int i;
 	int id;
 	struct st_part *part;
 
-	/* this next for is *NOT* the right way to do this... */
-	while ((part = get_part(st_file_type, ST_BLOCK_TEXT, -1, n++, 0)))
+	part = get_part_by_id (st_file_type, block_id);
+
+	inp = (FILE *) curr_open (part->start);
+
+	if (inp)
 	{
-		if ((part->start_id) && (part->bcount))
+		for (i=part->start_id;i<part->start_id + part->bcount;i++)
 		{
-			inp = (FILE *) curr_open (part->start);
-			if (inp)
+			if (i > part->start_id)
 			{
-				for (i=part->start_id;i<part->start_id + part->bcount;i++)
-				{
-					if (i > part->start_id)
-					{
-						find_next_stxt_block (inp);
-						fseek (inp, 16, SEEK_CUR);
-					}
-					add_to_block_cache (i, id=1, ftell (inp));
-					while ((c = getc (inp)))
-					{
-						if (c == '~')
-						{
-							id++;
-							add_to_block_cache (i, id, ftell (inp));
-						}
-					}
-					/* So we can determine the size of the last entry */
-					/* in a block later. This is *not* a real entry,  */
-					/* and thus should never be read.                 */
-					add_to_block_cache (i, ++id, ftell (inp)-1);
-				}
-				fclose (inp);
+				find_next_stxt_block (inp);
+				fseek (inp, 16, SEEK_CUR);
 			}
+			add_to_block_cache (i, id=1, ftell (inp));
+			while ((c = getc (inp)))
+			{
+				if (c == '~')
+				{
+					id++;
+					add_to_block_cache (i, id, ftell (inp));
+				}
+			}
+				/* So we can determine the size of the last entry */
+				/* in a block later. This is *not* a real entry,  */
+				/* and thus should never be read.                 */
+			add_to_block_cache (i, ++id, ftell (inp)-1);
 		}
+		fclose (inp);
 	}
 }
 
-static long get_block_pos_from_cache (int block_id, int id)
+static long get_block_pos_from_cache (int block_id, int id, int allow_recursion)
 {
 	struct ency_titles *curr=NULL;
 
@@ -1476,7 +1497,12 @@ static long get_block_pos_from_cache (int block_id, int id)
 		cache_quick = curr = curr->next;
 	}
 
-	return -1;
+	if (allow_recursion)
+	{
+		load_block_cache (block_id);
+		return (get_block_pos_from_cache (block_id, id, 0));
+	} else
+		return -1;
 }
 
 static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
@@ -1488,10 +1514,7 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 	if (!block_id || !id)
 		return NULL;
 
-	if (!cache)
-		load_block_cache ();
-
-	filepos = get_block_pos_from_cache (block_id, id);
+	filepos = get_block_pos_from_cache (block_id, id, 1);
 
 	if (filepos >= 0)
 	{
@@ -1943,6 +1966,9 @@ static struct ency_titles *st_find_fulltext (char *search_string, int section, i
 struct ency_titles *st_find (char *search_string, int section, int options)
 {
 	int exact = 0;
+
+	if (!((st_file_type >= 0) && (st_file_type < ST_FILE_TYPES)))
+		return NULL;
 
 	if (options & ST_OPT_CASE_SENSITIVE)
 		st_ignore_case = 0;

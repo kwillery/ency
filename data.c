@@ -493,6 +493,29 @@ struct st_part *get_part (int file, int type, int section, int number, int optio
 	return NULL;
 }
 
+struct st_part *get_part_by_id (int file, int block_id)
+{
+	struct st_data_filenode *file_node=NULL;
+	struct st_part *part=NULL;
+
+	file_node = get_filenode (file);
+
+	if (!file_node)
+		return NULL;
+
+	part = file_node->parts;
+
+	while (part)
+	{
+		if (part->start_id == block_id)
+			return part;
+
+		part = part->next;
+	}
+
+	return NULL;
+}
+
 char *get_exception (int file, char *type, char *from)
 {
 	struct st_data_exception *ex=NULL;
