@@ -90,10 +90,10 @@ int loopies (char *txt, struct st_ency_formatting *fmt)
 	  words += fmt->words;
 
 	  if (fmt->underline)
-	    printf ("<u>");
+	    printf ("</u>");
 
 	  if (fmt->italic)
-	    printf ("<b>");
+	    printf ("</i>");
 
 	  if (fmt->bold)
 	    printf ("</b>");
