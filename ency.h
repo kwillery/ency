@@ -45,9 +45,8 @@
 #define ST_OPT_MATCH_SUBSTRING 4
 #define ST_OPT_NO_FMT 8
 #define ST_OPT_SORTEPIS 16
-#define ST_OPT_SORTALPHA 32
-#define ST_OPT_FT 64
-#define ST_OPT_NO_FILEPOS 128
+#define ST_OPT_FT 32
+#define ST_OPT_NO_FILEPOS 64
 
 /* enums/structs */
 typedef enum
