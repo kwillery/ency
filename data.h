@@ -69,7 +69,7 @@ struct st_part *get_part (int file, int type, int section, int number, int optio
 struct st_part *get_part_by_id (int file, int block_id);
 struct st_part *get_part_by_name (int file, char *name);
 char *get_exception (int file, char *type, char *from);
-void free_exception (struct st_data_exception *ex)
+void free_exception (struct st_data_exception *ex);
 
 struct st_part *new_part(void);
 void free_part (struct st_part *part);
