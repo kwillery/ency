@@ -960,6 +960,7 @@ st_get_captions (void)
   struct st_caption *root_cpt = 0, *curr_cpt = 0, *last_cpt = 0;
   int c = 0, text_size = 0;
   char *temp_text;
+  upto = 0;
 
   last_cpt = NULL;
   first_time = 1;
@@ -1001,7 +1002,7 @@ st_get_captions (void)
 		      first_time = 0;
 		      do
 			{
-			  while ((c != '\"') && (c != '[') && (c = getc (inp)) != (' '));	// \"
+			  while ((c != '\"') && (c != '[') && (c = getc (inp)) != (' '));
 
 			  c = getc (inp);
 			}
@@ -1013,7 +1014,7 @@ st_get_captions (void)
 			c = ungetc (c, inp);
 		      c = 0;
 
-		      while (((c = getc (inp)) != ':') && (c != '\"'))	// \"
+		      while (((c = getc (inp)) != ':') && (c != '\"'))
 
 			{
 			  temp_text = realloc (temp_text, text_size + 2);

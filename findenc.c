@@ -29,6 +29,7 @@
 #include "ency.h"
 extern int st_ignore_case;
 extern int st_file_type;
+extern int optind;
 extern char *ency_filename;
 
 int
@@ -46,9 +47,15 @@ main (int argc, char *argv[])
       printf ("findenc - Searches Star Trek encyclopedia\nhttp://www.picknowl.com.au/homepages/beemer/ency.html\nUsage: findenc -[c|e]\n-c: searches chronology\n-e: searches episodes\ndefault: search encyclopedia\n");
       exit (0);
     }
-
-  printf ("Enter search string :");
-  scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
+  if (argc > optind)
+    {
+      strcpy (search_string, argv[optind]);
+    }
+  else
+    {
+      printf ("Enter search string :");
+      scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
+    }
 
   st_ignore_case = 1;
   st_file_type = st_fingerprint ();
