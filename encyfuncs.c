@@ -1507,7 +1507,10 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 	if (!block_id || !id)
 		return NULL;
 
-	filepos = get_block_pos_from_cache (block_id, id, 1);
+	if ((st_return_body == 0) && (options & ST_OPT_NO_FILEPOS))
+		filepos = 1; /* can't be 0 'cos of the if() below */
+	else
+		filepos = get_block_pos_from_cache (block_id, id, 1);
 
 	if (filepos >= 0)
 	{

@@ -49,6 +49,7 @@
 #define ST_OPT_SORTEPIS 64
 #define ST_OPT_SORTALPHA 128
 #define ST_OPT_FT 256
+#define ST_OPT_NO_FILEPOS 512
 
 /* enums/structs */
 typedef enum
