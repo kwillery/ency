@@ -536,7 +536,7 @@ static struct st_table *read_table (FILE *input, struct st_table *root)
 			last_tbl = last_tbl->next;
 	}
 	c = getc (inp);
-	if ((c != '[') && (c != '\"'))
+	if (c != '\"')
 		if (ungetc (getc (inp), inp) != '\"')
 			return (root);
 	ungetc (c, inp);
@@ -1484,8 +1484,6 @@ static void load_block_cache (void)
 static long get_block_pos_from_cache (int block_id, int id)
 {
 	struct ency_titles *curr=NULL;
-	int ok_to_go_again=0;
-
 
 	if (cache_quick)
 		if (cache_quick->block_id <= block_id && cache_quick->id <= id)
@@ -1500,17 +1498,12 @@ static long get_block_pos_from_cache (int block_id, int id)
 	
 	while (curr)
 	{
-		if (curr->block_id > block_id)
-			ok_to_go_again = 1;
 		if ((curr->block_id == block_id) && (curr->id == id))
 			return (curr->filepos);
 		cache_quick = curr = curr->next;
 	}
 
-	if (ok_to_go_again)
-		return -2;
-	else
-		return -1;
+	return -1;
 }
 
 static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
@@ -1565,10 +1558,7 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 		return (ret);
 	}
 
-	fprintf (stderr, "Uhoh - entry not found @ %d:%d%s\n", block_id, id, (filepos == -2) ? ", retrying" : "");
-
-	if (filepos == -2)
-		return (get_entry_by_id (block_id+1, id, options));
+	fprintf (stderr, "Uhoh - entry not found @ %d:%d\n", block_id, id);
 
 	return NULL;
 }
@@ -1623,7 +1613,8 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 				}
 				else
 					root = curr = get_entry_by_id (tbl->block_id, tbl->id, options);
-				curr->name = strdup (tmp->title);
+				if (curr)
+					curr->name = strdup (tmp->title);
 			}
 		}
 		tmp = tmp->next;
