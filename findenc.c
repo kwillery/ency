@@ -103,7 +103,7 @@ int main (int argc, char *argv[])
 	 * st_set_filename ("/dose/trek/Reference/eg_tng.dxr");
 	 */
 
-	thingy = st_find (search_string, section, ST_OPT_MATCH_SUBSTRING | ST_OPT_RETURN_BODY);
+	thingy = st_find (search_string, section, ST_OPT_MATCH_SUBSTRING | ST_OPT_RETURN_BODY | ST_OPT_NO_CACHE);
 
 	/*
 	 * get from a certain point in the file...

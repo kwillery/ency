@@ -178,7 +178,7 @@ int main (int argc, char *argv[])
 		scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
 	}
 
-	thingy = st_find (search_string, section, ST_OPT_MATCH_SUBSTRING);
+	thingy = st_find (search_string, section, ST_OPT_MATCH_SUBSTRING | ST_OPT_NO_CACHE);
 
 	i = 0;
 	fprintf (out, "<html>\n");

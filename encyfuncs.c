@@ -133,6 +133,8 @@ static struct st_caption *st_vcpts = NULL, *st_oldvcpts = NULL;
 /* cache */
 static struct ency_titles *cache[3] =
 {0, 0, 0};
+static struct ency_titles *cache_last[3] =
+{0, 0, 0};
 static struct ency_titles *st_find_in_cache (int, char *, int, int);
 static void st_clear_cache (void);
 
@@ -1057,31 +1059,34 @@ static void st_clear_cache ()
 	{
 		st_free_entry_tree (cache[i]);
 		cache[i] = NULL;
+		cache_last[i] = NULL;
 	}
 }
 
 static void st_add_to_cache (int section, char *title, long filepos)
 {
 	struct ency_titles *temp_cache=NULL, *curr=NULL;
+
 	if ((section < 0) || (section > 2)) return;
+
 	temp_cache = malloc (sizeof (struct ency_titles));
+	if (!temp_cache) return;
+
 	temp_cache->title = strdup (title);
 	temp_cache->text = NULL;
 	temp_cache->fmt = NULL;
 	temp_cache->next = NULL;
 	temp_cache->filepos = filepos;
 
-	curr = cache[section];
-	if (curr)
-		while (curr->next)
-			curr = curr->next;
-	else
+	curr = cache_last[section];
+
+	if (!curr)
 	{
-		cache[section] = temp_cache;
+		cache_last[section] = cache[section] = temp_cache;
 		return;
 	}
 
-	curr->next = temp_cache;
+	cache_last[section] = curr->next = temp_cache;
 
 	return;
 }
@@ -1132,87 +1137,50 @@ static struct st_ency_formatting *st_return_fmt (void)
 	struct st_ency_formatting *root_fmt = NULL, *last_fmt = NULL, *curr_fmt = NULL;
 	char c = 0;
 	int i = 0;
-
-	c = getc (inp);
+	char fmt[8]="";
 
 	while (c != '@')
 	{
-		if (st_return_body)
-		{
-			curr_fmt = (struct st_ency_formatting *) malloc (sizeof (struct st_ency_formatting));
-			curr_fmt->firstword = curr_fmt->words = curr_fmt->bold = 0;
-			curr_fmt->italic = curr_fmt->underline = 0;
-			curr_fmt->next = NULL;
+		curr_fmt = (struct st_ency_formatting *) malloc (sizeof (struct st_ency_formatting));
+		curr_fmt->next = NULL;
 
-			if (curr_fmt == NULL)
+		if (curr_fmt == NULL)
+		{
+			printf ("Memory allocation failed\n");
+			exit (1);
+		}
+
+		fscanf (inp,"%d : [ %d , %[#buiBUI] ] ",&curr_fmt->firstword,&curr_fmt->words,fmt);
+
+		c=getc(inp);
+
+		for (i=0;fmt[i];i++)
+		{
+			switch (c)
 			{
-				printf ("Memory allocation failed\n");
-				exit (1);
+			case 'b':
+			case 'B':
+				curr_fmt->bold = 1;
+				break;
+			case 'u':
+			case 'U':
+				curr_fmt->underline = 1;
+				break;
+			case 'i':
+			case 'I':
+				curr_fmt->italic = 1;
+				break;
 			}
 		}
 
-		i = 0;
 
-		if (c == '~')
-			c = getc (inp);
-
-		while (c != ':')
-		{
-			if ((c != 20) && (c != ',') && (st_return_body))
-				curr_fmt->firstword = curr_fmt->firstword * 10 + (c - '0');
-			c = getc (inp);
-		}
-
-		c = getc (inp);
-
-		if (c != '[')
-			c = getc (inp);
-
-		i = 0;
-
-		while ((c = getc (inp)) != ',')
-			if (st_return_body)
-				curr_fmt->words = curr_fmt->words * 10 + (c - '0');
-
-		c = getc (inp);
-
-		if (c != 35)
-			c = getc (inp);
-
-		while ((c = getc (inp)) != ']')
-		{
-			if (st_return_body)
-				switch (c)
-				{
-				case 'b':
-				case 'B':
-					curr_fmt->bold = 1;
-					break;
-				case 'u':
-				case 'U':
-					curr_fmt->underline = 1;
-					break;
-				case 'i':
-				case 'I':
-					curr_fmt->italic = 1;
-					break;
-				default:
-					break;
-				}
-		}
-
-		c = getc (inp);
-
-		if (st_return_body)
-		{
-			if (!root_fmt)
-				root_fmt = curr_fmt;
-			curr_fmt->next = NULL;
-			if (last_fmt != NULL)
-				last_fmt->next = curr_fmt;
-			last_fmt = curr_fmt;
-			curr_fmt = NULL;
-		}
+		if (!root_fmt)
+			root_fmt = curr_fmt;
+		curr_fmt->next = NULL;
+		if (last_fmt != NULL)
+			last_fmt->next = curr_fmt;
+		last_fmt = curr_fmt;
+		curr_fmt = NULL;
 	}
 
 	c = getc (inp);
@@ -1319,22 +1287,19 @@ static struct ency_titles *st_title_error (int error_no)
 }
 
 
-static struct ency_titles *curr_find_list (char *search_string, int exact)
+static struct ency_titles *curr_find_list (int section, char *search_string, int exact, int options)
 {
-	long this_one_starts_at = 0;
+	long this_one_starts_at = 0, temp_pos;
 	int found_any_yet = 0;
 	int first_time = 1;
 	char c;
 	int i = 0, z = 1;
 	struct ency_titles *root_title = NULL, *curr_title = NULL, *last_title = NULL;
-	struct ency_titles *root_cache = NULL, *curr_cache = NULL, *temp_cache = NULL,
-	 *old_cache = NULL;
 	int no_so_far = 0;
 	char *title = NULL, *temp_text = NULL, *new_title = NULL;
-	struct st_ency_formatting *text_fmt = NULL, *kill_fmt = NULL;
+	struct st_ency_formatting *text_fmt = NULL;
 	char last_year[5] = "";
 	int prepend_year=0, append_series=0;
-	root_cache = cache[curr - 1];
 
 	if (!st_open ())
 	{
@@ -1353,7 +1318,9 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
 			this_one_starts_at = ftell (inp);
 
 			first_time = 0;
-			text_fmt = st_return_fmt ();
+			while ((getc(inp) != '@'));
+			getc(inp);
+
 			i = 0;
 
 			title = st_return_title ();
@@ -1413,24 +1380,8 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
 			/* Title & number:  printf ("%d:%s\n", no_so_far, title); */
 
 			/* build the cached version of this entry */
-			temp_cache = malloc (sizeof (struct ency_titles));
-			temp_cache->title = strdup (title);
-			temp_cache->text = NULL;
-			temp_cache->fmt = NULL;
-			temp_cache->filepos = this_one_starts_at;
-			st_copy_part_entry (&curr_cache, temp_cache);
-			st_free_entry (temp_cache);
-			if (root_cache == NULL)
-				root_cache = curr_cache;
-			else
-			{
-				if (old_cache == NULL)
-					old_cache = root_cache;
-				while (old_cache->next)
-					old_cache = old_cache->next;
-				old_cache->next = curr_cache;
-			}
-			curr_cache = curr_cache->next;
+			if (!(options & ST_OPT_NO_CACHE))
+				st_add_to_cache (section, title, this_one_starts_at);
 
 			c = getc (inp);
 
@@ -1438,7 +1389,19 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
 			{	/* If its a match... */
 				found_any_yet = 1;
 				if (st_return_body)
+				{
 					temp_text = st_return_text ();
+					/* this is a cheat. step back in the
+					   file to get the formatting. doing
+					   it this way saves time in the
+					   likely chance that the entry is
+					   the wrong one */
+					temp_pos = ftell (inp);
+					fseek (inp, this_one_starts_at, SEEK_SET);
+					text_fmt = st_return_fmt();
+					fseek (inp, temp_pos, SEEK_SET);
+				}
+					
 
 				/* define the pointer */
 				{
@@ -1468,19 +1431,11 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
 				/* It's not the one we want */
 			{
 				free (title);
-				while (text_fmt)
-				{
-					kill_fmt = text_fmt;
-					text_fmt = text_fmt->next;
-					free (kill_fmt);
-				}
 			}
 		}
 	}
 	while (no_so_far != curr_lastone);
 	st_close_file ();
-
-	cache[curr - 1] = root_cache;
 
 	if (found_any_yet)
 		return (root_title);
@@ -1550,7 +1505,7 @@ int st_guess_section (char *title, char *text, int last_section)
 }
 
 
-static struct ency_titles *st_find_unknown (int section, char *search_string, int exact)
+static struct ency_titles *st_find_unknown (int section, char *search_string, int exact, int options)
 {
 	long this_one_starts_at = 0;
 	struct ency_titles *curr_title = NULL;
@@ -1575,13 +1530,14 @@ static struct ency_titles *st_find_unknown (int section, char *search_string, in
 			last_start = *curr_title->title;
 
 			/* build the cached version of this entry */
-			st_add_to_cache (last_section,curr_title->title,this_one_starts_at);
+			if (!(options & ST_OPT_NO_CACHE))
+				st_add_to_cache (last_section,curr_title->title,this_one_starts_at);
 		}
 	}
 	return (st_find_in_cache (section, search_string, exact, 1));
 }
 
-struct ency_titles *st_find_in_file (int file, int section, char *search_string, int exact)
+struct ency_titles *st_find_in_file (int file, int section, char *search_string, int exact, int options)
 {
 	struct ency_titles *root = NULL, *current = NULL, *temp = NULL;
 	struct st_part *part = NULL;
@@ -1599,7 +1555,7 @@ struct ency_titles *st_find_in_file (int file, int section, char *search_string,
 		curr_starts_at = part->start;
 		if (!first_time)
 		{
-			temp = (curr_find_list (search_string, exact));
+			temp = (curr_find_list (section, search_string, exact, options));
 			if (current)
 				current->next = temp;
 			else
@@ -1607,7 +1563,7 @@ struct ency_titles *st_find_in_file (int file, int section, char *search_string,
 		}
 		else
 		{
-			root = (curr_find_list (search_string, exact));
+			root = (curr_find_list (section, search_string, exact, options));
 			current = root;
 			first_time = 0;
 		}
@@ -1646,7 +1602,7 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 			if ((cache[section]) && (!st_return_body))
 				return (st_find_in_cache (section, search_string, exact, 0));
 			else
-				return (st_find_in_file (st_file_type, section, search_string, exact));
+				return (st_find_in_file (st_file_type, section, search_string, exact, options));
 		default:
 			return (NULL);
 		}
@@ -1654,7 +1610,7 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 	}
 	else
 	{			/* unknown file type */
-		return (st_find_unknown (section, search_string, exact));
+		return (st_find_unknown (section, search_string, exact, options));
 	}
 }
 
