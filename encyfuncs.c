@@ -1465,7 +1465,7 @@ static void load_block_cache (void)
 							if (c == '~')
 							{
 								id++;
-								add_to_block_cache (i, id, ftell (inp)-1);
+								add_to_block_cache (i, id, ftell (inp));
 							}
 						}
 						/* So we can determine the size of the last entry */
