@@ -44,8 +44,6 @@ int main (int argc, char *argv[])
   char search_string[70];
   char *temp_fn = NULL;
   struct ency_titles *thingy = NULL;
-  struct ency_titles *kill_me = NULL;
-  struct st_ency_formatting *fmt = NULL, *kill_fmt = NULL;
   struct st_media *media = NULL;
   char base_path[] = "/cdrom"; /* where the media dirs etc. are */
   int use_media = 0;
@@ -122,30 +120,10 @@ int main (int argc, char *argv[])
 	free (media); media = NULL;
       }
       
-
-      /* free the returned stuff */
-      kill_me = thingy;
-      thingy = thingy->next;
-      fmt = kill_me->fmt;
-
-      while (fmt) {
-	kill_fmt = fmt;
-	fmt = fmt->next;
-	if (kill_fmt)
-	  free (kill_fmt);
-      }
-
-      if (kill_me->title)
-	free (kill_me->title);
-
-      if (kill_me->text)
-	free (kill_me->text);
-
-      if (kill_me)
-	free (kill_me);
-
+      st_free_entry_and_advance (&thingy);
     }
     while (thingy != NULL);
+
   } else
     printf ("No matches\n");
   st_unload_media ();

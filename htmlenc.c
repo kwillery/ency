@@ -28,15 +28,12 @@
 #include <unistd.h>
 #include "ency.h"
 
-extern int st_ignore_case;
-extern int st_return_body;
 extern int optind;		/* for getopt() */
 
 int words = 0;
 
 struct st_ency_formatting *loopies (char *txt, struct st_ency_formatting *fmt, FILE *output)
 {
-  struct st_ency_formatting *kill_fmt;
   int word_finish = 0;
   char smeg[50];
 
@@ -68,10 +65,7 @@ struct st_ency_formatting *loopies (char *txt, struct st_ency_formatting *fmt, F
 	    fprintf (output, "</i>");
 	  if (fmt->bold)
 	    fprintf (output, "</b>");
-
-	  kill_fmt = fmt;
-	  fmt = fmt->next;
-	  free (kill_fmt);
+	  fmt=fmt->next;
 	}
 
       txt += strlen (smeg);
@@ -127,9 +121,6 @@ int main (int argc, char *argv[])
   int search_what = 0;
   int section = ST_SECT_ENCY;
 
-  st_ignore_case = 1;
-  st_return_body = 0;
-  
   while ((i = getopt (argc, argv, "ecmh")) != EOF) 
     switch (i)
   {
@@ -192,13 +183,8 @@ int main (int argc, char *argv[])
 	printf ("</ul>");
       }
 
-      kill_me = thingy;
-      thingy = thingy->next;
-      free (kill_me->title);
-      free (kill_me);
-      free (full_body->title);
-      free (full_body->text);
-      free (full_body);
+      st_free_entry_and_advance (&thingy);
+      st_free_entry (full_body);
     }
     while (thingy != NULL);
   } else
