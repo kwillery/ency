@@ -24,13 +24,6 @@
 #define ST_BLOCK_SCAN 254 /* If we should scan this file */
 #define ST_BLOCK_SCANNED 255 /* If we have scanned this file */
 
-/* Data file types */
-#define ST_DFILE_TYPES 4
-#define ST_DFILE_UNKNOWN 0
-#define ST_DFILE_ENCY 1 /* e.g. Ency99.dxr */
-#define ST_DFILE_DATA 2 /* e.g. Data99.cxt */
-#define ST_DFILE_PICON 3 /* e.g. Picons.cxt */
-
 /* Options */
 #define ST_DATA_OPT_PREFIX 1
 
