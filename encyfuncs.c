@@ -506,11 +506,11 @@ static const char *st_fileinfo_get_data (int file, st_filename_type type)
 		{
 		case mainfilename:
 			return ency_filename;
-		case data:
+		case data_dir:
 			return "";
-		case picture:
+		case picture_dir:
 			return "";
-		case video:
+		case video_dir:
 			return "";
 		case append_char:
 			return "yes";
@@ -530,11 +530,11 @@ static const char *st_fileinfo_get_data (int file, st_filename_type type)
 		{
 			case mainfilename:
 				return st_files[file].filename;
-			case data:
+			case data_dir:
 				return st_files[file].data_dir;
-			case picture:
+			case picture_dir:
 				return st_files[file].pic_dir;
-			case video:
+			case video_dir:
 				return st_files[file].vid_dir;
 			case append_char:
 				return st_files[file].append_char ? "yes" : NULL;
@@ -730,20 +730,20 @@ char *st_autofind (int st_file_version, char *base_dir)
 {
 	char *test_filename = NULL;
 	char *ency_fn_backup = NULL;
-	const char *data_dir = NULL, *filename = NULL;
+	const char *datadir = NULL, *filename = NULL;
 	char *lc_data_dir = NULL, *lc_filename = NULL;
 
 	if ((st_file_version < ST_FILE_TYPES) && (st_file_version >= 0))
 	{
 
-		data_dir = st_fileinfo_get_data (st_file_version,data);
+		datadir = st_fileinfo_get_data (st_file_version,data_dir);
 		filename = st_fileinfo_get_data (st_file_version,mainfilename);
 
-		lc_data_dir = st_lcase ((char *)data_dir);
+		lc_data_dir = st_lcase ((char *)datadir);
 		lc_filename = st_lcase ((char *)filename);
 
 		ency_fn_backup = ency_filename;
-		test_filename = malloc (strlen (base_dir) + strlen (data_dir) + strlen (filename) + 3);
+		test_filename = malloc (strlen (base_dir) + strlen (datadir) + strlen (filename) + 3);
 		ency_filename = test_filename;
 
 		sprintf (test_filename, "%s", base_dir);
@@ -764,7 +764,7 @@ char *st_autofind (int st_file_version, char *base_dir)
 			return (test_filename);
 		}
 
-		sprintf (test_filename, "%s/%s/%s", base_dir, data_dir, filename);
+		sprintf (test_filename, "%s/%s/%s", base_dir, datadir, filename);
 		if (st_fingerprint () == st_file_version)
 		{
 			free (lc_data_dir);
@@ -791,7 +791,7 @@ char *st_autofind (int st_file_version, char *base_dir)
 			return (test_filename);
 		}
 
-		sprintf (test_filename, "%s/%s/%s", base_dir, data_dir, lc_filename);
+		sprintf (test_filename, "%s/%s/%s", base_dir, datadir, lc_filename);
 		if (st_fingerprint () == st_file_version)
 		{
 			free (lc_data_dir);
@@ -2116,6 +2116,23 @@ static struct st_photo st_parse_video_captions (char *fnbasen)
 	return (photo);
 }
 
+struct st_media *new_media (struct st_media *old_media)
+{
+	struct st_media *media;
+
+	if (old_media)
+		return (old_media);
+
+	media = malloc (sizeof (struct st_media));
+	if (media)
+	{
+		strcpy (media->video.file, "");
+		strcpy (media->audio.file, "");
+		strcpy (media->swf.file, "");
+	}
+	return media;
+}
+
 struct st_media *st_get_media (char *search_string)
 {
 	int i = 0;
@@ -2137,6 +2154,7 @@ struct st_media *st_get_media (char *search_string)
 		title_with_dot = malloc (strlen (search_string) + 2);
 		sprintf (title_with_dot, "%s.", search_string);
 
+		media = new_media (media);
 
 		while (temp_ptbls)
 		{
@@ -2144,16 +2162,16 @@ struct st_media *st_get_media (char *search_string)
 			{
 				for (i = 0; i < 5; i++)
 				{
-					if (!media)
-					{
-						media = malloc (sizeof (struct st_media));
-						strcpy (media->video.file, "");
-					}
 					sprintf (temp_fnbase, "%s%d", temp_ptbls->fnbase, i + 1);
 					media->photos[i] = st_parse_captions (temp_fnbase);
 					if (strlen (media->photos[i].file))
 						media_found = 1;
 				}
+				sprintf (temp_fnbase, "%sf", temp_ptbls->fnbase);
+				media->swf = st_parse_captions (temp_fnbase);
+				if (strlen (media->swf.file))
+					media_found = 1;
+				
 				goto end_photo_search;
 			}
 			temp_ptbls = temp_ptbls->next;
@@ -2165,11 +2183,6 @@ struct st_media *st_get_media (char *search_string)
 		{
 			if ((!strcmp (temp_vtbls->title, search_string)) || (!strcmp (temp_vtbls->title, title_with_dot)))
 			{
-				if (!media)
-				{
-					media = malloc (sizeof (struct st_media));
-					strcpy (media->video.file, "");
-				}
 				media->video = st_parse_video_captions (temp_vtbls->fnbase);
 				media_found = 1;
 				goto end_video_search;
@@ -2191,22 +2204,30 @@ struct st_media *st_get_media (char *search_string)
 	return (media);
 }
 
-char *st_format_filename (char *fnbasen, char *base_path, int media)
+char *st_format_filename (char *fnbasen, char *base_path, media_type media)
 {
-/* media: 0 == pic, 1 == vid */
 	char *filename = NULL;
 	int dir_size = 0;
 
-	if (fnbasen && (media < 2))
+	if (fnbasen)
 	{
 
 		if (base_path)
 			dir_size = strlen (base_path);
 
-		if (media == 0)
-			dir_size += strlen (st_fileinfo_get_data(st_file_type,picture));
-		if (media == 1)
-			dir_size += strlen (st_fileinfo_get_data(st_file_type,video));
+		switch (media)
+		{
+		case audio:
+		case swf:
+		case picture:
+			dir_size += strlen (st_fileinfo_get_data(st_file_type,picture_dir));
+			break;
+		case video:
+			dir_size += strlen (st_fileinfo_get_data(st_file_type,video_dir));
+			break;
+		default:
+			return "";
+		}
 
 		filename = malloc (dir_size + 17);
 		if (base_path)
@@ -2217,10 +2238,17 @@ char *st_format_filename (char *fnbasen, char *base_path, int media)
 		else
 			strcat (filename, "/");
 
-		if (media == 0)
-			strcat (filename, st_fileinfo_get_data(st_file_type,picture));
-		if (media == 1)
-			strcat (filename, st_fileinfo_get_data(st_file_type,video));
+		switch (media)
+		{
+		case audio:
+		case swf:
+		case picture:
+			strcat (filename, st_fileinfo_get_data(st_file_type,picture_dir));
+			break;
+		case video:
+			strcat (filename, st_fileinfo_get_data(st_file_type,video_dir));
+			break;
+		}
 
 		strcat (filename, "/");
 		if (st_fileinfo_get_data(st_file_type,append_char))
@@ -2231,11 +2259,21 @@ char *st_format_filename (char *fnbasen, char *base_path, int media)
 		}
 		strncat (filename, fnbasen, 8);
 
-		if (media == 0)
+		switch (media)
+		{
+		case audio:
+			strcat (filename, "a.aif");
+			break;
+		case swf:
+			strcat (filename, "f.swf");
+			break;
+		case picture:
 			strcat (filename, "r.pic");
-		if (media == 1)
+			break;
+		case video:
 			strcat (filename, "q.mov");
-
+			break;
+		}
 	}
 	return (filename);
 }

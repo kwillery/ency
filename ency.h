@@ -51,13 +51,21 @@
 typedef enum
 {
 	mainfilename,
-	data,
-	picture,
-	video,
+	data_dir,
+	picture_dir,
+	video_dir,
 	append_char,
 	prepend_year,
 	append_series
 } st_filename_type;
+
+typedef enum
+{
+	picture,
+	video,
+	audio,
+	swf
+} media_type;
 
 struct st_ency_formatting
 {
@@ -103,6 +111,8 @@ struct st_media
 {
 	struct st_photo photos[5];
 	struct st_photo video;
+	struct st_photo audio;
+	struct st_photo swf;
 };
 
 struct st_part
@@ -134,7 +144,7 @@ int st_loaded_media (void);
 void st_unload_media (void);
 
 struct st_media *st_get_media (char *);
-char *st_format_filename (char *, char *, int);
+char *st_format_filename (char *, char *, media_type);
 
 /* For the actual searches */
 struct ency_titles *st_find (char *, int, int);
