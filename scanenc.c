@@ -36,6 +36,14 @@ extern int optind;		/* for getopt() */
 int tell = 0;
 long old_ftell;
 
+struct part
+{
+	int section;
+	long start;
+	int count;
+	struct part *next;
+};
+
 int is_all_ascii (char *string)
 {
 	while (*string)
@@ -113,7 +121,7 @@ void check_for_captions (FILE *inp, FILE *outp, FILE *data)
 					if (outp)
 						fprintf (outp, "found cpt @ 0x%lx\t%s\n", found_at, fnbase);
 					if (data)
-						fprintf (data, "<pcaption \"0x%lx\" count=\"1\"/>\n", found_at);
+						fprintf (data, "  <pcaption start=\"0x%lx\" count=\"1\"/>\n", found_at-2);
 					fseek (inp, found_at, SEEK_SET);
 					return;
 				}
@@ -170,6 +178,8 @@ int check_for_table (FILE *inp, FILE *outp, FILE *data)
 					printf ("found tbl @ 0x%lx\t%s\n", found_at, fnbase);
 					if (outp)
 						fprintf (outp, "found tbl @ 0x%lx\t%s\n", found_at, fnbase);
+					if (data)
+						fprintf (data, "  <ptable start=\"0x%lx\" count=\"1\"/>\n", found_at-2);
 					fseek (inp, found_at, SEEK_SET);
 					return 1;
 				}
@@ -180,9 +190,40 @@ int check_for_table (FILE *inp, FILE *outp, FILE *data)
 	return 0;
 }
 
+void check_for_old_captions (FILE *inp, FILE *outp, FILE *data)
+{
+	long found_at;
+	char temp[32];
+	char fnbasen[8];
+
+	found_at = ftell(inp);
+
+	fseek (inp, 16, SEEK_CUR);
+
+	fread (temp, 32, 1, inp);
+
+	if ((temp[0] == '[') && doesnt_have_junk (temp + 1))
+	{
+		if (isdigit (temp[7]) && temp[8] == ':')
+			if ((temp[9] == ' ') && (temp[10] == '\"'))
+			{
+				strncpy (fnbasen, temp+1, 7);
+				fnbasen[7] = 0;
+				printf ("found [old] cpt @ 0x%lx\t%s\n", found_at+16, fnbasen);
+				if (outp)
+					fprintf (outp, "found [old] cpt @ 0x%lx\t%s\n", found_at+16, fnbasen);
+				if (data)
+					fprintf (data, "  <pcaption start=\"0x%lx\" count=\"1\" old_type=\"true\"/>\n", found_at+16);
+			}
+	}
+
+	fseek (inp, found_at, SEEK_SET);
+}
+
 void find_media_tables (FILE *inp, FILE *outp, FILE *data)
 {
 	unsigned char c=0, old_c=0, old_old_c=0;
+	unsigned char old_old_old_c=0;
 
 	while (!feof(inp))
 	{
@@ -202,8 +243,12 @@ void find_media_tables (FILE *inp, FILE *outp, FILE *data)
 						check_for_table(inp, outp, data);
 				}
 			}
+		} else if ((c == 'S') && (old_c == 'T') && (old_old_c == 'X') && (old_old_old_c == 'T'))
+		{
+			check_for_old_captions(inp, outp, data);
 		}
 
+		old_old_old_c = old_old_c;
 		old_old_c = old_c;
 		old_c = c;
 	}
@@ -217,6 +262,18 @@ void save_match (FILE *inp, FILE *outp)
 		fprintf (outp, "%2x ", getc(inp));
 	fseek (inp, -8, SEEK_CUR);
 	fprintf (outp, "\n");
+}
+
+void print_parts (struct part *this_part, int sect, char *name, FILE *data)
+{
+	fprintf (data, "  <section name=\"%s\">\n", name);
+	while (this_part)
+	{
+		if (this_part->section == sect)
+			fprintf (data, "    <part start=\"0x%lx\" count=\"%d\"/>\n", this_part->start, this_part->count);
+		this_part = this_part->next;
+	}
+	fprintf (data, "  </section>\n");
 }
 
 int guess_section (char *title, char *text, int last_section)
@@ -276,7 +333,9 @@ int main (int argc, char *argv[])
 	char last_start = 0;
 	int new_section;
 	int last_section = -1;
+	long this_start=0;
 	int this_count=0;
+	struct part *root_part=NULL, *this_part=NULL, *last_part=NULL;
 	char *filename;
 	char *save_file=NULL;
 	char *save_data=NULL;
@@ -327,6 +386,14 @@ int main (int argc, char *argv[])
 			printf ("Error writing to %s\n", save_data);
 			exit;
 		}
+		fprintf (data, "<file>\n");
+		fprintf (data, "  <name>Unknown encyclopedia</name>\n");
+		fprintf (data, "  <mainfile>%s</mainfile>\n", filename);
+		fprintf (data, "  <datadir>Please_fill_this_field_in</datadir>\n");
+		fprintf (data, "  <photodir>Please_fill_this_field_in</photodir>\n");
+		fprintf (data, "  <videodir>Please_fill_this_field_in</videodir>\n");
+		fprintf (data, "  <append_char/>\n");
+		fprintf (data, "  <prepend_year/>\n  <append_series/>\n");
 	}
 	if (inp == 0)
 	{
@@ -347,6 +414,16 @@ int main (int argc, char *argv[])
 			fprintf (outp, "%x;", getc (inp));
 		fprintf (outp, "\n");
 	}
+
+	if (save_data)
+	{
+		rewind(inp);
+		fprintf (data, "  <fingerprint>");
+		for (i = 0; i < 16; i++)
+			fprintf (data, "%x;", getc (inp));
+		fprintf (data, "</fingerprint>\n");
+	}
+	
 	st_init();
 	st_force_unknown_file (1);
 	st_set_filename (filename);
@@ -364,8 +441,24 @@ int main (int argc, char *argv[])
 				new_section = guess_section (entry->title, entry->text, last_section);
 				if (new_section != last_section)
 				{
-					if ((save_file) && (this_count))
-						fprintf (outp, "Total for this part: %d\n", this_count);
+					if (this_count)
+					{
+						if (save_file)
+							fprintf (outp, "Total for this part: %d\n", this_count);
+
+						this_part = (struct part *) malloc (sizeof (struct part));
+						this_part->section = last_section;
+						this_part->start = this_start;
+						this_part->count = this_count;
+						this_part->next = NULL;
+						if (!root_part)
+							root_part = this_part;
+						if (last_part)
+							last_part->next = this_part;
+						last_part = this_part;
+					}
+					this_start = ftell(inp);
+
 					if (save_file)
 						fprintf (outp, "\nNew section (%s)\n", sections[new_section]);
 #ifndef QUIET
@@ -409,6 +502,27 @@ int main (int argc, char *argv[])
 			fprintf (outp, "\t%s\t%d\n", sections[i], counts[i]);
 	}
 
+
+	if (this_part)
+	{
+		this_part = (struct part *) malloc (sizeof (struct part));
+		this_part->section = last_section;
+		this_part->start = this_start;
+		this_part->count = this_count;
+		this_part->next = NULL;
+		if (!root_part)
+			root_part = this_part;
+		if (last_part)
+			last_part->next = this_part;
+		last_part = this_part;
+	}
+
+	if (data)
+	{
+		for (i=0;i<3;i++)
+			print_parts (root_part, i, sections[i], data);
+	}
+
 	rewind (inp);
 
 	printf ("Scanning for media lists...\n");
@@ -420,7 +534,11 @@ int main (int argc, char *argv[])
 	if (outp)
 		fclose (outp);
 	if (data)
+	{
+		fprintf (data, "</file>\n");
 		fclose (data);
+	}
+
 	fclose (inp);
 	return 0;
 }
