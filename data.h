@@ -65,6 +65,7 @@ char *get_name_of_file (int file_type);
 const char *st_fileinfo_get_data (int file, st_filename_type type);
 struct st_part *get_part (int file, int type, int section, int number, int options);
 struct st_part *get_part_by_id (int file, int block_id);
+struct st_part *get_part_by_name (int file, char *name);
 char *get_exception (int file, char *type, char *from);
 
 struct st_part *new_part(void);
