@@ -47,7 +47,8 @@ static const long int st_caption_starts_at[] =
 {0x4e5064, 0, 0x615552, 0, 0x646D0A, 0, 0x2C5F2C, 0, 0x37CB82, 0};
 
 /* for videos */
-static const long st_video_table_starts_at[] = {0x50e690, 0x4d8294, 0};
+static const long st_video_table_starts_at[] = {0x50e690, 0,1,0,1,0,1,0,1,0};
+static const long st_video_caption_starts_at[] = {0x4FCED6, 0,1,0,1,0,1,0,1,0};
 
 /* the actual encyclopedia entries */
 static const long int ency_starts_at[] =
@@ -78,8 +79,8 @@ static const long int st_table_lastone[] =
 static const long int st_caption_lastone[] =
 {5, 0, 4, 0, 4, 0, 5, 0, 4, 0};
 
-static const long st_video_table_lastone[] = {26, 6, 0};
-
+static const long st_video_table_lastone[] = {26,0,1,0,1,0,1,0,1,0};
+static const long st_video_caption_lastone[] = {1,0,1,0,1,0,1,0,1,0};
 static long int curr_starts_at, curr_lastone, curr;
 
 const struct st_file_info st_files[] =
@@ -97,11 +98,12 @@ const struct st_file_info st_files[] =
 };
 
 /* for pictures */
-static struct st_caption *st_pcpts = NULL, *st_oldpcpts = NULL;
 static struct st_table *st_ptbls = NULL, *st_oldptbls = NULL;
+static struct st_caption *st_pcpts = NULL, *st_oldpcpts = NULL;
 
 /* for videos */
 static struct st_table *st_vtbls = NULL, *st_oldvtbls = NULL;
+static struct st_caption *st_vcpts = NULL, *st_oldvcpts = NULL;
 
 /* init/de-init stuff */
 int st_init (void)
@@ -270,6 +272,9 @@ static int st_open ()
 
   if (curr == 7)                /* video table */
     curr_starts_at = st_video_table_starts_at[upto];
+
+  if (curr == 8)                /* video captions */
+    curr_starts_at = st_video_caption_starts_at[upto];
 
   return (curr_open ());
 }
@@ -663,6 +668,95 @@ struct st_table *st_get_video_table (void)
   return (root_tbl);
 }
 
+struct st_caption *st_get_video_captions (void)
+{
+  int i, z;
+  struct st_caption *root_cpt = NULL, *curr_cpt = NULL, *last_cpt = NULL;
+  int c = 0, text_size = 0;
+  char *temp_text = NULL;
+
+  curr = 8;
+
+  upto = 0;
+
+  for (i = 0; i < st_file_type; i++) {
+    while (st_video_caption_starts_at[upto] != 0)
+      upto++;
+    upto++;
+  }
+  if (st_video_caption_starts_at[upto] != 0x1) {
+    while (st_video_caption_starts_at[upto] != 0) {
+
+      if (!st_open ()) {
+        return (NULL);
+      } else {
+        for (i = 0; i < st_video_caption_lastone[upto]; i++) {
+          c = getc(inp);
+          while (c != ']') {    /* main loop */
+            curr_cpt = (struct st_caption *) malloc (sizeof (struct
+                                                             st_caption));
+
+            if (curr_cpt == NULL) {
+              return (NULL);
+            }
+            if (!root_cpt)
+              root_cpt = curr_cpt;
+
+            do {
+              while ((c != '\"') && (c != '[') && (c = getc (inp)) != (' '));
+
+              c = getc (inp);
+            }
+            while (!c);
+            ungetc (c, inp);
+            if ((c = getc (inp)) != ' ')
+              c = ungetc (c, inp);
+            if ((c = getc (inp)) != '\"')
+              c = ungetc (c, inp);
+            c = 0;
+
+            temp_text = malloc (8);
+            text_size = 0;
+
+            fread (temp_text, 1, 7, inp); // was 8, inp);
+            temp_text[6] = 0; // was ...[7] = 0;
+
+            z=0;while (temp_text[z] = tolower(temp_text[z])) z++;
+
+            c = getc(inp);
+
+            curr_cpt->fnbasen = temp_text;
+
+            temp_text = malloc (70);
+            text_size = 0;
+
+            while ((c = getc (inp)) != '\"');
+            while ((c = getc (inp)) != '\"') {
+              temp_text[text_size++] = st_cleantext (c);
+            }
+            temp_text[text_size] = 0;
+
+            curr_cpt->caption = temp_text;
+            c=getc(inp);
+
+            curr_cpt->next = NULL;
+
+            if (last_cpt)
+              last_cpt->next = curr_cpt;
+            last_cpt = curr_cpt;
+            curr_cpt = NULL;
+          }                     /* end main loop */
+
+        }
+      }
+      upto++;
+      st_close_file ();
+    }
+  }
+  return (root_cpt);
+}
+
+
 int st_load_media (void)
 {
   /*
@@ -674,13 +768,15 @@ int st_load_media (void)
     st_pcpts = st_get_captions ();
   if (!st_vtbls)
     st_vtbls = st_get_video_table ();
+  if (!st_vcpts)
+    st_vcpts = st_get_video_captions ();
 
   return (1);
 }
 
 int st_loaded_media (void)
 {
-  if ((st_pcpts) && (st_ptbls) && (st_vtbls))
+  if ((st_pcpts) && (st_ptbls) && (st_vtbls) && (st_vcpts))
     return (1);
   else
     return (0);
@@ -688,7 +784,7 @@ int st_loaded_media (void)
 
 int st_unload_media (void)
 {
-/* Free the caption & table info */
+/* Free the caption & table info for the pictures*/
   while (st_pcpts) {
     st_oldpcpts = st_pcpts;
     st_pcpts = st_pcpts->next;
@@ -713,6 +809,19 @@ int st_unload_media (void)
     }
   }
 
+/* & for the videos */
+  while (st_vcpts) {
+    st_oldvcpts = st_vcpts;
+    st_vcpts = st_vcpts->next;
+    if (st_oldvcpts) {
+      if (st_oldvcpts->fnbasen)
+        free (st_oldvcpts->fnbasen);
+      if (st_oldvcpts->caption)
+        free (st_oldvcpts->caption);
+      free (st_oldvcpts);
+    }
+  }
+
   while (st_vtbls) {
     st_oldvtbls = st_vtbls;
     st_vtbls = st_vtbls->next;
@@ -724,7 +833,6 @@ int st_unload_media (void)
       free (st_oldvtbls);
     }
   }
-
 
   return (1);
 }
@@ -1243,6 +1351,26 @@ static struct st_photo st_parse_captions (char *fnbasen)
   return (photo);
 }
 
+static struct st_photo st_parse_video_captions (char *fnbasen)
+{
+  struct st_photo photo;
+
+  st_oldvcpts = st_vcpts;
+
+  strcpy (photo.file, "");
+  strcpy (photo.caption, "");
+  while (st_vcpts) {
+    if (!strcmp (fnbasen, st_vcpts->fnbasen)) {
+      strcpy (photo.file, fnbasen); strcat (photo.file, "1");
+      strcpy (photo.caption, st_vcpts->caption);
+    }
+    st_vcpts = st_vcpts->next;
+  }
+
+  st_vcpts = st_oldvcpts;
+  return (photo);
+}
+
 struct st_media *st_get_media (char *search_string)
 {
   int i = 0;
@@ -1272,7 +1400,7 @@ struct st_media *st_get_media (char *search_string)
 	for (i = 0; i < 5; i++) {
 	  if (!media)
 	    media = malloc (sizeof (struct st_media));
-	  media->video = NULL;
+//	  media->video = NULL;
 	  sprintf (temp_fnbase, "%s%d", st_ptbls->fnbase, i + 1);
 	  media->photos[i] = st_parse_captions (temp_fnbase);
 	  if (strlen(media->photos[i].file)) media_found = 1;
@@ -1284,12 +1412,14 @@ struct st_media *st_get_media (char *search_string)
   
   end_photo_search:
 
+    strcpy(media->video.file,"");
+
     while (st_vtbls) {
       if ((!strcmp (st_vtbls->title, search_string)) || (!strcmp (st_vtbls->title, title_with_dot))) {
         if (!media)
           media = malloc (sizeof (struct st_media));
-        sprintf (temp_fnbase, "%s%d", st_vtbls->fnbase, 1);
-        media->video = strdup (temp_fnbase);
+//        sprintf (temp_fnbase, "%s%d", st_vtbls->fnbase, 1);
+        media->video = st_parse_video_captions (st_vtbls->fnbase);
         media_found = 1;
         goto end_video_search;
       }

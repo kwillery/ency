@@ -123,7 +123,7 @@ struct st_photo {
 
 struct st_media {
   struct st_photo photos[5];
-  char *video;
+  struct st_photo video;
 };
 
 #endif
