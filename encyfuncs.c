@@ -703,6 +703,7 @@ static struct st_table *read_table (FILE *inp, struct st_table *root)
 		ungetc (c, inp);
 
 		curr_tbl->title = get_text_from_file (inp);
+		st_cleanstring (curr_tbl->title);
 
 		if (last_tbl)
 			last_tbl->next = curr_tbl;
@@ -963,7 +964,7 @@ static struct st_table *st_get_video_table (int section)
 	while ((part = get_part (st_file_type, ST_BLOCK_ATTRIB, section, count, 0)))
 	{
 		if ((inp = curr_open (part->start)) == 0)
-			return (NULL);
+			return (root_tbl);
 		else
 		{
 			if (curr_tbl)
@@ -1394,6 +1395,7 @@ static struct st_table *get_table_entry_by_title (struct st_table *tbl, char *ti
 		return NULL;
 	if ((exception = get_exception (st_file_type, "LU title", title)))
 		title = exception;
+
 	while (tbl)
 	{
 		if (!strcasecmp (tbl->title, title))
@@ -1951,7 +1953,7 @@ static struct entry_scores *find_words (struct entry_scores *root, char *words, 
 					curr = scores;
 					while (curr)
 					{
-						if (!strcasecmp (curr->fnbase, wl->fnbase)) /* Is the entry we found is in the list? */
+						if (!strcasecmp (curr->fnbase, wl->fnbase)) /* Is the entry we found already in the list? */
 						{
 							curr->score += 5;
 							wl = wl->next;
