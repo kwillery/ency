@@ -1227,15 +1227,12 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
   int first_time = 1;
   char c;
   int i = 0;
-  int found = 0;
   char *lc_title = NULL, *lc_search_string = NULL;
   struct ency_titles *root_title = NULL, *curr_title = NULL, *last_title = NULL;
   struct ency_titles *root_cache=NULL, *curr_cache=NULL, *temp_cache=NULL, *old_cache=NULL;
   int no_so_far = 0;
   char *title = NULL, *temp_text = NULL;
   struct st_ency_formatting *text_fmt = NULL, *kill_fmt = NULL;
-
-  lc_search_string = st_lcase (search_string);
 
   root_cache = cache[curr-1];
 
@@ -1273,28 +1270,7 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
 
     c = getc (inp);
 
-    lc_title = st_lcase (title);
-    /* */
-    found = 0;
-
-    /* Is this the one we want?? */
-    if ((!exact) && strstr (title, search_string))
-      found = 1;
-    if ((exact == 1) && (!strcmp (title, search_string)))
-      found = 1;
-    if (exact == 2)
-      found = 1;
-    if (st_ignore_case) {
-      if ((!exact) && (strstr (lc_title, lc_search_string)))
-	found = 1;
-      if ((exact == 1) && (!strcasecmp (title, search_string)))
-	found = 1;
-    }
-    /* */
-
-    free (lc_title);
-
-    if (found) {		/* If yes... */
+    if (check_match(search_string, title, exact)) {		/* If its a match... */
       found_any_yet = 1;
       if (st_return_body)
 	temp_text = st_return_text ();
@@ -1469,31 +1445,11 @@ struct ency_titles *chro_find_list (char *title, int exact)
 static struct ency_titles *st_find_in_cache (int section, char *search_string, int exact)
 {
   struct ency_titles *mine, *r_r=NULL, *r_c=NULL, *r_l=NULL;
-  char *title;
-  int found;
-  char *lc_title, *lc_search_string;
 
   mine = cache[section];
-  lc_search_string = st_lcase (search_string);
 
   while (mine) {
-    lc_title = st_lcase ((title = mine->title));
-    found=0; 
-    /* Is this the one we want?? */
-    if ((!exact) && strstr (title, search_string))
-      found = 1;
-    if ((exact == 1) && (!strcmp (title, search_string)))
-      found = 1;
-    if (exact == 2)
-      found = 1;
-    if (st_ignore_case) {
-      if ((!exact) && (strstr (lc_title, lc_search_string)))
-        found = 1;
-      if ((exact == 1) && (!strcasecmp (title, search_string)))
-        found = 1;
-    }
-
-    if (found) {
+    if (check_match (search_string, mine->title, exact)) {
      r_l = r_c;
      st_copy_part_entry (&r_c, mine); 
      if (r_l) r_l->next = r_c;
@@ -1506,7 +1462,11 @@ return (r_r);
 
 struct ency_titles *st_find_unknown (char *search_string, int exact)
 {
+    long this_one_starts_at=0;
     struct ency_titles *root_title = NULL, *curr_title=NULL, *last_title=NULL;
+    struct ency_titles *root_cache = NULL, *curr_cache=NULL;
+    struct ency_titles *old_cache=NULL, *temp_cache=NULL;
+
     FILE *input_temp;
     
     if (cache[0])
@@ -1517,10 +1477,25 @@ struct ency_titles *st_find_unknown (char *search_string, int exact)
         {
             /* get_title_at opens the file again, so... */
             input_temp = inp;
-            curr_title = get_title_at (ftell(input_temp));
+            curr_title = get_title_at (this_one_starts_at = ftell(input_temp));
             inp = input_temp;
             getc(inp); /* make sure we dont get the same entry again */
-            
+
+            /* build the cached version of this entry */
+            temp_cache = malloc (sizeof(struct ency_titles));
+            temp_cache->title = strdup (curr_title->title);
+            temp_cache->text = NULL;
+            temp_cache->fmt = NULL;
+            temp_cache->filepos = this_one_starts_at;
+            st_copy_part_entry (&curr_cache, temp_cache);
+            st_free_entry (temp_cache);
+            if (root_cache == NULL) root_cache = curr_cache;
+            else {
+            if (old_cache == NULL) old_cache = root_cache;
+            while (old_cache->next) old_cache=old_cache->next;
+            old_cache->next = curr_cache; }
+            curr_cache = curr_cache->next;
+       
             if (check_match (search_string, curr_title->title, exact))
             {
                 if (!root_title) root_title = curr_title;
@@ -1539,6 +1514,7 @@ struct ency_titles *st_find_unknown (char *search_string, int exact)
             }
         }
     }
+    cache[0] = root_cache;
     return (root_title);
 }
 
