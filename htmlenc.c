@@ -97,7 +97,7 @@ int printoff (struct ency_titles *stuff, FILE *output)
 
   fprintf (output, "<h2>");
   fmt1 = loopies (tmp, fmt1, output);
-  fprintf (output, "</h2>");
+  fprintf (output, "</h2>\n");
 
   tmp = stuff->text;
 
