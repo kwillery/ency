@@ -1288,22 +1288,8 @@ static int entry_list_has_section (section)
 	return 0;
 }
 
-/* Load up all of the entry lists for all
- * sections (-1 == ST_SECT_ALL) */
-static int load_entry_lists (void)
-{
-	/* Note we don't clean out the old entry
-	 * lists here - potential memory leak if
-	 * it is called > 1 time. */
-	if (!entrylist_head)
-		entrylist_head = st_get_video_table (-1);
-
-	st_vtbls = entrylist_head;
-
-	return 1;
-}
-
-/* Load just one section's entry list */
+/* Load just one section's entry list. Use
+ * section = -1 to load every section. */
 static int load_entry_list (int section)
 {
 	struct st_table *lst=entrylist_head;
@@ -1395,8 +1381,6 @@ static struct st_table *get_table_entry_by_fnbase (struct st_table *tbl, char *f
 static struct st_table *get_table_entry_by_title (struct st_table *tbl, char *title)
 {
 	char *exception;
-	struct st_table *root=tbl;
-	char *temp;
 
 	if (!title)
 		return NULL;
