@@ -426,7 +426,7 @@ static void search_file (FILE *inp, int reverse)
 	}
 }
 
-void clean_up ()
+static void clean_up ()
 {
 	struct casttable *t;
 
