@@ -189,7 +189,7 @@ int main (int argc, char *argv[])
 	{
 		do
 		{
-			full_body = get_title_at (thingy->filepos);
+			full_body = st_get_title_at (thingy->filepos);
 
 			printoff (full_body, out);
 

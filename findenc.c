@@ -107,7 +107,7 @@ int main (int argc, char *argv[])
 
 	/*
 	 * get from a certain point in the file...
-	 * thingy = get_title_at (0x149310);
+	 * thingy = st_get_title_at (0x149310);
 	 */
 
 	if ((thingy != NULL) && (thingy->title != NULL))

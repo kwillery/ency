@@ -90,7 +90,7 @@ int main (int argc, char *argv[])
 		returned = st_find_start (inp);
 		if (returned)
 		{
-			entry = get_title_at (ftell (inp));
+			entry = st_get_title_at (ftell (inp));
 			if ((!last_start) || (last_start > tolower (*entry->title)) || ((last_start == '\"') && (*entry->title != '\"')))
 			{
 				new_section = guess_section (entry->title, entry->text, last_section);

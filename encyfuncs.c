@@ -62,7 +62,7 @@ static const long int epis_starts_at[] =
 static const long int chro_starts_at[] =
 {0x41e32c, 0, 0x62764A, 0, 0x66B9C4, 0, 0x1, 0, 0x1, 0};
 
-/* for use w/ get_title_at() */
+/* for use w/ st_get_title_at() */
 static long int set_starts_at = 0x0;
 
 /* hm. articles or sections or whatever to get */
@@ -88,14 +88,26 @@ static const long st_video_caption_lastone[] =
 
 static long int curr_starts_at, curr_lastone, curr;
 
+struct st_file_info
+{
+	char *name;
+	char *filename;
+	char *data_dir;
+	char *pic_dir;
+	char *vid_dir;
+	int append_char;
+	int fingerprint[16];
+	long int filesize;
+};
+
 const struct st_file_info st_files[] =
 {
 	{"Encyclopedia", "Data.cxt", "Ency98", "media98", "video98", 1,
 	 {0x52, 0x49, 0x46, 0x58, 0x0, 0x99, 0xD7, 0x6E, 0x4D, 0x43, 0x39, 0x35, 0x69, 0x6D, 0x61, 0x70}, 1},
 	{"Omnipedia", "OMNI1.DXR", "", "media", "media", 1,
 	 {0x58, 0x46, 0x49, 0x52, 0xBC, 0x42, 0xB7, 0x0, 0x33, 0x39, 0x56, 0x4D, 0x70, 0x61, 0x6D, 0x69}, 1},
-     {"Omnipedia (updated)", "omni_v2.dxr", "startrek", "media", "media", 1,
-      {0x52, 0x49, 0x46, 0x58, 0x0, 0xFa, 0x1C, 0x7A, 0x4D, 0x56, 0x39, 0x33, 0x69, 0x6D, 0x61, 0x70}, 1},
+	{"Omnipedia (updated)", "omni_v2.dxr", "startrek", "media", "media", 1,
+	 {0x52, 0x49, 0x46, 0x58, 0x0, 0xFa, 0x1C, 0x7A, 0x4D, 0x56, 0x39, 0x33, 0x69, 0x6D, 0x61, 0x70}, 1},
 	{"TNG Episode guide", "eg_tng.dxr", "source", "media", "media", 1,
 	 {0x52, 0x49, 0x46, 0x58, 0x00, 0x51, 0x91, 0xF4, 0x4D, 0x56, 0x39, 0x33, 0x69, 0x6D, 0x61, 0x70}, 1},
 	{"DS9 Episode guide", "eg_ds9.dxr", "ds9", "media", "media", 1,
@@ -327,6 +339,28 @@ char *st_fileinfo_get_name (int file_type)
 		return (st_files[file_type].name);
 }
 
+const char *st_fileinfo_get_data (int file, st_filename_type type)
+{
+	if ((file < 0) || (file >= ST_FILE_TYPES))
+		return NULL;
+
+	switch (type)
+	{
+		case mainfilename:
+			return st_files[file].filename;
+		case data:
+			return st_files[file].data_dir;
+		case picture:
+			return st_files[file].pic_dir;
+		case video:
+			return st_files[file].vid_dir;
+		case append_char:
+			return st_files[file].append_char ? "yes" : NULL;
+		default:
+			return NULL;
+	}
+}
+
 static struct st_part *get_part (int file, int section, int number)
 {
 	int i, tmp = 0;
@@ -509,16 +543,17 @@ char *st_autofind (int st_file_version, char *base_dir)
 {
 	char *test_filename = NULL;
 	char *ency_fn_backup = NULL;
-	char *data_dir = NULL, *filename = NULL;
+	const char *data_dir = NULL, *filename = NULL;
 	char *lc_data_dir = NULL, *lc_filename = NULL;
 
 	if ((st_file_version < ST_FILE_TYPES) && (st_file_version >= 0))
 	{
 
-		data_dir = st_files[st_file_version].data_dir;
-		filename = st_files[st_file_version].filename;
-		lc_data_dir = st_lcase (data_dir);
-		lc_filename = st_lcase (filename);
+		data_dir = st_fileinfo_get_data (st_file_version,data);
+		filename = st_fileinfo_get_data (st_file_version,mainfilename);
+
+		lc_data_dir = st_lcase ((char *)data_dir);
+		lc_filename = st_lcase ((char *)filename);
 
 		ency_fn_backup = ency_filename;
 		test_filename = malloc (strlen (base_dir) + strlen (data_dir) + strlen (filename) + 3);
@@ -1459,7 +1494,7 @@ static struct ency_titles *st_find_in_cache (int section, char *search_string, i
 		{
 			r_l = r_c;
 			if (get_body)
-				r_c = get_title_at (mine->filepos);
+				r_c = st_get_title_at (mine->filepos);
 			else
 				st_copy_part_entry (&r_c, mine);
 			if (r_l)
@@ -1522,9 +1557,9 @@ static struct ency_titles *st_find_unknown (int section, char *search_string, in
 	{
 		while (st_find_start (inp))
 		{
-			/* get_title_at opens the file again, so... */
+			/* st_get_title_at opens the file again, so... */
 			input_temp = inp;
-			curr_title = get_title_at (this_one_starts_at = ftell (input_temp));
+			curr_title = st_get_title_at (this_one_starts_at = ftell (input_temp));
 			inp = input_temp;
 			getc (inp);	/* make sure we dont get the same entry again */
 
@@ -1617,7 +1652,7 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 	}
 }
 
-struct ency_titles *get_title_at (long filepos)
+struct ency_titles *st_get_title_at (long filepos)
 {
 	int return_body_was;
 	char c;
@@ -1827,9 +1862,9 @@ char *st_format_filename (char *fnbasen, char *base_path, int media)
 			dir_size = strlen (base_path);
 
 		if (media == 0)
-			dir_size += strlen (st_files[st_file_type].pic_dir);
+			dir_size += strlen (st_fileinfo_get_data(st_file_type,picture));
 		if (media == 1)
-			dir_size += strlen (st_files[st_file_type].vid_dir);
+			dir_size += strlen (st_fileinfo_get_data(st_file_type,video));
 
 		filename = malloc (dir_size + 17);
 		if (base_path)
@@ -1841,12 +1876,12 @@ char *st_format_filename (char *fnbasen, char *base_path, int media)
 			strcat (filename, "/");
 
 		if (media == 0)
-			strcat (filename, st_files[st_file_type].pic_dir);
+			strcat (filename, st_fileinfo_get_data(st_file_type,picture));
 		if (media == 1)
-			strcat (filename, st_files[st_file_type].vid_dir);
+			strcat (filename, st_fileinfo_get_data(st_file_type,video));
 
 		strcat (filename, "/");
-		if (st_files[st_file_type].append_char)
+		if (st_fileinfo_get_data(st_file_type,append_char))
 		{
 			filename[dir_size + 2] = fnbasen[0];
 			filename[dir_size + 3] = 0;

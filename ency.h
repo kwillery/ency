@@ -45,7 +45,16 @@
 #define ST_OPT_RETURN_BODY 2
 #define ST_OPT_MATCH_SUBSTRING 4
 
-/* structs */
+/* enums/structs */
+typedef enum
+{
+	mainfilename,
+	data,
+	picture,
+	video,
+	append_char
+} st_filename_type;
+
 struct st_ency_formatting
 {
 	int firstword;
@@ -78,18 +87,6 @@ struct st_caption
 	char *fnbasen;
 	char *caption;
 	struct st_caption *next;
-};
-
-struct st_file_info
-{
-	char *name;
-	char *filename;
-	char *data_dir;
-	char *pic_dir;
-	char *vid_dir;
-	int append_char;
-	int fingerprint[16];
-	long int filesize;
 };
 
 struct st_photo
@@ -140,7 +137,7 @@ struct ency_titles *st_find (char *, int, int);
 struct ency_titles *ency_find_list (char[], int);
 struct ency_titles *epis_find_list (char[], int);
 struct ency_titles *chro_find_list (char[], int);
-struct ency_titles *get_title_at (long);
+struct ency_titles *st_get_title_at (long);
 
 /* Takes an error # & returns a string */
 char *st_nice_error (int);

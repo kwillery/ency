@@ -74,7 +74,7 @@ These are options passed to <ref id="st_find" name="st_find">.
 </verb>
 <p>
 <tt/CASE_SENSITIVE/ is whether the search is case-sensitive or not. (default: no)
-<tt/RETURN_BODY/ determines whether the <tt/fmt/ and <tt/text/ parts of an <ref id="ency_titles" name="ency_titles"> struct are returned. (default: no). If they are not returned, <ref id="get_title_at" name="get_title_at"> can be used to retrieve the full entry.
+<tt/RETURN_BODY/ determines whether the <tt/fmt/ and <tt/text/ parts of an <ref id="ency_titles" name="ency_titles"> struct are returned. (default: no). If they are not returned, <ref id="st_get_title_at" name="st_get_title_at"> can be used to retrieve the full entry.
 <tt/MATCH_SUBSTRING/ determines whether <ref id="st_find" name="st_find"> will match substrings or not. (default: no)
 <p>
 For more information on how to use these, see the <ref id="st_find" name="st_find"> section.
@@ -122,7 +122,7 @@ struct ency_titles
 <tt/fmt/ is the entry's formatting information. (see <ref id="st_ency_formatting" name="st_ency_formatting">)
 <tt/next/ leads to the next returned entry (<tt/NULL/ if this is the last one).
 <tt/err/ is a returned error code (see <ref id="st_nice_error" name="st_nice_error">).
-<tt/filepos/ is the # of bytes into the data file the information starts. (see <ref id="get_title_at" name="get_title_at">). It should be free'd with one of the <ref id="st_free_entry*" name="st_free_entry*"> functions
+<tt/filepos/ is the # of bytes into the data file the information starts. (see <ref id="st_get_title_at" name="st_get_title_at">). It should be free'd with one of the <ref id="st_free_entry*" name="st_free_entry*"> functions
 
 
 <sect1>st_table<label id="st_table">
@@ -192,7 +192,7 @@ If <tt/st_ignore_case/ is set to 1, the <ref id="*_find_list" name="*_find_list"
 
 
 <sect1>st_return_body<label id="st_return_body">
-<p>If <tt/st_return_body/ is set to 0, the <tt/fmt/ and <tt/text/ parts of a <ref id="ency_titles" name="ency_titles"> struct returned from a <ref id="*_find_list" name="*_find_list"> are set to <tt/NULL/. <ref id="get_title_at" name="get_title_at"> can be used to retrieve the full entry.
+<p>If <tt/st_return_body/ is set to 0, the <tt/fmt/ and <tt/text/ parts of a <ref id="ency_titles" name="ency_titles"> struct returned from a <ref id="*_find_list" name="*_find_list"> are set to <tt/NULL/. <ref id="st_get_title_at" name="st_get_title_at"> can be used to retrieve the full entry.
 The default is 1, which <em/does/ return <tt/fmt/ and <tt/text/ parts.
 
 
@@ -294,12 +294,14 @@ If <tt/exact/ is set to 0, *_find_list will match substrings (eg. "James" in "Ki
 <ref id="st_return_body" name="st_return_body"> and <ref id="st_ignore_case" name="st_ignore_case"> can be used with these functions.
 
 
-<sect1>get_title_at<label id="get_title_at">
+<sect1>st_get_title_at<label id="st_get_title_at">
 <p>
 <verb>
-struct ency_titles *get_title_at (long filepos);
+struct ency_titles *st_get_title_at (long filepos);
 </verb>
-This function returns an <ref id="ency_titles" name="ency_titles"> struct of an entry at a certain byte position in the file. The position is returned with <ref id="*_find_list" name="*_find_list"> searches.
+</p>
+<p>
+This function returns an <ref id="ency_titles" name="ency_titles"> struct of an entry at a certain byte position in the file. The position is returned with <ref id="*_find_list" name="*_find_list"> searches.</p><p><em/Note:/ This used to be called simply get_title_at(), renamed to fit the rest of the function names.</p>
 
 <sect1>st_nice_error<label id="st_nice_error">
 <p>
