@@ -1,26 +1,26 @@
-/******************************************************************************/
-/* Mibus's Ency 98 Reader: Reads the Star Trek Encyclopedia (1998 version)    */
-/* Copyright (C) 1998 Robert Mibus                                            */
-/* Also reads the various Omnipedias & Episode guides                         */
-/*                                                                            */
-/* This program is free software; you can redistribute it and/or              */
-/* modify it under the terms of the GNU General Public License                */
-/* as published by the Free Software Foundation; either version 2             */
-/* of the License, or (at your option) any later version.                     */
-/*                                                                            */
-/* This program is distributed in the hope that it will be useful,            */
-/* but WITHOUT ANY WARRANTY; without even the implied warranty of             */
-/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              */
-/* GNU General Public License for more details.                               */
-/*                                                                            */
-/* You should have received a copy of the GNU General Public License          */
-/* along with this program; if not, write to the Free Software                */
-/* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. */
-/*                                                                            */
-/* Author:                                                                    */
-/*      Email   mibus@bigpond.com                                             */
-/*      Webpage http://users.bigpond.com/mibus/                               */
-/******************************************************************************/
+/*****************************************************************************/
+/* Mibus's Ency 98 Reader: Reads the Star Trek Encyclopedia (1998 version)   */
+/* Copyright (C) 1998 Robert Mibus                                           */
+/* Also reads the various Omnipedias & Episode guides                        */
+/*                                                                           */
+/* This program is free software; you can redistribute it and/or             */
+/* modify it under the terms of the GNU General Public License               */
+/* as published by the Free Software Foundation; either version 2            */
+/* of the License, or (at your option) any later version.                    */
+/*                                                                           */
+/* This program is distributed in the hope that it will be useful,           */
+/* but WITHOUT ANY WARRANTY; without even the implied warranty of            */
+/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             */
+/* GNU General Public License for more details.                              */
+/*                                                                           */
+/* You should have received a copy of the GNU General Public License         */
+/* along with this program; if not, write to the Free Software               */
+/* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.*/
+/*                                                                           */
+/* Author:                                                                   */
+/*      Email   mibus@bigpond.com                                            */
+/*      Webpage http://users.bigpond.com/mibus/                              */
+/*****************************************************************************/
 
 #ifndef ENCY_H
 #define ENCY_H
@@ -70,9 +70,11 @@ int st_fingerprint (void);
 char *st_autofind (int, char *);
 
 struct st_ency_formatting {
-  int bi;
-  int words;
   int firstword;
+  int words;
+  int bold;
+  int italic;
+  int underline;
   struct st_ency_formatting *next;
 };
 

@@ -1,26 +1,26 @@
-/******************************************************************************/
-/* Mibus's Ency 98 Reader: Reads the Star Trek Encyclopedia (1998 version)    */
-/* Copyright (C) 1998 Robert Mibus                                            */
-/* Also reads the various Omnipedias & Episode guides                         */
-/*                                                                            */
-/* This program is free software; you can redistribute it and/or              */
-/* modify it under the terms of the GNU General Public License                */
-/* as published by the Free Software Foundation; either version 2             */
-/* of the License, or (at your option) any later version.                     */
-/*                                                                            */
-/* This program is distributed in the hope that it will be useful,            */
-/* but WITHOUT ANY WARRANTY; without even the implied warranty of             */
-/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              */
-/* GNU General Public License for more details.                               */
-/*                                                                            */
-/* You should have received a copy of the GNU General Public License          */
-/* along with this program; if not, write to the Free Software                */
-/* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. */
-/*                                                                            */
-/* Author:                                                                    */
-/*      Email   mibus@bigpond.com                                             */
-/*      Webpage http://users.bigpond.com/mibus/                               */
-/******************************************************************************/
+/*****************************************************************************/
+/* Mibus's Ency 98 Reader: Reads the Star Trek Encyclopedia (1998 version)   */
+/* Copyright (C) 1998 Robert Mibus                                           */
+/* Also reads the various Omnipedias & Episode guides                        */
+/*                                                                           */
+/* This program is free software; you can redistribute it and/or             */
+/* modify it under the terms of the GNU General Public License               */
+/* as published by the Free Software Foundation; either version 2            */
+/* of the License, or (at your option) any later version.                    */
+/*                                                                           */
+/* This program is distributed in the hope that it will be useful,           */
+/* but WITHOUT ANY WARRANTY; without even the implied warranty of            */
+/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             */
+/* GNU General Public License for more details.                              */
+/*                                                                           */
+/* You should have received a copy of the GNU General Public License         */
+/* along with this program; if not, write to the Free Software               */
+/* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.*/
+/*                                                                           */
+/* Author:                                                                   */
+/*      Email   mibus@bigpond.com                                            */
+/*      Webpage http://users.bigpond.com/mibus/                              */
+/*****************************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,7 +38,6 @@ int exact = 0;
 
 int loopies (char *txt, struct st_ency_formatting *fmt)
 {
-  char fmtstring[10];
   struct st_ency_formatting *fmt2;
   int i = 0, z = 0;
   char smeg[50];
@@ -65,53 +64,18 @@ int loopies (char *txt, struct st_ency_formatting *fmt)
       }
       if (fmt != NULL)
 	if (words == fmt->firstword) {
-	  fmtstring[0] = 0;
-	  fmtstring[1] = 0;
-	  fmtstring[2] = 0;
 
-	  switch (fmt->bi) {
-	  case 0:		// None
+	  if (fmt->bold)
+	    printf ("<b>");
 
-	    fmtstring[0] = 0;
-	    break;
-	  case 1:		// Bold
+	  if (fmt->italic)
+	    printf ("<i>");
 
-	    strcpy (fmtstring, "b");
-	    break;
-	  case 2:		// Italic
-
-	    strcpy (fmtstring, "i");
-	    break;
-	  case 3:		// Bold & Italic
-
-	    strcpy (fmtstring, "bi");
-	    break;
-	  case 4:		// Underline
-
-	    strcpy (fmtstring, "u");
-	    break;
-	  case 5:		// Bold & Underline
-
-	    strcpy (fmtstring, "bu");
-	    break;
-	  case 6:		// Bold & Italic
-
-	    strcpy (fmtstring, "bi");
-	    break;
-	  case 7:		// Bold & Underline & Italic
-
-	    strcpy (fmtstring, "bui");
-	    break;
-	  }
-
-	  if (fmtstring[0])
-	    printf ("<%c>", fmtstring[0]);
-	  if (fmtstring[1])
-	    printf ("<%c>", fmtstring[1]);
-	  if (fmtstring[2])
-	    printf ("<%c>", fmtstring[2]);
+	  if (fmt->underline)
+	    printf ("<u>");
 
 	  printf ("%s", smeg);
+
 	  for (i = 0; i < fmt->words - 1; i++) {
 	    txt += (strlen (smeg) + 1);
 	    while ((txt[0] == 32) || (txt[0] == 10))
@@ -124,12 +88,15 @@ int loopies (char *txt, struct st_ency_formatting *fmt)
 	  }
 	  words--;
 	  words += fmt->words;
-	  if (fmtstring[2])
-	    printf ("</%c>", fmtstring[2]);
-	  if (fmtstring[1])
-	    printf ("</%c>", fmtstring[1]);
-	  if (fmtstring[0])
-	    printf ("</%c>", fmtstring[0]);
+
+	  if (fmt->underline)
+	    printf ("<u>");
+
+	  if (fmt->italic)
+	    printf ("<b>");
+
+	  if (fmt->bold)
+	    printf ("</b>");
 
 	  fmt2 = fmt;
 	  fmt = fmt->next;
