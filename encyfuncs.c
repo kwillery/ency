@@ -765,7 +765,7 @@ while ((c=getc(inp)) != '\"')
 printf("uh-oh!\n");
    return (NULL);
   }
-  temp_text[text_size++] = ency_cleantext(c);
+  temp_text[text_size++] = tolower(ency_cleantext(c));
  // printf("%c",c);
 }
 temp_text[text_size]=0;

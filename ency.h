@@ -29,15 +29,20 @@ char ency_cleantext (unsigned char);
 int ency_open (void);
 int ency_close (void);
 struct ency_titles *ency_find_titles (char[]);
+struct ency_titles *ency_find_list (char[], int);
 struct ency_titles *ency_get_title (char[]);
 int epis_open (void);
 int epis_close (void);
 struct ency_titles *epis_find_titles (char[]);
+struct ency_titles *epis_find_list (char[], int);
 struct ency_titles *epis_get_title (char[]);
 int chro_open (void);
 int chro_close (void);
 struct ency_titles *chro_find_titles (char[]);
+struct ency_titles *chro_find_list (char[], int);
 struct ency_titles *chro_get_title (char[]);
+
+struct st_table *st_get_table(void);
 
 struct st_ency_formatting
 {

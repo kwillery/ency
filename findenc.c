@@ -43,12 +43,11 @@ int i=0;
 
 st_ignore_case=1;
 
-// *
 
 //  thingy = ency_find_titles (search_string);
 // thingy = chro_find_titles (search_string);
-thingy = ency_find_list (search_string,0);
-// thingy = chro_find_list (search_string,0);
+// thingy = ency_find_list (search_string,0);
+ thingy = chro_find_list (search_string,0);
 
   if ((thingy != NULL) && (thingy->title != NULL))
     {
@@ -70,7 +69,7 @@ free(thingyz->title);
   else
     printf ("No matches\n");
 
-// *
+
 
 /* tbl=st_get_table();
 i=0;
