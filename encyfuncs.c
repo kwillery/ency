@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <malloc.h>
+#define __USE_ISOC99 /* For isblank() in ctype.h */
 #include <ctype.h>
 #include <string.h>
 #include <errno.h>
@@ -64,7 +65,7 @@ struct st_ftlist *ftlist=NULL;
 /* for use w/ st_get_title_at() */
 static long int set_starts_at = 0x0;
 
-static long int curr_starts_at, curr_lastone, curr;
+static long int curr_starts_at, curr;
 
 /* internal */
 #define ST_SECT_PTBL 10
@@ -73,12 +74,12 @@ static long int curr_starts_at, curr_lastone, curr;
 #define ST_SECT_VCPT 13
 
 /* for pictures */
-static struct st_table *st_ptbls = NULL, *st_ptbls_tail = NULL;
-static struct st_caption *st_pcpts = NULL, *st_pcpts_tail = NULL;
+static struct st_table *st_ptbls = NULL;
+static struct st_caption *st_pcpts = NULL;
 
 /* for videos */
-static struct st_table *st_vtbls = NULL, *st_vtbls_tail = NULL;
-static struct st_caption *st_vcpts = NULL, *st_vcpts_tail = NULL;
+static struct st_table *st_vtbls = NULL;
+static struct st_caption *st_vcpts = NULL;
 
 /* cache */
 static struct ency_titles *cache = NULL;
@@ -275,99 +276,6 @@ static void st_clear_cache ()
 	st_free_entry_tree (cache);
 	cache = NULL;
 	cache_last = NULL;
-}
-
-static int cache_has_section (int section)
-{
-	struct ency_titles *curr = cache;
-
-	while (curr)
-	{
-		if (curr->section == section)
-			return 1;
-		curr = curr->next;
-	}
-	return 0;
-}
-
-static void add_to_table (struct st_table *list, int section)
-{
-	struct st_table *curr=NULL;
-	struct st_table **head=NULL;
-	struct st_table **tail=NULL;
-
-	if (!list)
-		return;
-
-	switch (section)
-	{
-	case ST_SECT_PTBL:
-		head = &st_ptbls;
-		tail = &st_ptbls_tail;
-		break;
-	case ST_SECT_VTBL:
-		break;
-	default:
-		return;
-	}
-	curr = *tail;
-
-	if (!curr)
-	{
-		*head = list;
-		while (list->next)
-			list = list->next;
-		*tail = list;
-		return;
-	} else
-	{
-		curr->next = list;
-		while (list->next)
-			list = list->next;
-		*tail = list;
-	}
-
-	return;
-}
-
-static void add_to_captions (struct st_caption *list, int section)
-{
-	struct st_caption *curr=NULL;
-	struct st_caption **head=NULL;
-	struct st_caption **tail=NULL;
-
-	if (!list)
-		return;
-
-	switch (section)
-	{
-	case ST_SECT_PCPT:
-		head = &st_pcpts;
-		tail = &st_pcpts_tail;
-		break;
-	case ST_SECT_VCPT:
-		break;
-	default:
-		return;
-	}
-	curr = *tail;
-
-	if (!curr)
-	{
-		*head = list;
-		while (list->next)
-			list = list->next;
-		*tail = list;
-		return;
-	} else
-	{
-		curr->next = list;
-		while (list->next)
-			list = list->next;
-		*tail = list;
-	}
-
-	return;
 }
 
 /* file stuff */
@@ -1303,7 +1211,7 @@ static struct ency_titles *st_title_error (int error_no)
 /* sorted episode list stuff */
 static struct st_table *entrylist_head=NULL;
 
-int entry_list_has_section (section)
+static int entry_list_has_section (section)
 {
 	struct st_table *lst;
 	lst = entrylist_head;
@@ -1316,7 +1224,7 @@ int entry_list_has_section (section)
 	return 0;
 }
 
-int load_entry_list (int section)
+static int load_entry_list (int section)
 {
 	struct st_table *curr;
 
@@ -1343,7 +1251,7 @@ int load_entry_list (int section)
 	return 0;
 }
 
-int load_entry_lists (void)
+static int load_entry_lists (void)
 {
 	int i;
 
@@ -1355,7 +1263,7 @@ int load_entry_lists (void)
 	return (entrylist_head ? 1 : 0);
 }
 
-char *get_fnbase (struct st_table *tbl, char *title)
+static char *get_fnbase (struct st_table *tbl, char *title)
 {
 	char *exception;
 	if (!title)
@@ -1371,7 +1279,7 @@ char *get_fnbase (struct st_table *tbl, char *title)
 	return NULL;
 }
 
-char *get_title (struct st_table *tbl, char *fnbase)
+static char *get_title (struct st_table *tbl, char *fnbase)
 {
 	char *exception;
 	if (!fnbase)
@@ -1389,7 +1297,7 @@ char *get_title (struct st_table *tbl, char *fnbase)
 	return NULL;
 }
 
-struct st_table *get_table_entry_by_fnbase (struct st_table *tbl, char *fnbase)
+static struct st_table *get_table_entry_by_fnbase (struct st_table *tbl, char *fnbase)
 {
 	char *exception;
 	if (!fnbase)
@@ -1405,7 +1313,7 @@ struct st_table *get_table_entry_by_fnbase (struct st_table *tbl, char *fnbase)
 	return NULL;
 }
 
-struct st_table *get_table_entry_by_title (struct st_table *tbl, char *title)
+static struct st_table *get_table_entry_by_title (struct st_table *tbl, char *title)
 {
 	char *exception;
 	struct st_table *root=tbl;
@@ -1437,212 +1345,7 @@ struct st_table *get_table_entry_by_title (struct st_table *tbl, char *title)
 	return NULL;
 }
 
-int get_block_id_by_fnbase (struct st_table *tbl, char *fnbase)
-{
-	char *exception;
-	if (!fnbase)
-		return 0;
-	if ((exception = get_exception (st_file_type, "LU fnbase", fnbase)))
-		fnbase = exception;
-	while (tbl)
-		if (!strcasecmp (tbl->fnbase, fnbase))
-			return tbl->block_id;
-		else
-			tbl = tbl->next;		
-	return 0;
-}
-
-int get_block_id_by_title (struct st_table *tbl, char *title)
-{
-	char *exception;
-	if (!title)
-		return 0;
-	if ((exception = get_exception (st_file_type, "LU title", title)))
-		title = exception;
-	while (tbl)
-	{
-		if (!strcasecmp (tbl->title, title))
-			return tbl->block_id;
-		else if (strlen (title) > 14)
-			if (!strncmp (title + 5, "Star Trek", 9))
-				if (!strcasecmp (tbl->title, title + 4))
-					return tbl->block_id;
-		tbl = tbl->next;		
-	}
-	return 0;
-}
-
-int get_entry_id_by_fnbase (struct st_table *tbl, char *fnbase)
-{
-	char *exception;
-	if (!fnbase)
-		return 0;
-	if ((exception = get_exception (st_file_type, "LU fnbase", fnbase)))
-		fnbase = exception;
-	while (tbl)
-		if (!strcasecmp (tbl->fnbase, fnbase))
-			return tbl->id;
-		else
-			tbl = tbl->next;		
-	return 0;
-}
-
-int get_entry_id_by_title (struct st_table *tbl, char *title)
-{
-	char *exception;
-	if (!title)
-		return 0;
-	if ((exception = get_exception (st_file_type, "LU title", title)))
-		title = exception;
-	while (tbl)
-	{
-		if (!strcmp (tbl->title, title))
-			return tbl->id;
-		else if (strlen (title) > 14)
-			if (!strncmp (title + 5, "Star Trek", 9))
-				if (!strcasecmp (tbl->title, title + 4))
-					return tbl->id;
-		tbl = tbl->next;		
-	}
-	return 0;
-}
-
-static struct ency_titles *sort_by_epis (struct ency_titles *root, int section)
-{
-	struct ency_titles *curr, *last;
-	struct ency_titles *new_root = NULL, *new_curr = NULL;
-	struct st_table *tbl, *atbl;
-	char fnbase[8];
-	char *title;
-
-	load_entry_list (section);
-
-	tbl = entrylist_head;
-	while ((tbl) && (isdigit (tbl->title[0]) || (isblank (tbl->title[0]))))
-	{
-		curr = root;
-		last = NULL;
-
-		if (tbl->fnbase)
-		{
-			atbl = tbl->next;
-			title = get_title (atbl, tbl->fnbase);
-			/* Special case */
-			if (!strcmp (tbl->fnbase, "oneong"))
-				title = "\"11001001\" (TNG)";
-			/* Strange cases */
-			if (!title)
-			{
-				sprintf (fnbase, "e%c%c%c%c%c", tbl->fnbase[0], tbl->fnbase[1], tbl->fnbase[2], tbl->fnbase[4], tbl->fnbase[5]);
-				title = get_title (atbl, fnbase);
-			}
-			if (!title)
-			{
-				sprintf (fnbase, "e%c%c%c%c%c", tbl->fnbase[0], tbl->fnbase[2], tbl->fnbase[3], tbl->fnbase[4], tbl->fnbase[5]);
-				title = get_title (atbl, fnbase);
-			}
-
-			if (title)
-				while (curr)
-				{
-					if (!strcasecmp (curr->title, title)
-					 || !strcasecmp (curr->title, tbl->title+3)
-					 || !strcasecmp (curr->title, tbl->title+4))
-					{
-						if (new_curr)
-						{
-							new_curr->next = curr;
-							new_curr = curr;
-						}
-						else
-							new_root = new_curr = curr;
-						if (last)
-							last->next = curr->next;
-						if (curr == root)
-							root = root->next;
-						curr->next = NULL;
-
-						free (curr->title);
-						curr->title = strdup (tbl->title);
-					
-						curr = NULL;
-					} else
-					{
-						last = curr;
-						curr = curr->next;
-					}
-				}
-		}
-		tbl = tbl->next;
-	}
-
-	/* Add whats left on to the end, just in case */
-	curr = new_root;
-	if (curr)
-	{
-		while (curr->next)
-			curr = curr->next;
-		curr->next = root;
-	}
-	return (new_root);
-}
-
-struct ency_titles *sort_alphabetical (struct ency_titles *root)
-{
-        struct ency_titles *lowest, *last_lowest;
-        struct ency_titles *curr, *last;
-        struct ency_titles *new_root=NULL;
-
-        while (root)
-        {
-                curr = root;
-                last = NULL;
-                lowest = root;
-                last_lowest = NULL;
-
-                while (curr)
-                {
-                        if (strcasecmp (curr->title, lowest->title) < 0)
-                        {
-                                lowest = curr;
-                                last_lowest = last;
-                        }
-                        last = curr;
-                        curr = curr->next;
-                }
-
-                curr = new_root;
-                if (curr)
-                {
-                        while (curr->next)
-                        {
-                                curr = curr->next;
-                        }
-                        curr->next = lowest;
-                } else
-                        new_root = lowest;
-
-                if (last_lowest)
-                        last_lowest->next = lowest->next;
-                if (lowest == root)
-                        root = root->next;
-
-                lowest->next = NULL;
-        }
-        return (new_root);
-}
-
-static struct ency_titles *sort_entries (struct ency_titles *root, int section, int options)
-{
-	if (options & ST_OPT_SORTEPIS)
-		return (sort_by_epis (root, section));
-	else if (options & ST_OPT_SORTALPHA)
-		return (sort_alphabetical (root));
-	else
-		return (root);
-}
-
-struct ency_titles *read_entry (FILE *inp, int options)
+static struct ency_titles *read_entry (FILE *inp, int options)
 {
 	int return_body_was;
 	char c;
@@ -1715,7 +1418,7 @@ struct ency_titles *st_get_title_at (long filepos)
 	return (st_read_title_at (filepos, ST_OPT_RETURN_BODY));
 }
 
-void add_to_block_cache (int block_id, int id, long filepos)
+static void add_to_block_cache (int block_id, int id, long filepos)
 {
 	if (cache)
 	{
@@ -1735,7 +1438,7 @@ void add_to_block_cache (int block_id, int id, long filepos)
 	cache_last->next = NULL;
 }
 
-void load_block_cache (void)
+static void load_block_cache (void)
 {
 	char c;
 	int section, n, i=0;
@@ -1782,7 +1485,7 @@ void load_block_cache (void)
 	}
 }
 
-long get_block_pos_from_cache (int block_id, int id)
+static long get_block_pos_from_cache (int block_id, int id)
 {
 	struct ency_titles *curr=NULL;
 	int ok_to_go_again=0;
@@ -1933,7 +1636,7 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 	return root;
 }
 
-int ft_list_has_section (int section)
+static int ft_list_has_section (int section)
 {
 	struct st_ftlist *fl=NULL;
 
@@ -1947,7 +1650,7 @@ int ft_list_has_section (int section)
 	return 0;
 }
 
-void load_ft_list (int section)
+static void load_ft_list (int section)
 {
 	struct st_part *part;
 	struct st_ftlist *root=NULL, *curr=NULL, *last=NULL;
@@ -2072,7 +1775,7 @@ struct entry_scores
 	struct entry_scores *next;
 };
 
-struct entry_scores *find_words (struct entry_scores *root, char *words, struct st_ftlist *fl)
+static struct entry_scores *find_words (struct entry_scores *root, char *words, struct st_ftlist *fl)
 {
 	struct entry_scores *scores=NULL, *curr=NULL, *last=NULL;
 	struct st_wl *wl;
@@ -2153,7 +1856,7 @@ struct entry_scores *find_words (struct entry_scores *root, char *words, struct 
 	return scores;
 }
 
-struct ency_titles  *sort_scores (struct ency_titles *scores)
+static struct ency_titles  *sort_scores (struct ency_titles *scores)
 {
 	struct ency_titles *curr=NULL, *last=NULL, *last_last=NULL, *tmp=NULL;
 	int needs_sorting=1;
@@ -2191,7 +1894,7 @@ struct ency_titles  *sort_scores (struct ency_titles *scores)
 	return scores;
 }
 
-struct ency_titles *st_find_fulltext (char *search_string, int section, int options)
+static struct ency_titles *st_find_fulltext (char *search_string, int section, int options)
 {
 	struct ency_titles *root=NULL, *curr=NULL;
 	struct st_table *tbl=NULL, *ctbl=NULL;
