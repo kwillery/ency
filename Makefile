@@ -4,8 +4,9 @@ CFLAGS = -O3 -m486
 GTKCFLAGS = `gtk-config --cflags`
 LDFLAGS=
 CC=gcc
-BINDIR=/usr/local/bin
-MANDIR=/usr/local/man/man1
+DOCDIR=/usr/doc
+BINDIR=/usr/bin
+MANDIR=/usr/man
 LIBS = `gtk-config --libs`
 
 all: htmlenc findenc gtkenc
@@ -24,9 +25,9 @@ clean :
 
 install: findenc
 	install -c findenc $(BINDIR)
-	install -c findenc.1 $(MANDIR)
+#	install -c findenc.1 $(MANDIR)
 	install -c htmlenc $(BINDIR)
-	install -c htmlenc.1 $(MANDIR)
+#	install -c htmlenc.1 $(MANDIR)
 	install -c gtkenc $(BINDIR)
 
 uninstall:
