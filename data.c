@@ -19,6 +19,9 @@
 #include "scan.h"
 #include "rcfile.h"
 
+/* strdup() barfs on NULLs, so if we want to be able to
+ * copy a possibly NULL string, do this instead.
+ * N.B. We return NULL not "" if the input is NULL. */
 static char *strdup_if_valid (char *t)
 {
 	if (t)
@@ -27,14 +30,20 @@ static char *strdup_if_valid (char *t)
 		return NULL;
 }
 
+/* The list of files we support. */
 struct st_data_filenode *files=NULL;
 
+/* Returns one file out of 'files'.
+ * If file_type is higher than the number we have
+ * (starting at 0, so count_filetypes()-1) then it
+ * returns NULL. If file_type is < 0 we just return the
+ * first one. */
 static struct st_data_filenode *get_filenode (int file_type)
 {
 	struct st_data_filenode *tmp;
 	int i;
 
-	if (file_type > count_files())
+	if (file_type >= count_files())
 		return NULL;
 
 	tmp = files;
@@ -45,6 +54,7 @@ static struct st_data_filenode *get_filenode (int file_type)
 	return tmp;
 }
 
+/* Frees a part struct and things it points to. */
 void free_part (struct st_part *part)
 {
 	if (part->name)
@@ -54,6 +64,7 @@ void free_part (struct st_part *part)
 	free (part);
 }
 
+/* Frees an exception. */
 void free_exception (struct st_data_exception *ex)
 {
 	if (ex->type)
@@ -65,6 +76,8 @@ void free_exception (struct st_data_exception *ex)
 	free (ex);
 }
 
+/* Frees a data_filenode, its parts, exceptions,
+ * etc. etc. etc. */
 void free_data_filenode (struct st_data_filenode *file)
 {
 	struct st_part *part,*tmp_part;
@@ -99,6 +112,7 @@ void free_data_filenode (struct st_data_filenode *file)
 
 }
 
+/* This clears all of our loaded file nodes. */
 void st_data_clear (void)
 {
 	struct st_data_filenode *tmp=NULL;
@@ -111,6 +125,7 @@ void st_data_clear (void)
 	}
 }
 
+/* A quick & safe way to make a part. */
 struct st_part *new_part()
 {
 	struct st_part *part=NULL;
@@ -132,6 +147,7 @@ struct st_part *new_part()
 	return part;
 }
 
+/* A quick, easy & safe way to make an exception */
 struct st_data_exception *new_exception (char *type, char *from, char *to)
 {
 	struct st_data_exception *ex;
@@ -146,6 +162,7 @@ struct st_data_exception *new_exception (char *type, char *from, char *to)
 	return ex;
 }
 
+/* Returns how many files we know about. */
 int count_files (void)
 {
 	struct st_data_filenode *tmp;
@@ -162,6 +179,9 @@ int count_files (void)
 	return i;
 }
 
+/* Turns a 16-byte array (from the start of a file) into
+ * a string (eg. 1;23;a3;d2;...) so that it can be easily
+ * stored or compared */
 static void make_text_fingerprint (unsigned char fp[16], unsigned char text_fp[16 * 3 + 1])
 {
 	char temp_ptr[4];
@@ -176,6 +196,10 @@ static void make_text_fingerprint (unsigned char fp[16], unsigned char text_fp[1
 	}
 }
 
+/* Compares the currently active file to all known
+ * encyclopediae. It returns the file node's number
+ * if it is recognised, else 254 or 255.
+ * (unrecognised or unopenable respectively.) */
 int st_fingerprint (void)
 {
 	int i = 0;
@@ -211,11 +235,14 @@ int st_fingerprint (void)
 	return 254;
 }
 
+/* Gets the 'nice' name from a data node.
+ * e.g. "Encyclopedia 3.0". */
 char *get_name_of_file (int file_type)
 {
 	return (get_filenode (file_type)->name);
 }
 
+/* Gets specific bits of info from a data node. */
 const char *st_fileinfo_get_data (int file, st_filename_type type)
 {
 	struct st_data_filenode *node=NULL;
@@ -242,6 +269,9 @@ const char *st_fileinfo_get_data (int file, st_filename_type type)
 	}
 }
 
+/* Gets a 'part' based on its type, section, and number in the list.
+ * (The first one matching type & section is '0', the next that matches
+ * is '1', etc.) */
 struct st_part *get_part (int file, int type, int section, int number, int options)
 {
 	FILE *inp;
@@ -265,6 +295,9 @@ struct st_part *get_part (int file, int type, int section, int number, int optio
 			i++;
 		}
 
+		/* ST_BLOCK_SCAN is a pseudo-block entry. It triggers off
+		 * a call to scan_file() so that less info needs to be
+		 * kept in the rcfile. */
 		if (part->type == ST_BLOCK_SCAN)
 		{
 			inp = (FILE *) curr_open (0);
@@ -272,6 +305,8 @@ struct st_part *get_part (int file, int type, int section, int number, int optio
 			fclose (inp);
 			/* NB. we don't do 
 				tmp->next = part->next;
+			   because we don't want to have to screw
+			   around w/ the returned list,
 			   so <needscan/> should be the last
 			   parts tag for that file
 			   (not that you need others when using it
@@ -287,6 +322,9 @@ struct st_part *get_part (int file, int type, int section, int number, int optio
 	return NULL;
 }
 
+/* Similar to get_part(), but does it by block number.
+ * (Usually 500+). This is for getting the part an entry
+ * is in. */
 struct st_part *get_part_by_id (int file, int block_id)
 {
 	struct st_data_filenode *file_node=NULL;
@@ -310,6 +348,9 @@ struct st_part *get_part_by_id (int file, int block_id)
 	return NULL;
 }
 
+/* Similar to get_part(), but does it by block name.
+ * (eg. "LU_A_ENCY"). This is for getting the part a thumbnail
+ * is in. */
 struct st_part *get_part_by_name (int file, char *name)
 {
         struct st_data_filenode *file_node=NULL;
@@ -336,6 +377,7 @@ struct st_part *get_part_by_name (int file, char *name)
         return NULL;
 }
 
+/* Looks up an exception in a given file. */
 char *get_exception (int file, char *type, char *from)
 {
 	struct st_data_exception *ex=NULL;
@@ -358,6 +400,7 @@ char *get_exception (int file, char *type, char *from)
 	return NULL;
 }
 
+/* A quick & safe way to make new filenodes. */
 struct st_data_filenode *st_data_new_filenode (void)
 {
 	struct st_data_filenode *new_node=NULL;
@@ -380,6 +423,8 @@ struct st_data_filenode *st_data_new_filenode (void)
 	return new_node;
 }
 
+/* Appends a new filenode to the end of the list of files
+ * that we know about. */
 void st_data_append_filenode (struct st_data_filenode *new_file)
 {
 	struct st_data_filenode *tmp=files;

@@ -11,6 +11,9 @@
 #include "rcfile.h"
 #include "data.h"
 
+/* Try and locate an rc file to open.
+ * If we can, open it and return the file
+ * handle */
 static FILE *open_rc_file (char *filename)
 {
 	FILE *file=NULL;
@@ -75,6 +78,9 @@ static FILE *open_rc_file (char *filename)
 	return NULL;
 }
 
+/* A sort-of do-all get-me-some-text from this line function.
+ * N.B. it takes the pointer to the pointer to the start of what you
+ * want to read. */
 static char *rcfile_get_text (char **line, char stop_at, int stop_at_whitespace)
 {
 	char *l = *line;
@@ -124,6 +130,7 @@ static char *rcfile_get_text (char **line, char stop_at, int stop_at_whitespace)
 	return strdup (m);
 }
 
+/* Create an argument list out a line in the rc file. */
 static struct rcfile_args *new_rcfile_args (char *line)
 {
 	struct rcfile_args *arg_root=NULL;
@@ -157,6 +164,8 @@ static struct rcfile_args *new_rcfile_args (char *line)
 	return arg_root;
 }
 
+/* Reads the command part of a line, and calls a function to get
+ * each argument. */
 static struct rcfile_cmd *new_rcfile_cmd (char *line)
 {
 	struct rcfile_cmd *cmd=NULL;
@@ -198,6 +207,7 @@ static struct rcfile_cmd *new_rcfile_cmd (char *line)
 	return cmd;
 }
 
+/* Load a command and it's arguments from the rc file. */
 static struct rcfile_cmd *rc_file_get_cmd (FILE *inp)
 {
 	char line[256]="";
@@ -217,6 +227,7 @@ static struct rcfile_cmd *rc_file_get_cmd (FILE *inp)
 	return new_rcfile_cmd (line);
 }
 
+/* Look in an rc argument list for a given argument. */
 static char *get_rc_arg (struct rcfile_args *arg, char *name)
 {
 	if (!arg)
@@ -239,6 +250,7 @@ static char *get_rc_arg (struct rcfile_args *arg, char *name)
 	return NULL;
 }
 
+/* Makes a part out of an rc argument list. */
 static struct st_part *append_part_from_rc_file (struct st_part *part_root, struct rcfile_args *arg)
 {
 	struct st_part *part=NULL, *part_last=NULL;
@@ -308,6 +320,7 @@ static struct st_part *append_part_from_rc_file (struct st_part *part_root, stru
 	return part_root;
 }
 
+/* Makes an exception out of an rc arg list. */
 static struct st_data_exception *append_exception_from_rc_file (struct st_data_exception *ex_root, struct rcfile_args *arg)
 {
 	struct st_data_exception *ex=NULL, *ex_last=NULL;
@@ -341,6 +354,7 @@ static struct st_data_exception *append_exception_from_rc_file (struct st_data_e
 	return ex_root;
 }
 
+/* Frees an rc argument list. */
 static void free_rc_args (struct rcfile_args *arg)
 {
 	struct rcfile_args *old_arg;
@@ -358,6 +372,7 @@ static void free_rc_args (struct rcfile_args *arg)
 	}
 }
 
+/* Frees the rc command. */
 static void free_rc_cmd (struct rcfile_cmd *cmd)
 {
 	free_rc_args (cmd->args);
@@ -368,6 +383,8 @@ static void free_rc_cmd (struct rcfile_cmd *cmd)
 	free (cmd);
 }
 
+/* Loop through every rc command and set up new
+ * file nodes. */
 static struct st_data_filenode *make_filenode_from_rc_file (FILE *inp)
 {
 	struct st_data_filenode *new_node=NULL;
@@ -418,6 +435,7 @@ static struct st_data_filenode *make_filenode_from_rc_file (FILE *inp)
 	return new_node;
 }
 
+/* Load an rcfile into file nodes. */
 int load_rc_file_info (char *filename)
 {
 	FILE *inp;
