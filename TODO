@@ -9,8 +9,8 @@ My todo list for my ency reader
 - split ency/timeline/episode/resource
 - make prettier code :-)
 - library functions ?
-- update the man pages heaps
-- error handling
+- update the man pages  & docs heaps
+- better & more error handling
 - if (project != finished) drink(coffee) else goto bed;
 
 --
