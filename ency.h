@@ -58,59 +58,52 @@ int st_fingerprint (void);
 struct st_media *st_get_media (char *);
 char *st_format_filename (char *, char *, int);
 
-struct st_ency_formatting
-  {
-    int bi;
-    int words;
-    int firstword;
-    struct st_ency_formatting *next;
-  };
+struct st_ency_formatting {
+  int bi;
+  int words;
+  int firstword;
+  struct st_ency_formatting *next;
+};
 
-struct ency_titles
-  {
-    char *title;
-    char *text;
-    struct st_ency_formatting *fmt;
-    struct ency_titles *next;
-    int err;
-    long filepos;
-  };
+struct ency_titles {
+  char *title;
+  char *text;
+  struct st_ency_formatting *fmt;
+  struct ency_titles *next;
+  int err;
+  long filepos;
+};
 
-struct st_table
-  {
-    char *title;
-    char *fnbase;
-    struct st_table *next;
-  };
+struct st_table {
+  char *title;
+  char *fnbase;
+  struct st_table *next;
+};
 
-struct st_caption
-  {
-    char *fnbasen;
-    char *caption;
-    struct st_caption *next;
-  };
+struct st_caption {
+  char *fnbasen;
+  char *caption;
+  struct st_caption *next;
+};
 
-struct st_file_info
-  {
-    char *name;
-    char *filename;
-    char *data_dir;
-    char *pic_dir;
-    char *vid_dir;
-    int append_char;
-    int fingerprint[16];
-    long int filesize;
-  };
+struct st_file_info {
+  char *name;
+  char *filename;
+  char *data_dir;
+  char *pic_dir;
+  char *vid_dir;
+  int append_char;
+  int fingerprint[16];
+  long int filesize;
+};
 
-struct st_photo
-  {
-    char file[8];
-    char caption[50];
-  };
+struct st_photo {
+  char file[8];
+  char caption[50];
+};
 
-struct st_media
-  {
-    struct st_photo photos[5];
-  };
+struct st_media {
+  struct st_photo photos[5];
+};
 
 #endif

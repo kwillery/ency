@@ -29,14 +29,15 @@
 
 extern int st_file_type;
 extern char *ency_filename;
+char *st_lcase (char *);	/* from encyfuncs.c */
 
-int
-main (int argc, char *argv[])
+int main (int argc, char *argv[])
 {
   int silent = 0;
   int i = 0, use_ee = 0;
   char ee_string[1000] = "";
   char search_string[70], *temp_fn;
+  char *lc_search, *lc_title;
   struct st_table *tbl, *oldtbl;
   struct st_media *media = NULL;
   char base_path[] = "/cdrom";
@@ -51,23 +52,19 @@ main (int argc, char *argv[])
   tbl = st_get_table ();
 
   /* parse command-line args */
-  for (i = 1; i < argc; i++)
-    {
-      if (!strcmp ("-s", argv[i]))
-	silent++;
-      if (!strcmp ("-ee", argv[i]))
-	use_ee = 1;
-      else if (argv[i][0] == '-')
-	{
-	  printf ("No help yet\n");
-	  return (0);
-	}
-      else
-	{
-	  strcpy (search_string, argv[i]);
-	  silent = 2;
-	}
+  for (i = 1; i < argc; i++) {
+    if (!strcmp ("-s", argv[i]))
+      silent++;
+    if (!strcmp ("-ee", argv[i]))
+      use_ee = 1;
+    else if (argv[i][0] == '-') {
+      printf ("No help yet\n");
+      return (0);
+    } else {
+      strcpy (search_string, argv[i]);
+      silent = 2;
     }
+  }
 
   /* get the search_string */
   if (silent < 1)
@@ -75,37 +72,38 @@ main (int argc, char *argv[])
   if (silent < 2)
     scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
 
-  while (tbl)
-    {
-      if (strstr (tbl->title, search_string))
-	{
-	  media = st_get_media (tbl->title);
-	  for (i = 0; i < 5; i++)
-	    if (strlen (media->photos[i].file))		/* if there is a response */
-	      {
-		temp_fn = st_format_filename (media->photos[i].file, base_path, 0);	/* makes /cdrom/media98/a/abc1q.pic etc */
-		printf ("%s : %s\n", temp_fn, media->photos[i].caption);
-		if (use_ee)
-		  {
+  while (tbl) {
+    lc_search = st_lcase (search_string);	/* make search string & title lowercase */
+    lc_title = st_lcase (tbl->title);	/* (ie removes case sensitivity         */
+
+    if (strstr (lc_title, lc_search)) {
+      media = st_get_media (tbl->title);
+      for (i = 0; i < 5; i++)
+	if (strlen (media->photos[i].file)) {	/* if there is a response */
+	  temp_fn = st_format_filename (media->photos[i].file, base_path, 0);	/* makes /cdrom/media98/a/abc1q.pic etc */
+	  printf ("%s : %s\n", temp_fn, media->photos[i].caption);
+	  if (use_ee) {
 /* NOTE: This calls a version of ee i modified 
  * to allow setting of the title bar caption
  * using the -t or --title option
  */
-		    strcpy (ee_string, "ee -t \"");
-		    strcat (ee_string, media->photos[i].caption);
-		    strcat (ee_string, "\" ");
-		    strcat (ee_string, temp_fn);
-		    strcat (ee_string, " &");
-		    system (ee_string);
-		  }
-		free (temp_fn);
-	      }
+	    strcpy (ee_string, "ee -t \"");
+	    strcat (ee_string, media->photos[i].caption);
+	    strcat (ee_string, "\" ");
+	    strcat (ee_string, temp_fn);
+	    strcat (ee_string, " &");
+	    system (ee_string);
+	  }
+	  free (temp_fn);
 	}
-      oldtbl = tbl;		/* store tbl's memory address in oldtbl */
-      tbl = tbl->next;		/* progress tbl along the list */
-      free (oldtbl->title);	/* free the last entry's title */
-      free (oldtbl->fnbase);	/* free the last fnbase */
-      free (oldtbl);		/* free the last entry */
     }
+    free (lc_search);
+    free (lc_title);
+    oldtbl = tbl;		/* store tbl's memory address in oldtbl */
+    tbl = tbl->next;		/* progress tbl along the list */
+    free (oldtbl->title);	/* free the last entry's title */
+    free (oldtbl->fnbase);	/* free the last fnbase */
+    free (oldtbl);		/* free the last entry */
+  }
   ency_finish ();		/* cleans up after ency_init() */
 }

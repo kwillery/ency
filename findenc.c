@@ -33,34 +33,28 @@ extern int st_file_type;
 extern int optind;
 extern char *ency_filename;
 
-int
-main (int argc, char *argv[])
+int main (int argc, char *argv[])
 {
   int i = 0;
   char search_string[70];
   struct ency_titles *thingy = NULL;
   struct ency_titles *kill_me = NULL;
   struct st_ency_formatting *fmt = NULL, *kill_fmt = NULL;
-  strcpy(search_string, "");
-    
+  strcpy (search_string, "");
+
   i = getopt (argc, argv, "ech");
 
-  if (i == 'h')
-    {
-      printf ("findenc - Searches Star Trek encyclopedia\nhttp://www.picknowl.com.au/homepages/beemer/ency.html\nUsage: findenc -[c|e]\n-c: searches chronology\n-e: searches episodes\ndefault: search encyclopedia\n");
-      exit (0);
-    }
-
+  if (i == 'h') {
+    printf ("findenc - Searches Star Trek encyclopedia\nhttp://www.picknowl.com.au/homepages/beemer/ency.html\nUsage: findenc -[c|e]\n-c: searches chronology\n-e: searches episodes\ndefault: search encyclopedia\n");
+    exit (0);
+  }
 /* get the search string, one way or another */
-  if (argc > optind)
-    {
-      strcpy (search_string, argv[optind]);
-    }
-  else
-    {
-      printf ("Enter search string :");
-      scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
-    }
+  if (argc > optind) {
+    strcpy (search_string, argv[optind]);
+  } else {
+    printf ("Enter search string :");
+    scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
+  }
 
   /* make the search *not* case sensitive */
   st_ignore_case = 1;
@@ -82,58 +76,53 @@ main (int argc, char *argv[])
  */
 
 
-  if (st_file_type <= ST_FILE_TYPES)
-    {
-      if (i == 'c')
-	thingy = chro_find_list (search_string, 0);
-      if (i == 'e')
-	thingy = epis_find_list (search_string, 0);
-      if ((i != 'c') && (i != 'e'))
-	thingy = ency_find_list (search_string, 0);
+  if (st_file_type <= ST_FILE_TYPES) {
+    if (i == 'c')
+      thingy = chro_find_list (search_string, 0);
+    if (i == 'e')
+      thingy = epis_find_list (search_string, 0);
+    if ((i != 'c') && (i != 'e'))
+      thingy = ency_find_list (search_string, 0);
 
-      /*
-       * get from a certain point in the file...
-       * thingy = get_title_at (0x149310);
-       */
+    /*
+     * get from a certain point in the file...
+     * thingy = get_title_at (0x149310);
+     */
 
-      i = 0;
+    i = 0;
 
-      if ((thingy != NULL) && (thingy->title != NULL))
-	{
-	  do
-	    {
-	      /* print the returned text */
-	      printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
+    if ((thingy != NULL) && (thingy->title != NULL)) {
+      do {
+	/* print the returned text */
+	printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
 
-	      /* free the returned stuff */
-	      kill_me = thingy;
-	      thingy = thingy->next;
-	      fmt = kill_me->fmt;
+	/* free the returned stuff */
+	kill_me = thingy;
+	thingy = thingy->next;
+	fmt = kill_me->fmt;
 
-	      while (fmt)
-		{
-		  kill_fmt = fmt;
-		  fmt = fmt->next;
-		  if (kill_fmt) free (kill_fmt);
-		}
-
-	    if (kill_me->title)
-		  free (kill_me->title);
-
-	    if (kill_me->text)
-		  free (kill_me->text);
-
-	    if (kill_me)
-		   free (kill_me);
-
-	    }
-	  while (thingy != NULL);
+	while (fmt) {
+	  kill_fmt = fmt;
+	  fmt = fmt->next;
+	  if (kill_fmt)
+	    free (kill_fmt);
 	}
-      else
-	printf ("No matches\n");
 
-    }
-  else
+	if (kill_me->title)
+	  free (kill_me->title);
+
+	if (kill_me->text)
+	  free (kill_me->text);
+
+	if (kill_me)
+	  free (kill_me);
+
+      }
+      while (thingy != NULL);
+    } else
+      printf ("No matches\n");
+
+  } else
     printf ("An error has occurred.\n");
   return (0);
 }

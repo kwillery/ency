@@ -40,8 +40,7 @@ int remove_fmt = 0;
 int words = 0;
 int exact = 0;
 
-int
-loopies (char *txt, struct st_ency_formatting *fmt)
+int loopies (char *txt, struct st_ency_formatting *fmt)
 {
   char fmtstring[10];
   struct st_ency_formatting *fmt2;
@@ -49,35 +48,30 @@ loopies (char *txt, struct st_ency_formatting *fmt)
   char smeg[50];
   int print_br = 0;
 
-  while ((txt[0] == 32) || (txt[0] == 10))
-    {
-      printf ("%c", txt[0]);
-      txt++;
-    }
+  while ((txt[0] == 32) || (txt[0] == 10)) {
+    printf ("%c", txt[0]);
+    txt++;
+  }
 
-  while ((fmt) && (fmt->firstword < words + 1))
+  while ((fmt) && (fmt->firstword < words + 1)) {
+    fmt2 = fmt;
+    fmt = fmt->next;
+    if (remove_fmt)
+      free (fmt2);
+  }
+  while (strlen (txt)) {
+    z = sscanf (txt, "%s", smeg);
     {
-      fmt2 = fmt;
-      fmt = fmt->next;
-      if (remove_fmt)
-	free (fmt2);
-    }
-  while (strlen (txt))
-    {
-      z = sscanf (txt, "%s", smeg);
-      {
-	words++;
+      words++;
 
-	if ((*(txt + strlen (smeg)) == 0x0a) || (*(txt + strlen (smeg) + 1) == 0x0a))
-	  {
-	    print_br = 1;
-	  }
-	if (fmt != NULL)
-	  if (words == fmt->firstword)
-	    {
-	      fmtstring[0] = 0;
-	      fmtstring[1] = 0;
-	      fmtstring[2] = 0;
+      if ((*(txt + strlen (smeg)) == 0x0a) || (*(txt + strlen (smeg) + 1) == 0x0a)) {
+	print_br = 1;
+      }
+      if (fmt != NULL)
+	if (words == fmt->firstword) {
+	  fmtstring[0] = 0;
+	  fmtstring[1] = 0;
+	  fmtstring[2] = 0;
 /*
    if (fmt->bi == 0) // None
    fmtstring[0]=0;
@@ -96,103 +90,97 @@ loopies (char *txt, struct st_ency_formatting *fmt)
    if (fmt->bi == 7) // Bold & Underline & Italic
    strcpy(fmtstring,"bui");
  */
-	      switch (fmt->bi)
-		{
-		case 0:	// None
+	  switch (fmt->bi) {
+	  case 0:		// None
 
-		  fmtstring[0] = 0;
-		  break;
-		case 1:	// Bold
+	    fmtstring[0] = 0;
+	    break;
+	  case 1:		// Bold
 
-		  strcpy (fmtstring, "b");
-		  break;
-		case 2:	// Italic
+	    strcpy (fmtstring, "b");
+	    break;
+	  case 2:		// Italic
 
-		  strcpy (fmtstring, "i");
-		  break;
-		case 3:	// Bold & Italic
+	    strcpy (fmtstring, "i");
+	    break;
+	  case 3:		// Bold & Italic
 
-		  strcpy (fmtstring, "bi");
-		  break;
-		case 4:	// Underline
+	    strcpy (fmtstring, "bi");
+	    break;
+	  case 4:		// Underline
 
-		  strcpy (fmtstring, "u");
-		  break;
-		case 5:	// Bold & Underline
+	    strcpy (fmtstring, "u");
+	    break;
+	  case 5:		// Bold & Underline
 
-		  strcpy (fmtstring, "bu");
-		  break;
-		case 6:	// Bold & Italic
+	    strcpy (fmtstring, "bu");
+	    break;
+	  case 6:		// Bold & Italic
 
-		  strcpy (fmtstring, "bi");
-		  break;
-		case 7:	// Bold & Underline & Italic
+	    strcpy (fmtstring, "bi");
+	    break;
+	  case 7:		// Bold & Underline & Italic
 
-		  strcpy (fmtstring, "bui");
-		  break;
-		}
+	    strcpy (fmtstring, "bui");
+	    break;
+	  }
 
-	      if (fmtstring[0])
-		printf ("<%c>", fmtstring[0]);
-	      if (fmtstring[1])
-		printf ("<%c>", fmtstring[1]);
-	      if (fmtstring[2])
-		printf ("<%c>", fmtstring[2]);
+	  if (fmtstring[0])
+	    printf ("<%c>", fmtstring[0]);
+	  if (fmtstring[1])
+	    printf ("<%c>", fmtstring[1]);
+	  if (fmtstring[2])
+	    printf ("<%c>", fmtstring[2]);
 
+	  printf ("%s", smeg);
+	  for (i = 0; i < fmt->words - 1; i++) {
+	    txt += (strlen (smeg) + 1);
+	    while ((txt[0] == 32) || (txt[0] == 10))
+	      txt++;
+	    printf (" ");
+	    if (sscanf (txt, "%s", smeg) == -1)
+	      i = fmt->words;
+	    if (i < fmt->words)
 	      printf ("%s", smeg);
-	      for (i = 0; i < fmt->words - 1; i++)
-		{
-		  txt += (strlen (smeg) + 1);
-		  while ((txt[0] == 32) || (txt[0] == 10))
-		    txt++;
-		  printf (" ");
-		  if (sscanf (txt, "%s", smeg) == -1)
-		    i = fmt->words;
-		  if (i < fmt->words)
-		    printf ("%s", smeg);
-		}
-	      words--;
-	      words += fmt->words;
-	      if (fmtstring[2])
-		printf ("</%c>", fmtstring[2]);
-	      if (fmtstring[1])
-		printf ("</%c>", fmtstring[1]);
-	      if (fmtstring[0])
-		printf ("</%c>", fmtstring[0]);
+	  }
+	  words--;
+	  words += fmt->words;
+	  if (fmtstring[2])
+	    printf ("</%c>", fmtstring[2]);
+	  if (fmtstring[1])
+	    printf ("</%c>", fmtstring[1]);
+	  if (fmtstring[0])
+	    printf ("</%c>", fmtstring[0]);
 
-	      fmt2 = fmt;
-	      fmt = fmt->next;
-	      if (remove_fmt)
-		free (fmt2);
-	      z = 0;
-	    }
-	if (z)
-	  {
-	    printf ("%s", smeg);
-	  }
-	if (print_br)
-	  {
-	    printf ("<br>\n");
-	    print_br = 0;
-	  }
+	  fmt2 = fmt;
+	  fmt = fmt->next;
+	  if (remove_fmt)
+	    free (fmt2);
+	  z = 0;
+	}
+      if (z) {
+	printf ("%s", smeg);
       }
-// strlen(txt)-strlen(smeg) == 0 
-      txt += (strlen (smeg));
-      if (strlen (txt))
-	while ((txt[0] == 32) || (txt[0] == '\n'))
-	  {
-	    if (txt[0] == 32)
-	      printf ("%c", txt[0]);
-	    else
-	      printf ("<br>\n");
-	    txt++;
-	  }
+      if (print_br) {
+	printf ("<br>\n");
+	print_br = 0;
+      }
     }
+// strlen(txt)-strlen(smeg) == 0 
+    txt += (strlen (smeg));
+    if (strlen (txt))
+      while ((txt[0] == 32) || (txt[0] == '\n')) {
+	if (txt[0] == 32)
+	  printf ("%c", txt[0]);
+	else
+	  printf ("<br>\n");
+	txt++;
+      }
+  }
   return (0);
 }
 
-int
-printoff (struct ency_titles *stuff)
+int printoff (struct ency_titles *stuff)
 {
   char *tmp;
   struct st_ency_formatting *fmt1;
@@ -217,8 +205,7 @@ printoff (struct ency_titles *stuff)
   return (0);
 }
 
-int
-main (int argc, char *argv[])
+int main (int argc, char *argv[])
 {
   char search_string[50];
   struct ency_titles *thingy = NULL, *full_body = NULL;
@@ -228,67 +215,57 @@ main (int argc, char *argv[])
   st_ignore_case = 1;
   st_return_body = 0;
 
-  while ((i = getopt (argc, argv, "ech")) != EOF)
-    {
-      if (i == 'h')
-	{
-	  printf ("htmlenc - Searches Star Trek encyclopedia\nhttp://www.picknowl.com.au/homepages/beemer/ency.html\nUsage: htmlenc -[c|e]\n-c: searches chronology\n-e: searches episodes\ndefault: search encyclopedia\n");
-	  exit (0);
-	}
-      search_what = i;
+  while ((i = getopt (argc, argv, "ech")) != EOF) {
+    if (i == 'h') {
+      printf ("htmlenc - Searches Star Trek encyclopedia\nhttp://www.picknowl.com.au/homepages/beemer/ency.html\nUsage: htmlenc -[c|e]\n-c: searches chronology\n-e: searches episodes\ndefault: search encyclopedia\n");
+      exit (0);
     }
+    search_what = i;
+  }
 
 //if (argc > optind) printf("%s\n",argv[optind]);
-  if (argc > optind)
-    {
-      strcpy (search_string, argv[optind]);
-    }
-  else
-    {
-      printf ("Enter search string :");
-      scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
-    }
+  if (argc > optind) {
+    strcpy (search_string, argv[optind]);
+  } else {
+    printf ("Enter search string :");
+    scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
+  }
   st_file_type = st_fingerprint ();
-  if (st_file_type <= ST_FILE_TYPES)
-    {
-      if (search_what == 'c')
-	thingy = chro_find_list (search_string, 0);
-      if (search_what == 'e')
-	thingy = epis_find_list (search_string, 0);
-      if ((search_what != 'c') && (search_what != 'e'))
-	thingy = ency_find_list (search_string, 0);
+  if (st_file_type <= ST_FILE_TYPES) {
+    if (search_what == 'c')
+      thingy = chro_find_list (search_string, 0);
+    if (search_what == 'e')
+      thingy = epis_find_list (search_string, 0);
+    if ((search_what != 'c') && (search_what != 'e'))
+      thingy = ency_find_list (search_string, 0);
 
-      i = 0;
-      printf ("<html>\n");
-      printf ("<head><title>Search results for: %s</title></head>", search_string);
-      printf ("<h1>Star Trek Encyclopedia</h1>\n");
-      printf ("You searched for <b>%s</b>.\n", search_string);
-      if ((thingy != NULL) && (thingy->title != NULL))
-	{
-	  do
-	    {
-	      full_body = get_title_at (thingy->filepos);
-	      printoff (full_body);
-	      kill_me = thingy;
-	      thingy = thingy->next;
-	      free (kill_me->title);
-	      free (kill_me);
-	      free (full_body->title);
-	      free (full_body->text);
-	      free (full_body);
-	    }
-	  while (thingy != NULL);
-	}
-      else
-	printf ("No matches<br>\n");
+    i = 0;
+    printf ("<html>\n");
+    printf ("<head><title>Search results for: %s</title></head>", search_string);
+    printf ("<h1>Star Trek Encyclopedia</h1>\n");
+    printf ("You searched for <b>%s</b>.\n", search_string);
+    if ((thingy != NULL) && (thingy->title != NULL)) {
+      do {
+	full_body = get_title_at (thingy->filepos);
+	printoff (full_body);
+	kill_me = thingy;
+	thingy = thingy->next;
+	free (kill_me->title);
+	free (kill_me);
+	free (full_body->title);
+	free (full_body->text);
+	free (full_body);
+      }
+      while (thingy != NULL);
+    } else
+      printf ("No matches<br>\n");
 
-      printf ("<hr>\nMibus' ency reader<br>\n");
-      printf ("<a href=\"http://www.picknowl.com.au/homepages/beemer/ency.html\">http://www.picknowl.com.au/homepages/beemer/ency.html</a><br>\n");
-      printf ("queries, comments, flames, to <a href=\"mailto:mibus@bigpond.com\">Robert Mibus (mibus@bigpond.com)</a>");
+    printf ("<hr>\nMibus' ency reader<br>\n");
+    printf ("<a href=\"http://www.picknowl.com.au/homepages/beemer/ency.html\">http://www.picknowl.com.au/homepages/beemer/ency.html</a><br>\n");
+    printf ("queries, comments, flames, to <a href=\"mailto:mibus@bigpond.com\">Robert Mibus (mibus@bigpond.com)</a>");
 
-      printf ("</html>\n");
-    }
-  else
+    printf ("</html>\n");
+  } else
     printf ("An error has occurred.\n");
 
   return (0);

@@ -40,7 +40,7 @@ int upto = 0;
 int st_file_type = 0;
 
 const long int st_table_starts_at[] =
-{0x410c4, 0, 0x388f2e, 0, 0x3CD470, 0, 0x2BBA98, 0, 0x322996, 0};
+{0x410c4, 0, 0x388f2e, 0, 0x3CD470, 0, 0x2BBA98, 0x2BCD9B, 0, 0x322996, 0};
 
 const long int st_caption_starts_at[] =
 {0x4e5064, 0, 0x615552, 0, 0x646D0A, 0, 0x2C5F2C, 0, 1, 0};
@@ -66,7 +66,7 @@ const long int chro_lastone[] =
 {582, 0, 465, 0, 582, 0, 0x1, 0, 0x1, 0};
 
 const long int st_table_lastone[] =
-{26, 0, 26, 0, 26, 0, 23, 0, 15, 0};
+{26, 0, 26, 0, 26, 0, 2, 22, 0, 15, 0};
 
 const long int st_caption_lastone[] =
 {5, 0, 4, 0, 4, 0, 5, 0, 1, 0};
@@ -90,8 +90,7 @@ const struct st_file_info st_files[] =
 struct st_caption *st_cpts = NULL, *st_oldcpts = NULL;
 struct st_table *st_tbls = NULL, *st_oldtbls = NULL;
 
-int 
-ency_init (void)
+int ency_init (void)
 {
   /*
    * Get the table & captions (if we don't already have them)
@@ -100,11 +99,10 @@ ency_init (void)
     st_tbls = st_get_table ();
   if (!st_cpts)
     st_cpts = st_get_captions ();
-return(1);
+  return (1);
 }
 
-int 
-ency_initted (void)
+int ency_initted (void)
 {
   if ((st_cpts) && (st_tbls))
     return (1);
@@ -112,72 +110,59 @@ ency_initted (void)
     return (0);
 }
 
-int 
-ency_finish (void)
+int ency_finish (void)
 {
-
 /* Free the caption & table info */
-  while (st_cpts)
-    {
-      st_oldcpts = st_cpts;
-      st_cpts = st_cpts->next;
-      if (st_oldcpts)
-	{
-	  if (st_oldcpts->fnbasen)
-	    free (st_oldcpts->fnbasen);
-	  if (st_oldcpts->caption)
-	    free (st_oldcpts->caption);
-	  free (st_oldcpts);
-	}
+  while (st_cpts) {
+    st_oldcpts = st_cpts;
+    st_cpts = st_cpts->next;
+    if (st_oldcpts) {
+      if (st_oldcpts->fnbasen)
+	free (st_oldcpts->fnbasen);
+      if (st_oldcpts->caption)
+	free (st_oldcpts->caption);
+      free (st_oldcpts);
     }
+  }
 
-  while (st_tbls)
-    {
-      st_oldtbls = st_tbls;
-      st_tbls = st_tbls->next;
-      if (st_oldtbls)
-	{
-	  if (st_oldtbls->fnbase)
-	    free (st_oldtbls->fnbase);
-	  if (st_oldtbls->title)
-	    free (st_oldtbls->title);
-	  free (st_oldtbls);
-	}
+  while (st_tbls) {
+    st_oldtbls = st_tbls;
+    st_tbls = st_tbls->next;
+    if (st_oldtbls) {
+      if (st_oldtbls->fnbase)
+	free (st_oldtbls->fnbase);
+      if (st_oldtbls->title)
+	free (st_oldtbls->title);
+      free (st_oldtbls);
     }
-return(1);
+  }
+  return (1);
 }
 
-int
-curr_open (void)
+int curr_open (void)
 {
   int i = 0;
 
-  if (ency_filename == NULL)
-    {
-      ency_filename = getenv ("ENCY_FILENAME");
-      if (ency_filename == NULL)
-	{
-	  ency_filename = (char *) malloc (10);
-	  strcpy (ency_filename, "Data.cxt");
-	}
+  if (ency_filename == NULL) {
+    ency_filename = getenv ("ENCY_FILENAME");
+    if (ency_filename == NULL) {
+      ency_filename = (char *) malloc (10);
+      strcpy (ency_filename, "Data.cxt");
     }
-
+  }
   inp = fopen (ency_filename, "rb");
 
   i = 0;
-  if (inp)
-    {
-      i = fseek (inp, curr_starts_at, SEEK_SET);
-    }
-
+  if (inp) {
+    i = fseek (inp, curr_starts_at, SEEK_SET);
+  }
   if (i == 0)
     return ((int) inp);
   else
     return (0);
 }
 
-int
-st_open ()
+int st_open ()
 {
   if (curr == 0)		/* Defaults to ency */
     curr_starts_at = ency_starts_at[upto];
@@ -204,84 +189,81 @@ st_open ()
 }
 
 
-int
-st_close_file (void)
+int st_close_file (void)
 {
   fclose (inp);
   return (0);
 }
 
-char
-st_cleantext (unsigned char c)
+char st_cleantext (unsigned char c)
 {
-  switch (c)
-    {
-    case 13:
-      return ('\n');
-      break;
-    case 0xD0:
-      return ('-');
-      break;
-    case 0xD1:
-      return ('_');
-      break;
-    case 0xD2:
-      return (34);
-      break;
-    case 0xD3:
-      return (34);
-      break;
-    case 0xD4:
-      return (39);
-      break;
-    case 0xD5:
-      return (39);
-      break;
-    case 0x88:
-      return ('a');
-      break;
-    case 0x8E:
-      return ('e');
-      break;
-    case 0x8F:
-      return ('e');
-      break;
-    case 0xA5:
-      return ('*');
-      break;
-    case 0x93:
-      return ('\"');
-      break;
-    case 0x94:
-      return ('\"');
-      break;
-    case 0x92:
-      return ('\'');
-      break;
-    default:
-      return (c);
-      break;
-    }
+  switch (c) {
+  case 13:
+    return ('\n');
+    break;
+  case 0xD0:
+    return ('-');
+    break;
+  case 0xD1:
+    return ('_');
+    break;
+  case 0xD2:
+    return (34);
+    break;
+  case 0xD3:
+    return (34);
+    break;
+  case 0xD4:
+    return (39);
+    break;
+  case 0xD5:
+    return (39);
+    break;
+  case 0x88:
+    return ('a');
+    break;
+  case 0x8E:
+    return ('e');
+    break;
+  case 0x8F:
+    return ('e');
+    break;
+  case 0xA5:
+    return ('*');
+    break;
+  case 0x93:
+    return ('\"');
+    break;
+  case 0x94:
+    return ('\"');
+    break;
+  case 0x92:
+    return ('\'');
+    break;
+  default:
+    return (c);
+    break;
+  }
 }
 
 
-char *st_lcase(char *mcase)
+char *
+ st_lcase (char *mcase)
 {
-char *lcase=NULL;
-int i=0;
-int length = 0;
+  char *lcase = NULL;
+  int i = 0;
+  int length = 0;
 
-length = strlen(mcase) + 1;
-lcase = (char *)malloc (length);
+  length = strlen (mcase) + 1;
+  lcase = (char *) malloc (length);
 
-for (i=0;i<length;i++)
- lcase[i] = tolower(mcase[i]);
+  for (i = 0; i < length; i++)
+    lcase[i] = tolower (mcase[i]);
 
-return(lcase);
+  return (lcase);
 }
 
-int
-st_fingerprint (void)
+int st_fingerprint (void)
 {
   int good = 0;
   int i = 0, z = 0;
@@ -292,39 +274,100 @@ st_fingerprint (void)
   set_starts_at = 0;
 
   i = st_open ();
-  if (i)
-    {
-      for (i = 0; i < 16; i++)
-	input_fp[i] = getc (inp);
+  if (i) {
+    for (i = 0; i < 16; i++)
+      input_fp[i] = getc (inp);
 
 /* compare fingerprints etc... */
-      for (i = 0; i < ST_FILE_TYPES; i++)
-	{
-	  good = 0;
-	  for (z = 0; z < 16; z++)
-	    {
-	      if (input_fp[z] == st_files[i].fingerprint[z])
-		good++;
-	    }
-	  if (good == 16)
-	    {
-	      st_close_file ();
-	      return i;
-	    }
-	}
-      st_close_file ();
-      return (254);
+    for (i = 0; i < ST_FILE_TYPES; i++) {
+      good = 0;
+      for (z = 0; z < 16; z++) {
+	if (input_fp[z] == st_files[i].fingerprint[z])
+	  good++;
+      }
+      if (good == 16) {
+	st_close_file ();
+	return i;
+      }
     }
-  else
-    {
-      st_close_file ();
-      return (255);
-    }
+    st_close_file ();
+    return (254);
+  } else {
+//    st_close_file ();
+    return (255);
+  }
 }
 
+char *st_autofind (int st_file_version, char *base_dir)
+{
+  char *test_filename = NULL, *temp_string = NULL;
+  char *ency_fn_backup = NULL;
 
-struct st_ency_formatting *
-st_return_fmt (void)
+  ency_fn_backup = ency_filename;
+  test_filename = malloc (strlen (base_dir) + strlen (st_files[st_file_version].data_dir) + strlen (st_files[st_file_version].filename) + 3);
+  ency_filename = test_filename;
+
+  strcpy (test_filename, base_dir);
+  strcat (test_filename, "/");
+  strcat (test_filename, st_files[st_file_version].filename);
+  if (st_fingerprint () == st_file_version) {
+    ency_filename = ency_fn_backup;
+    return (test_filename);
+  }
+  strcpy (test_filename, base_dir);
+  strcat (test_filename, "/");
+  strcat (test_filename, st_files[st_file_version].data_dir);
+  strcat (test_filename, "/");
+  strcat (test_filename, st_files[st_file_version].filename);
+  if (st_fingerprint () == st_file_version) {
+    ency_filename = ency_fn_backup;
+    return (test_filename);
+  }
+  strcpy (test_filename, base_dir);
+  strcat (test_filename, "/");
+  temp_string = st_lcase (st_files[st_file_version].filename);
+  strcat (test_filename, temp_string);
+  free (temp_string);
+  if (st_fingerprint () == st_file_version) {
+    ency_filename = ency_fn_backup;
+    return (test_filename);
+  }
+  strcpy (test_filename, base_dir);
+  strcat (test_filename, "/");
+  temp_string = st_lcase (st_files[st_file_version].data_dir);
+  strcat (test_filename, temp_string);
+  free (temp_string);
+  temp_string = st_lcase (st_files[st_file_version].filename);
+  strcat (test_filename, temp_string);
+  free (temp_string);
+  if (st_fingerprint () == st_file_version) {
+    ency_filename = ency_fn_backup;
+    return (test_filename);
+  }
+  strcpy (test_filename, base_dir);
+  strcat (test_filename, "/");
+  strcat (test_filename, st_files[st_file_version].data_dir);
+  temp_string = st_lcase (st_files[st_file_version].filename);
+  strcat (test_filename, temp_string);
+  free (temp_string);
+  if (st_fingerprint () == st_file_version) {
+    ency_filename = ency_fn_backup;
+    return (test_filename);
+  }
+  strcpy (test_filename, base_dir);
+  strcat (test_filename, "/");
+  temp_string = st_lcase (st_files[st_file_version].data_dir);
+  strcat (test_filename, temp_string);
+  free (temp_string);
+  strcat (test_filename, st_files[st_file_version].filename);
+  if (st_fingerprint () == st_file_version) {
+    ency_filename = ency_fn_backup;
+    return (test_filename);
+  }
+  return (NULL);
+}
+
+struct st_ency_formatting *st_return_fmt (void)
 {
   struct st_ency_formatting *root_fmt = NULL, *last_fmt = NULL, *curr_fmt = NULL;
   int first_time = 1;
@@ -334,218 +377,194 @@ st_return_fmt (void)
 
   c = getc (inp);
 
-  while (c != '@')
-    {
-      if (st_return_body)
-	{
-	  curr_fmt = (struct st_ency_formatting *) malloc (sizeof (struct st_ency_formatting));
-	  if (curr_fmt == NULL)
-	    {
-	      printf ("Memory allocation failed\n");
-	      exit (1);
-	    }
-	  memset (curr_fmt, 0, sizeof (struct st_ency_formatting));
-	}
-      if (first_time)
-	root_fmt = curr_fmt;
+  while (c != '@') {
+    if (st_return_body) {
+      curr_fmt = (struct st_ency_formatting *) malloc (sizeof (struct st_ency_formatting));
 
-      first_time = 0;
-      i = 0;
+      if (curr_fmt == NULL) {
+	printf ("Memory allocation failed\n");
+	exit (1);
+      }
+      memset (curr_fmt, 0, sizeof (struct st_ency_formatting));
+    }
+    if (first_time)
+      root_fmt = curr_fmt;
 
-      while (c != ':')
-	{
-	  if ((c != 20) && (c != ','))
-	    tmp_txt[i++] = c;
-	  c = getc (inp);
-	}
-      tmp_txt[i] = 0;
-      if (st_return_body)
-	curr_fmt->firstword = atoi (tmp_txt);	/* starts at */
+    first_time = 0;
+    i = 0;
 
+    while (c != ':') {
+      if ((c != 20) && (c != ','))
+	tmp_txt[i++] = c;
+      c = getc (inp);
+    }
+    tmp_txt[i] = 0;
+    if (st_return_body)
+      curr_fmt->firstword = atoi (tmp_txt);	/* starts at */
+
+    c = getc (inp);
+
+    if (c != '[')
       c = getc (inp);
 
-      if (c != '[')
-	c = getc (inp);
+    i = 0;
 
-      i = 0;
+    while ((c = getc (inp)) != ',') {
+      tmp_txt[i++] = c;
+    }
 
-      while ((c = getc (inp)) != ',')
-	{
-	  tmp_txt[i++] = c;
-	}
+    tmp_txt[i] = 0;
 
-      tmp_txt[i] = 0;
+    if (st_return_body)
+      curr_fmt->words = atoi (tmp_txt);		/* words */
 
-      if (st_return_body)
-	curr_fmt->words = atoi (tmp_txt);	/* words */
+    c = getc (inp);
 
+    if (c != 35)
       c = getc (inp);
 
-      if (c != 35)
-	c = getc (inp);
+    if (st_return_body)
+      curr_fmt->bi = 0;
 
+    while ((c = getc (inp)) != ']') {
       if (st_return_body)
-	curr_fmt->bi = 0;
-
-      while ((c = getc (inp)) != ']')
-	{
-	  if (st_return_body)
-	    switch (c)
-	      {
-	      case 'B':
-		curr_fmt->bi += 1;
-		break;
-	      case 'U':
-		curr_fmt->bi += 4;
-		break;
-	      case 'I':
-		curr_fmt->bi += 2;
-		break;
-	      default:
-		break;
-	      }
-	}
-
-      c = getc (inp);
-      if (st_return_body)
-	{
-	  curr_fmt->next = NULL;
-	  if (last_fmt != NULL)
-	    last_fmt->next = curr_fmt;
-	  last_fmt = curr_fmt;
-	  curr_fmt = NULL;
+	switch (c) {
+	case 'B':
+	  curr_fmt->bi += 1;
+	  break;
+	case 'U':
+	  curr_fmt->bi += 4;
+	  break;
+	case 'I':
+	  curr_fmt->bi += 2;
+	  break;
+	default:
+	  break;
 	}
     }
+
+    c = getc (inp);
+    if (st_return_body) {
+      curr_fmt->next = NULL;
+      if (last_fmt != NULL)
+	last_fmt->next = curr_fmt;
+      last_fmt = curr_fmt;
+      curr_fmt = NULL;
+    }
+  }
 
   c = getc (inp);
 
   return (root_fmt);
 }
 
-int
-st_find_start (void)
+int st_find_start (void)
 {
   int c = 0;
   int oldc = 0;
 
 start_find_start:
 
-  while (c != '~')
-    {
-      c = getc (inp);
-      if ((oldc == 0x16) && (c != 0x7E) && (c != 0x2E) && (c != 0x0D) && (c != 0x20) && (c != 0x5B) && (c))
-	{
-	  ungetc (c, inp);
-	  return (0);
-	}
-      oldc = c;
+  while (c != '~') {
+    c = getc (inp);
+    if ((oldc == 0x16) && (c != 0x7E) && (c != 0x2E) && (c != 0x0D) && (c != 0x20) && (c != 0x5B) && (c)) {
+      ungetc (c, inp);
+      return (0);
     }
+    oldc = c;
+  }
 
   c = getc (inp);
 
-  if ((c == 0x0D) || (c == 0x20) || (c == 0x52))
-    {
-      c = ungetc (c, inp);
-      goto start_find_start;
-    }
-  else
-    {
-      c = ungetc (c, inp);
-      return (0);
-    }
+  if ((c == 0x0D) || (c == 0x20) || (c == 0x52)) {
+    c = ungetc (c, inp);
+    goto start_find_start;
+  } else {
+    c = ungetc (c, inp);
+    return (0);
+  }
 }
 
 char *
-st_return_text (void)
+ st_return_text (void)
 {
   int text_size = 0;
   int bye = 0;
   char c = 0;
   char old_c = 0;
-  char *temp_text=NULL;
+  char *temp_text = NULL;
 
-  while (!bye)
-    {
-      c = st_cleantext (getc (inp));
-      if (c == 0)
-	bye = 1;
-      if ((old_c == '\n') && (c == 0x7E))
-	{
-	  ungetc (c, inp);
-	  bye = 1;
-	}
-
-      if (!bye)
-	{
-	  temp_text = realloc (temp_text, text_size + 1);
-	  if (temp_text == NULL)
-	    {
-	      return (NULL);
-	    }
-	  temp_text[text_size++] = c;
-	  old_c = c;
-	}
+  while (!bye) {
+    c = st_cleantext (getc (inp));
+    if (c == 0)
+      bye = 1;
+    if ((old_c == '\n') && (c == 0x7E)) {
+      ungetc (c, inp);
+      bye = 1;
     }
+    if (!bye) {
+      temp_text = realloc (temp_text, text_size + 1);
+      if (temp_text == NULL) {
+	return (NULL);
+      }
+      temp_text[text_size++] = c;
+      old_c = c;
+    }
+  }
   temp_text[text_size - 1] = 0;
   return (temp_text);
 }
 
 char *
-st_return_title (void)
+ st_return_title (void)
 {
   char c;
   char *title = NULL;
   int title_size = 0;
 
-   title = malloc (70);		/* should be 1, not 70. */
+  title = malloc (70);		/* should be 1, not 70. */
 
 /* malloc & realloc calls keep crashing, no idea why. */
 
-  while ((c = st_cleantext (getc (inp))) != '@')
-
-    {
+  while ((c = st_cleantext (getc (inp))) != '@') {
 /*  should be on!  title = realloc(title,title_size+1); */
-         if (title == NULL)
-         {
-         printf("Oh, ^$#%%!\n");
-         return (NULL);
-         }
-      title[title_size++] = c;
+    if (title == NULL) {
+      printf ("Oh, ^$#%%!\n");
+      return (NULL);
     }
+    title[title_size++] = c;
+  }
 
   title[title_size] = 0;
   return (title);
 }
 
 char *
-st_nice_error (int error_no)
+ st_nice_error (int error_no)
 {
-  switch (error_no)
-    {
-    case 1:
-      return ("The Data.cxt file was not found");
-      break;
-    case 2:
-      return ("Memory allocation error");
-      break;
-    default:
-      return ("An error has occurred");
-      break;
-    }
+  switch (error_no) {
+  case 1:
+    return ("The Data.cxt file was not found");
+    break;
+  case 2:
+    return ("Memory allocation error");
+    break;
+  default:
+    return ("An error has occurred");
+    break;
+  }
 }
 
 struct ency_titles *
-st_title_error (int error_no)
+ st_title_error (int error_no)
 {
 
   struct ency_titles *return_error = NULL;
   return_error = (struct ency_titles *) malloc (sizeof (struct ency_titles));
 
-  if (return_error == NULL)
-    {
-      return (NULL);
-    }
-
+  if (return_error == NULL) {
+    return (NULL);
+  }
   return_error->title = NULL;
   return_error->text = NULL;
   return_error->fmt = NULL;
@@ -557,7 +576,7 @@ st_title_error (int error_no)
 
 
 struct ency_titles *
-curr_find_list (char *search_string, int exact)
+ curr_find_list (char *search_string, int exact)
 {
   long this_one_starts_at = 0;
   int found_any_yet = 0;
@@ -571,103 +590,96 @@ curr_find_list (char *search_string, int exact)
   char *title = NULL, *temp_text = NULL;
   struct st_ency_formatting *text_fmt = NULL, *kill_fmt = NULL;
 
-  lc_search_string = st_lcase(search_string);
-  
-  if (!st_open ())
-    {
-      return (st_title_error (1));
-    };
+  lc_search_string = st_lcase (search_string);
 
-  do
-    {
-      if (!first_time)
-		st_find_start ();
-      this_one_starts_at = ftell (inp);
+  if (!st_open ()) {
+    return (st_title_error (1));
+  };
 
-      first_time = 0;
-      text_fmt = st_return_fmt ();
-      i = 0;
-      no_so_far++;
+  do {
+    if (!first_time)
+      st_find_start ();
+    this_one_starts_at = ftell (inp);
 
-      title = st_return_title ();
-      /* Title & number:  printf ("%d:%s\n", no_so_far, title); */
+    first_time = 0;
+    text_fmt = st_return_fmt ();
+    i = 0;
+    no_so_far++;
 
-      c = getc (inp);
+    title = st_return_title ();
+    /* Title & number:  printf ("%d:%s\n", no_so_far, title); */
 
-      lc_title = st_lcase(title);
-      /* */
-      found = 0;
+    c = getc (inp);
 
-      /* Is this the one we want?? */
-      if ((!exact) && strstr (title, search_string))
+    lc_title = st_lcase (title);
+    /* */
+    found = 0;
+
+    /* Is this the one we want?? */
+    if ((!exact) && strstr (title, search_string))
+      found = 1;
+    if ((exact == 1) && (!strcmp (title, search_string)))
+      found = 1;
+    if (exact == 2)
+      found = 1;
+    if (st_ignore_case) {
+      if ((!exact) && (strstr (lc_title, lc_search_string)))
 	found = 1;
-      if ((exact == 1) && (!strcmp (title, search_string)))
+      if ((exact == 1) && (!strcasecmp (title, search_string)))
 	found = 1;
-      if (exact == 2)
-	found = 1;
-      if (st_ignore_case)
-	{
-	  if ((!exact) && (strstr (lc_title, lc_search_string)))
-	    found = 1;
-	  if ((exact == 1) && (!strcasecmp (title, search_string)))
-	    found = 1;
-	}
-      /* */
+    }
+    /* */
 
-free (lc_title);
+    free (lc_title);
 
-      if (found)		/* If yes... */
-	{
-	  found_any_yet = 1;
-	  if (st_return_body)
-	    temp_text = st_return_text ();
+    if (found) {		/* If yes... */
+      found_any_yet = 1;
+      if (st_return_body)
+	temp_text = st_return_text ();
 
-	  /* define the pointer */
+      /* define the pointer */
 /*        if (curr_title != root_title) */
-	  {
-	    curr_title = (struct ency_titles *) malloc (sizeof (struct ency_titles));
-	    if (curr_title == NULL)
-	      {
-		printf ("Memory allocation failed\n");
+      {
+	curr_title = (struct ency_titles *) malloc (sizeof (struct ency_titles));
+
+	if (curr_title == NULL) {
+	  printf ("Memory allocation failed\n");
 /*                exit (1); */
-	      }
-	  }
-	  if ((root_title) == NULL)
-	    root_title = curr_title;
+	}
+      }
+      if ((root_title) == NULL)
+	root_title = curr_title;
 
 /* copy pointer stuff over */
-	  curr_title->err = 0;
-	  curr_title->filepos = this_one_starts_at;
-	  curr_title->title = title;
-	  curr_title->next = NULL;
-	  if (st_return_body)
-	    {
-	      curr_title->text = temp_text;
-	      curr_title->fmt = text_fmt;
-	    }
-	  if (last_title != NULL)
-	    last_title->next = curr_title;
-	  last_title = curr_title;
-	  curr_title = (struct ency_titles *) NULL;
-	  title = temp_text = (char *) text_fmt = (struct st_ency_formatting *) NULL;
+      curr_title->err = 0;
+      curr_title->filepos = this_one_starts_at;
+      curr_title->title = title;
+      curr_title->next = NULL;
+      if (st_return_body) {
+	curr_title->text = temp_text;
+	curr_title->fmt = text_fmt;
+      }
+      if (last_title != NULL)
+	last_title->next = curr_title;
+      last_title = curr_title;
+      curr_title = (struct ency_titles *) NULL;
+      title = temp_text = (char *) text_fmt = (struct st_ency_formatting *) NULL;
 /* */
-	}
-      else
-	/* It's not the one we want */
-	{
-	  free (title);
-	  while (text_fmt)
-	    {
-	      kill_fmt = text_fmt;
-	      text_fmt = text_fmt->next;
-	      free (kill_fmt);
-	    }
-	}
-
+    } else
+      /* It's not the one we want */
+    {
+      free (title);
+      while (text_fmt) {
+	kill_fmt = text_fmt;
+	text_fmt = text_fmt->next;
+	free (kill_fmt);
+      }
     }
+
+  }
   while (no_so_far != curr_lastone);
   st_close_file ();
-free (lc_search_string);
+  free (lc_search_string);
   if (found_any_yet)
     return (root_title);
   else
@@ -675,342 +687,299 @@ free (lc_search_string);
 }
 
 struct ency_titles *
-ency_find_list (char *title, int exact)
+ ency_find_list (char *title, int exact)
 {
   struct ency_titles *root = NULL, *current = NULL, *temp = NULL;
   int i, first_time = 1;
+
   upto = 0;
-  
-  for (i = 0; i < st_file_type; i++)
-    {
-      while (ency_starts_at[upto] != 0)
-	upto++;
+
+  for (i = 0; i < st_file_type; i++) {
+    while (ency_starts_at[upto] != 0)
+      upto++;
+    upto++;
+  }
+  if (ency_starts_at[upto] != 0x1) {	/* if its 0x1, its reserved. */
+
+    curr = 1;
+    while (ency_starts_at[upto] != 0) {
+      if (current)
+	while (current->next) {
+	  current = current->next;
+	}
+      curr_lastone = ency_lastone[upto];
+      if (!first_time) {
+	temp = (curr_find_list (title, exact));
+	if (current)
+	  current->next = temp;
+	else
+	  root = current = temp;
+      } else {
+	root = (curr_find_list (title, exact));
+	current = root;
+	first_time = 0;
+      }
       upto++;
     }
-  if (ency_starts_at[upto] != 0x1)
-    {				/* if its 0x1, its reserved. */
-
-      curr = 1;
-      while (ency_starts_at[upto] != 0)
-	{
-	  if (current)
-	    while (current->next)
-	      {
-		current = current->next;
-	      }
-	  curr_lastone = ency_lastone[upto];
-	  if (!first_time)
-	    {
-	      temp = (curr_find_list (title, exact));
-	      if (current)
-		current->next = temp;
-	      else
-		root = current = temp;
-	    }
-	  else
-	    {
-	      root = (curr_find_list (title, exact));
-	      current = root;
-	      first_time = 0;
-	    }
-	  upto++;
-	}
-    }
+  }
   return (root);
 }
 
 struct ency_titles *
-epis_find_list (char *title, int exact)
+ epis_find_list (char *title, int exact)
 {
   struct ency_titles *root = NULL, *current = NULL, *temp = NULL;
   int i, first_time = 1;
+
   upto = 0;
 
-  for (i = 0; i < st_file_type; i++)
-    {
-      while (epis_starts_at[upto] != 0)
-	upto++;
+  for (i = 0; i < st_file_type; i++) {
+    while (epis_starts_at[upto] != 0)
+      upto++;
+    upto++;
+  }
+  if (epis_starts_at[upto] != 0x1) {	/* if its 0x1, its reserved. */
+
+    curr = 2;
+    while (epis_starts_at[upto] != 0) {
+      if (current)
+	while (current->next) {
+	  current = current->next;
+	}
+      curr_lastone = epis_lastone[upto];
+      if (!first_time) {
+	temp = (curr_find_list (title, exact));
+	if (current)
+	  current->next = temp;
+	else
+	  root = current = temp;
+      } else {
+	root = (curr_find_list (title, exact));
+	current = root;
+	first_time = 0;
+      }
       upto++;
     }
-  if (epis_starts_at[upto] != 0x1)
-    {				/* if its 0x1, its reserved. */
-
-      curr = 2;
-      while (epis_starts_at[upto] != 0)
-	{
-	  if (current)
-	    while (current->next)
-	      {
-		current = current->next;
-	      }
-	  curr_lastone = epis_lastone[upto];
-	  if (!first_time)
-	    {
-	      temp = (curr_find_list (title, exact));
-	      if (current)
-		current->next = temp;
-	      else
-		root = current = temp;
-	    }
-	  else
-	    {
-	      root = (curr_find_list (title, exact));
-	      current = root;
-	      first_time = 0;
-	    }
-	  upto++;
-	}
-    }
+  }
   return (root);
 }
 
 struct ency_titles *
-chro_find_list (char *title, int exact)
+ chro_find_list (char *title, int exact)
 {
   struct ency_titles *root = NULL, *current = NULL, *temp = NULL;
   int i, first_time = 1;
+
   upto = 0;
-  
-  for (i = 0; i < st_file_type; i++)
-    {
-      while (chro_starts_at[upto] != 0)
-	upto++;
+
+  for (i = 0; i < st_file_type; i++) {
+    while (chro_starts_at[upto] != 0)
+      upto++;
+    upto++;
+  }
+  if (chro_starts_at[upto] != 0x1) {	/* if its 0x1, its reserved. */
+
+    curr = 3;
+    while (chro_starts_at[upto] != 0) {
+      if (current)
+	while (current->next) {
+	  current = current->next;
+	}
+      curr_lastone = chro_lastone[upto];
+      if (!first_time) {
+	temp = (curr_find_list (title, exact));
+	if (current)
+	  current->next = temp;
+	else
+	  root = current = temp;
+      } else {
+	root = (curr_find_list (title, exact));
+	current = root;
+	first_time = 0;
+      }
       upto++;
     }
-  if (chro_starts_at[upto] != 0x1)
-    {				/* if its 0x1, its reserved. */
-
-      curr = 3;
-      while (chro_starts_at[upto] != 0)
-	{
-	  if (current)
-	    while (current->next)
-	      {
-		current = current->next;
-	      }
-	  curr_lastone = chro_lastone[upto];
-	  if (!first_time)
-	    {
-	      temp = (curr_find_list (title, exact));
-	      if (current)
-		current->next = temp;
-	      else
-		root = current = temp;
-	    }
-	  else
-	    {
-	      root = (curr_find_list (title, exact));
-	      current = root;
-	      first_time = 0;
-	    }
-	  upto++;
-	}
-    }
+  }
   return (root);
 }
 
 struct st_table *
-st_get_table (void)
+ st_get_table (void)
 {
   int i = 0, first_time;
   struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
   int c = 0, text_size = 0;
   char *temp_text = NULL;
+
   upto = 0;
 
   first_time = 1;
   curr = 4;
-  for (i = 0; i < st_file_type; i++)
-    {
-      while (st_table_starts_at[upto] != 0)
-	upto++;
+  for (i = 0; i < st_file_type; i++) {
+    while (st_table_starts_at[upto] != 0)
       upto++;
-    }
-  if (st_table_starts_at[upto] != 0x1)
-    {
-      while (st_table_starts_at[upto] != 0)
-	{
-	  if (!st_open ())
-	    {
+    upto++;
+  }
+  if (st_table_starts_at[upto] != 0x1) {
+    while (st_table_starts_at[upto] != 0) {
+      if (!st_open ()) {
+	return (NULL);
+      } else {
+
+	for (i = 0; i < st_table_lastone[upto]; i++) {
+	  while ((c = getc (inp)) != ']') {	/* main loop */
+
+	    temp_text = malloc (1);
+	    text_size = 0;
+
+	    curr_tbl = (struct st_table *) malloc (sizeof (struct st_table));
+
+	    if (curr_tbl == NULL) {
 	      return (NULL);
 	    }
-	  else
-	    {
-
-	      for (i = 0; i < st_table_lastone[upto]; i++)
-		{
-		  while ((c = getc (inp)) != ']')
-		    {		/* main loop */
-
-		      temp_text = malloc (1);
-		      text_size = 0;
-
-		      curr_tbl = (struct st_table *) malloc (sizeof (struct st_table));
-		      if (curr_tbl == NULL)
-			{
-			  return (NULL);
-			}
-		      if (first_time)
-			root_tbl = curr_tbl;
-		      first_time = 0;
-		      do
-			{
-			  while ((c = getc (inp)) != '\"');
-			  c = getc (inp);
-			}
-		      while (!c);
-		      ungetc (c, inp);
-		      while ((c = getc (inp)) != '\"')
-			{
-			  temp_text = realloc (temp_text, text_size + 2);
-			  if (temp_text == NULL)
-			    {
-			      return (NULL);
-			    }
-			  temp_text[text_size++] = tolower (st_cleantext (c));
-			}
-		      temp_text[text_size] = 0;
-		      curr_tbl->fnbase = temp_text;
-		      temp_text = malloc (1);
-		      text_size = 0;
-
-		      while ((c = getc (inp)) != '\"');
-		      while ((c = getc (inp)) != '\"')
-			{
-			  temp_text = realloc (temp_text, text_size + 2);
-			  if (temp_text == NULL)
-			    {
-			      return (NULL);
-			    }
-			  temp_text[text_size++] = st_cleantext (c);
-			}
-		      temp_text[text_size] = 0;
-		      curr_tbl->title = temp_text;
-		      if (last_tbl)
-			last_tbl->next = curr_tbl;
-		      last_tbl = curr_tbl;
-		      curr_tbl = NULL;
-		    }		/* end main loop */
-
-		}
+	    if (first_time)
+	      root_tbl = curr_tbl;
+	    first_time = 0;
+	    do {
+	      while ((c = getc (inp)) != '\"');
+	      c = getc (inp);
 	    }
-	  st_close_file ();
-	  upto++;
+	    while (!c);
+	    ungetc (c, inp);
+	    while ((c = getc (inp)) != '\"') {
+	      temp_text = realloc (temp_text, text_size + 2);
+	      if (temp_text == NULL) {
+		return (NULL);
+	      }
+	      temp_text[text_size++] = tolower (st_cleantext (c));
+	    }
+	    temp_text[text_size] = 0;
+	    curr_tbl->fnbase = temp_text;
+	    temp_text = malloc (1);
+	    text_size = 0;
+
+	    while ((c = getc (inp)) != '\"');
+	    while ((c = getc (inp)) != '\"') {
+	      temp_text = realloc (temp_text, text_size + 2);
+	      if (temp_text == NULL) {
+		return (NULL);
+	      }
+	      temp_text[text_size++] = st_cleantext (c);
+	    }
+	    temp_text[text_size] = 0;
+	    curr_tbl->title = temp_text;
+	    if (last_tbl)
+	      last_tbl->next = curr_tbl;
+	    last_tbl = curr_tbl;
+	    curr_tbl = NULL;
+	  }			/* end main loop */
+
 	}
+      }
+      st_close_file ();
+      upto++;
+    }
 
 /* */
 
-    }
+  }
   return (root_tbl);
 }
 
 struct st_caption *
-st_get_captions (void)
+ st_get_captions (void)
 {
   int i = 0, first_time;
   struct st_caption *root_cpt = NULL, *curr_cpt = NULL, *last_cpt = NULL;
   int c = 0, text_size = 0;
   char *temp_text = NULL;
+
   upto = 0;
 
   last_cpt = NULL;
   first_time = 1;
   curr = 6;
-  for (i = 0; i < st_file_type; i++)
-    {
-      while (st_caption_starts_at[upto] != 0)
-	upto++;
+  for (i = 0; i < st_file_type; i++) {
+    while (st_caption_starts_at[upto] != 0)
       upto++;
-    }
-  if (st_caption_starts_at[upto] != 0x1)
-    {
-      while (st_caption_starts_at[upto] != 0)
-	{
+    upto++;
+  }
+  if (st_caption_starts_at[upto] != 0x1) {
+    while (st_caption_starts_at[upto] != 0) {
 
-	  if (!st_open ())
-	    {
+      if (!st_open ()) {
+	return (NULL);
+      } else {
+
+	for (i = 0; i < st_caption_lastone[upto]; i++) {
+	  while ((c = getc (inp)) != ']') {	/* main loop */
+
+	    temp_text = malloc (1);
+	    text_size = 0;
+
+	    curr_cpt = (struct st_caption *) malloc (sizeof (struct
+							     st_caption));
+
+	    if (curr_cpt == NULL) {
 	      return (NULL);
 	    }
-	  else
-	    {
+	    if (first_time)
+	      root_cpt = curr_cpt;
+	    first_time = 0;
+	    do {
+	      while ((c != '\"') && (c != '[') && (c = getc (inp)) != (' '));
 
-	      for (i = 0; i < st_caption_lastone[upto]; i++)
-		{
-		  while ((c = getc (inp)) != ']')
-		    {		/* main loop */
-
-		      temp_text = malloc (1);
-		      text_size = 0;
-
-		      curr_cpt = (struct st_caption *) malloc (sizeof (struct
-							       st_caption));
-		      if (curr_cpt == NULL)
-			{
-			  return (NULL);
-			}
-		      if (first_time)
-			root_cpt = curr_cpt;
-		      first_time = 0;
-		      do
-			{
-			  while ((c != '\"') && (c != '[') && (c = getc (inp)) != (' '));
-
-			  c = getc (inp);
-			}
-		      while (!c);
-		      ungetc (c, inp);
-		      if ((c = getc (inp)) != ' ')
-			c = ungetc (c, inp);
-		      if ((c = getc (inp)) != '\"')
-			c = ungetc (c, inp);
-		      c = 0;
-
-		      while (((c = getc (inp)) != ':') && (c != '\"'))
-
-			{
-			  temp_text = realloc (temp_text, text_size + 2);
-			  if (temp_text == NULL)
-			    {
-			      return (NULL);
-			    }
-			  temp_text[text_size++] = tolower (st_cleantext (c));
-			}
-		      temp_text[text_size] = 0;
-		      curr_cpt->fnbasen = temp_text;
-		      temp_text = malloc (1);
-		      text_size = 0;
-
-		      while ((c = getc (inp)) != '\"');
-		      while ((c = getc (inp)) != '\"')
-			{
-			  temp_text = realloc (temp_text, text_size + 2);
-			  if (temp_text == NULL)
-			    {
-			      return (NULL);
-			    }
-			  temp_text[text_size++] = st_cleantext (c);
-			}
-		      temp_text[text_size] = 0;
-
-		      curr_cpt->caption = temp_text;
-		      if (last_cpt)
-			last_cpt->next = curr_cpt;
-		      last_cpt = curr_cpt;
-		      curr_cpt = NULL;
-		    }		/* end main loop */
-
-		}
+	      c = getc (inp);
 	    }
-	  upto++;
-	  st_close_file ();
+	    while (!c);
+	    ungetc (c, inp);
+	    if ((c = getc (inp)) != ' ')
+	      c = ungetc (c, inp);
+	    if ((c = getc (inp)) != '\"')
+	      c = ungetc (c, inp);
+	    c = 0;
+
+	    while (((c = getc (inp)) != ':') && (c != '\"')) {
+	      temp_text = realloc (temp_text, text_size + 2);
+	      if (temp_text == NULL) {
+		return (NULL);
+	      }
+	      temp_text[text_size++] = tolower (st_cleantext (c));
+	    }
+	    temp_text[text_size] = 0;
+	    curr_cpt->fnbasen = temp_text;
+	    temp_text = malloc (1);
+	    text_size = 0;
+
+	    while ((c = getc (inp)) != '\"');
+	    while ((c = getc (inp)) != '\"') {
+	      temp_text = realloc (temp_text, text_size + 2);
+	      if (temp_text == NULL) {
+		return (NULL);
+	      }
+	      temp_text[text_size++] = st_cleantext (c);
+	    }
+	    temp_text[text_size] = 0;
+
+	    curr_cpt->caption = temp_text;
+	    if (last_cpt)
+	      last_cpt->next = curr_cpt;
+	    last_cpt = curr_cpt;
+	    curr_cpt = NULL;
+	  }			/* end main loop */
+
 	}
+      }
+      upto++;
+      st_close_file ();
     }
+  }
   return (root_cpt);
 }
 
 
 struct ency_titles *
-get_title_at (long filepos)
+ get_title_at (long filepos)
 {
   int return_body_was;
   char c;
@@ -1026,16 +995,14 @@ get_title_at (long filepos)
   set_starts_at = filepos;
   curr = 5;
 
-  if (!st_open ())
-    {
-      return (st_title_error (1));
-    }
-
+  if (!st_open ()) {
+    return (st_title_error (1));
+  }
   root_title = (struct ency_titles *) malloc (sizeof (struct ency_titles));
-  if (root_title == NULL)
-    {
-      return (st_title_error (2));
-    }
+
+  if (root_title == NULL) {
+    return (st_title_error (2));
+  }
   text_fmt = st_return_fmt ();
   i = 0;
 
@@ -1055,32 +1022,30 @@ get_title_at (long filepos)
   return (root_title);
 }
 
-struct st_photo 
-st_parse_captions (char *fnbasen)
+struct st_photo st_parse_captions (char *fnbasen)
 {
   struct st_photo photo;
+
   st_oldcpts = st_cpts;
 
   strcpy (photo.file, "");
   strcpy (photo.caption, "");
-  while (st_cpts)
-    {
-      if (!strcmp (fnbasen, st_cpts->fnbasen))
-	{
+  while (st_cpts) {
+    if (!strcmp (fnbasen, st_cpts->fnbasen)) {
 
-	  strcpy (photo.file, fnbasen);
-	  strcpy (photo.caption, st_cpts->caption);
+      strcpy (photo.file, fnbasen);
+      strcpy (photo.caption, st_cpts->caption);
 
-	}
-      st_cpts = st_cpts->next;
     }
+    st_cpts = st_cpts->next;
+  }
 
   st_cpts = st_oldcpts;
   return (photo);
 }
 
 struct st_media *
-st_get_media (char *search_string)
+ st_get_media (char *search_string)
 {
   int i = 0;
   struct st_media *media = NULL;
@@ -1097,18 +1062,16 @@ st_get_media (char *search_string)
   snprintf (title_with_dot, strlen (search_string) + 2, "%s.", search_string);
 
   media = malloc (sizeof (struct st_media));
-  while (st_tbls)
-    {
-      if ((!strcmp (st_tbls->title, search_string)) || (!strcmp (st_tbls->title, title_with_dot)))
-	{
-	  for (i = 0; i < 5; i++)
-	    {
-	      snprintf (temp_fnbase, 9, "%s%d", st_tbls->fnbase, i + 1);
-	      media->photos[i] = st_parse_captions (temp_fnbase);
-	    }
-	}
-      st_tbls = st_tbls->next;
+
+  while (st_tbls) {
+    if ((!strcmp (st_tbls->title, search_string)) || (!strcmp (st_tbls->title, title_with_dot))) {
+      for (i = 0; i < 5; i++) {
+	snprintf (temp_fnbase, 9, "%s%d", st_tbls->fnbase, i + 1);
+	media->photos[i] = st_parse_captions (temp_fnbase);
+      }
     }
+    st_tbls = st_tbls->next;
+  }
 
   st_tbls = root_tbl;
   st_cpts = root_cpt;
@@ -1119,51 +1082,47 @@ st_get_media (char *search_string)
 }
 
 char *
-st_format_filename (char *fnbasen, char *base_path, int media)
+ st_format_filename (char *fnbasen, char *base_path, int media)
 {
 /* media: 0 == pic, 1 == vid */
   char *filename = NULL;
   int dir_size = 0;
 
-  if (fnbasen && (media < 2))
-    {
+  if (fnbasen && (media < 2)) {
 
-      if (base_path)
-	dir_size = strlen (base_path);
+    if (base_path)
+      dir_size = strlen (base_path);
 
-      if (media == 0)
-	dir_size += strlen (st_files[st_file_type].pic_dir);
-      if (media == 1)
-	dir_size += strlen (st_files[st_file_type].vid_dir);
+    if (media == 0)
+      dir_size += strlen (st_files[st_file_type].pic_dir);
+    if (media == 1)
+      dir_size += strlen (st_files[st_file_type].vid_dir);
 
-      filename = malloc (dir_size + 17);
-      if (base_path)
-	{
-	  strcpy (filename, base_path);
-	  strcat (filename, "/");
-	}
-      else
-	strcat (filename, "/");
-
-      if (media == 0)
-	strcat (filename, st_files[st_file_type].pic_dir);
-      if (media == 1)
-	strcat (filename, st_files[st_file_type].vid_dir);
-
+    filename = malloc (dir_size + 17);
+    if (base_path) {
+      strcpy (filename, base_path);
       strcat (filename, "/");
-      if (st_files[st_file_type].append_char)
-	{
-	  filename[dir_size + 2] = fnbasen[0];
-	  filename[dir_size + 3] = 0;
-	  strcat (filename, "/");
-	}
-      strncat (filename, fnbasen, 8);
+    } else
+      strcat (filename, "/");
 
-      if (media == 0)
-	strcat (filename, "r.pic");
-      if (media == 1)
-	strcat (filename, "q.mov");
+    if (media == 0)
+      strcat (filename, st_files[st_file_type].pic_dir);
+    if (media == 1)
+      strcat (filename, st_files[st_file_type].vid_dir);
 
+    strcat (filename, "/");
+    if (st_files[st_file_type].append_char) {
+      filename[dir_size + 2] = fnbasen[0];
+      filename[dir_size + 3] = 0;
+      strcat (filename, "/");
     }
+    strncat (filename, fnbasen, 8);
+
+    if (media == 0)
+      strcat (filename, "r.pic");
+    if (media == 1)
+      strcat (filename, "q.mov");
+
+  }
   return (filename);
 }
