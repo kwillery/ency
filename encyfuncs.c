@@ -1398,31 +1398,22 @@ static void add_to_block_cache (int block_id, int id, long filepos)
 
 	if (cache)
 	{
-//		if ((block_id < cache_last->block_id) || ((block_id == cache_last->block_id) && (id < cache_last->id)))
-//		{
+		if ((block_id < cache_last->block_id) || ((block_id == cache_last->block_id) && (id < cache_last->id)))
 			tmp = cache;
-			while (tmp)
-			{
-				if ((tmp->block_id >= block_id) && (tmp->id > id))
-					break;
-				otmp = tmp;
-				tmp = tmp->next;
-			}
-			new_entry = (struct ency_titles *) malloc (sizeof (struct ency_titles));
-			new_entry->next = tmp;
-			otmp->next = new_entry;
-			cache_last = new_entry;
-//		}
-//		else if ((block_id > cache_last->block_id) || (block_id == cache_last->block_id) && (id > cache_last->id))
-//		{
-//			new_entry = (struct ency_titles *) malloc (sizeof (struct ency_titles));
-//			new_entry->next = cache_last->next;
-//			cache_last->next = new_entry;
-//			cache_last = new_entry;
-//		} else if (block_id > cac
-//		{
-//			tmp = cache
-//		}
+		else
+			tmp = cache_last;
+
+		while (tmp)
+		{
+			if ((tmp->block_id >= block_id) && (tmp->id > id))
+				break;
+			otmp = tmp;
+			tmp = tmp->next;
+		}
+		new_entry = (struct ency_titles *) malloc (sizeof (struct ency_titles));
+		new_entry->next = tmp;
+		otmp->next = new_entry;
+		cache_last = new_entry;
 	}
 	else
 		cache_last = cache = (struct ency_titles *) malloc (sizeof (struct ency_titles));
