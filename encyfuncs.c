@@ -1179,10 +1179,13 @@ static int check_match (char *search_string, char *title, int options)
 
 	}
 
-	if ((options & ST_OPT_MATCH_SUBSTRING) && strstr (title, search_string))
-		found = 1;
-	else if (!strcmp (title, search_string))
-		found = 1;
+	if (options & ST_OPT_MATCH_SUBSTRING)
+	{
+		if (strstr (title, search_string))
+			found = 1;
+	} else
+		if (!strcmp (title, search_string))
+			found = 1;
 
 	if (!(options & ST_OPT_CASE_SENSITIVE))
 	{
