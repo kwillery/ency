@@ -37,7 +37,6 @@
         <part start="0x5b42e2" count="68" bcount="1" start_id="876"/>
         <part start="0x5ec57e" count="1437" bcount="48" start_id="962"/>
         <part start="0x70d05e" count="6" bcount="2" start_id="1013"/>
-        <list start="0x70e5a4" count="1"/>
         <ftlist start="0x7c31e0" count="170"/>
       </section>
       <section name="Episodes">
