@@ -1,0 +1,21 @@
+Technicalish info.
+------------------
+
+Data.cxt holds all of the text, etc.
+Each section (not necessarily in alphabetical order!) starts off with a header, saying:
+	-startword
+	-words
+	-bold or italic
+the title is included in the word count.
+
+it then has the title, text, and two ascii 13 characters
+
+it then continues.
+
+all this starts at the 506921st byte.
+
+ill get around to documenting more after ive had some sleep and some coffee.
+
+mibus.
+
+

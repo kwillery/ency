@@ -1,0 +1,17 @@
+Email me with any bug reports or patches or anything to better my code.
+Please?
+
+In encyfuncs.c:
+ ency_return_title():
+  the malloc & realloc lines keep losing it if done the same as in ency_return_text(). See the code for (slightly) more info.
+
+--
+Robert Mibus
+beemer@picknowl.com.au
+mibus@hallett-cove.schools.sa.edu.au
+http://www.picknowl.com.au/homepages/beemer/robonly.html
+--
+"How should I know if it works?  That's what beta testers are for.  I only
+coded it."
+(Attributed to Linus Torvalds, somewhere in a posting)
+--

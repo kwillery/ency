@@ -1,0 +1,24 @@
+To install:
+
+Link or copy your Data.cxt file to the install directory.
+
+Run:
+
+ make
+
+Copy or move the findenc & readenc files to the install directory.
+
+To run:
+
+ findenc
+
+--
+Robert Mibus
+beemer@picknowl.com.au
+mibus@hallett-cove.schools.sa.edu.au
+http://www.picknowl.com.au/homepages/beemer/robonly.html
+--
+"How should I know if it works?  That's what beta testers are for.  I only
+coded it."
+(Attributed to Linus Torvalds, somewhere in a posting)
+--

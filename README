@@ -1,0 +1,27 @@
+Mibus's Ency Reader '98.
+------------------------
+
+For the Star Trek Encyclopedia. The '98 one. With ST:FC etc...
+
+(So called because it is mine (Robert Mibus), it reads an "Ency"clopedia, and it reads the '98 version.)
+
+Uhhh... 
+Compile. Run. Behold.
+
+That's about it.
+
+The More Technical Thingys
+--------------------------
+I am (slowly) implementing a set of functions to do stuff in the encyclopedia, so anyone can write a small app to do ency stuff. findenc.c is my sample.
+For info on how my program works, read the source.
+
+--
+Robert Mibus
+beemer@picknowl.com.au
+mibus@hallett-cove.schools.sa.edu.au
+http://www.picknowl.com.au/homepages/beemer/robonly.html
+--
+"How should I know if it works?  That's what beta testers are for.  I only
+coded it."
+(Attributed to Linus Torvalds, somewhere in a posting)
+--
