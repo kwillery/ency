@@ -61,6 +61,9 @@ struct st_ency_formatting *loopies (char *txt, struct st_ency_formatting *fmt, F
 
 		fprintf (output, "%s", smeg);
 
+		if ((strlen (txt) <= 2) && (word_finish - words))
+			words = word_finish;
+
 		if (words == word_finish)
 		{
 			if (fmt->underline)
