@@ -14,10 +14,10 @@ libency : encyfuncs.c ency.h
 	$(CC) -o libency.o -c encyfuncs.c
 	$(AR) r libency.a libency.o
 
-findenc : findenc.c encyfuncs.c ency.h
+findenc : findenc.c ency.h libency.a
 	$(CC) $< -o $@ -L. -lency
 
-htmlenc : htmlenc.c encyfuncs.c ency.h
+htmlenc : htmlenc.c ency.h libency.a
 	$(CC) $< -o $@ -L. -lency
 
 clean :

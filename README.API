@@ -1,0 +1,75 @@
+--------
+ency API
+--------
+(rough draft)
+
+----------------
+global variables
+----------------
+extern int st_ignore_case;
+ sets for most functions to ignore case when searching
+
+----------
+structures
+----------
+struct st_table
+  {
+    char *title;
+    char *fnbase;
+    struct st_table *next;
+  };
+a simple linked list, with titles (title) and filename base (eg /cdrom/video98/a/%fnbase%*.mov if fnbase started with an 'a'. email me for a better explanation)
+
+struct ency_titles
+  {
+    char *title;
+    char *text;
+    struct st_ency_formatting *fmt;
+    struct ency_titles *next;
+    int err;
+    long filepos;
+  };
+title = the title of an entry
+text = the body of the entry
+fmt = formatting info
+next = the next returned entry
+err = the error code (see encyfuncs.c for now)
+filepos = used soon, i promise!!! (very alpha now, will be used for post search getting of text, etc)
+
+---------
+functions
+---------
+struct ency_titles *ency_find_list (char title[], int exact)
+returns - struct containing encyclopedia titles & text
+title: a string to search for.
+exact: 0 = match a substring
+       1 = match *full* string only
+       2 = return *every* result, ie ignore search string
+st_ignore_case = global variable
+(same for epis_find_list & chro_find_list)
+
+
+struct ency_titles *ency_find_titles (char title[])
+returns - struct containing encyclopedia titles & text
+title: a string to search for.
+st_ignore_case = global variable
+(same for epis_find_titles & chro_find_titles)
+
+struct ency_titles *ency_get_title (char title[])
+returns - struct containing encyclopedia titles only. matches a substring.
+title: a string to search for.
+case *sensitive*
+(same for epis_get_title & chro_get_title)
+
+struct st_table *st_get_table (void)
+returns a list of all encyclopedia (ency,epis, and chro) titles, and file name base. (eg /cdrom/video98/a/%fnbase%*.mov if fnbase started with an 'a'. email me for a better explanation)
+
+struct ency_titles *get_title_at (long filepos)
+returns title & text of entry at file position filepos
+(will be used later)
+
+---------
+Robert Mibus
+beemer@picknowl.com.au
+http://mibus.cjb.net
+---------
