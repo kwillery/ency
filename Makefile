@@ -73,3 +73,5 @@ ency-api.html: ency-api.sgml
 
 gtkscan: gtkscan.c libency.a
 	$(CC) $(CFLAGS) -o gtkscan gtkscan.c libency.a `gtk-config --cflags` `gtk-config --libs` `imlib-config --cflags-gdk` `imlib-config --libs-gdk`
+
+decscript: decscript.c libency.a
