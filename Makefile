@@ -9,6 +9,8 @@ BINDIR=$(prefix)/bin
 MANDIR=$(prefix)/man
 LIBDIR=$(prefix)/lib
 INCDIR=$(prefix)/include
+ETCDIR=/etc
+
 INSTALL_PROGRAM=install
 
 ifneq (,$(findstring debug,$(DEB_BUILD_OPTIONS)))
@@ -36,12 +38,15 @@ clean:
 
 distclean: clean
 
-install: install-bin install-dev install-doc
+install: install-bin install-data install-dev install-doc
 
 install-bin: all
 	$(INSTALL_BIN) findenc $(BINDIR)/findenc
 	$(INSTALL_BIN) htmlenc $(BINDIR)/htmlenc
 	$(INSTALL_BIN) scanenc $(BINDIR)/scanenc
+
+install-data:
+	$(INSTALL_PROGRAM) encyfiles.xml $(ETCDIR)/encyfiles.xml
 
 install-doc:
 
@@ -50,7 +55,7 @@ install-dev:
 	$(INSTALL_PROGRAM) -m644 ency.h $(INCDIR)/ency.h
 
 uninstall:
-	rm -f $(BINDIR)/findenc $(BINDIR)/htmlenc $(LIBDIR)/libency.a $(INCDIR)/ency.h $(BINDIR)/scanenc
+	rm -f $(BINDIR)/findenc $(BINDIR)/htmlenc $(LIBDIR)/libency.a $(INCDIR)/ency.h $(BINDIR)/scanenc $(ETCDIR)/encyfiles.xml
 
 doc: ency-api.txt ency-api.html
 
