@@ -503,7 +503,6 @@ static void clean_up ()
 {
 	parts = NULL;
 	plast = NULL;
-
 }
 
 int integrity_ok (FILE *inp, int reverse)

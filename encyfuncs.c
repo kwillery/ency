@@ -35,6 +35,11 @@
 #include "data.h"
 
 #define free(A) {if (A) free (A); A=NULL;}
+#ifdef DEBUG
+#define DBG(...) printf(...);
+#else
+#define DBG(...) ;
+#endif
 
 static char *ency_filename = NULL;
 
@@ -1623,7 +1628,7 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 		{
 			inp = curr_open (filepos);
 			if (!inp)
-				fprintf (stderr, "Oh damn! curr_open() failed for %ld (entry %d:%d)\n(%s)\n", filepos, block_id, id, strerror (errno));
+				DBG (stderr, "Oh damn! curr_open() failed for %ld (entry %d:%d)\n(%s)\n", filepos, block_id, id, strerror (errno));
 			if (!inp)
 				return NULL;
 
@@ -1654,8 +1659,6 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 
 		return (ret);
 	}
-
-	fprintf (stderr, "Uhoh - entry not found @ %d:%d\n", block_id, id);
 
 	return NULL;
 }
@@ -1701,13 +1704,18 @@ static struct ency_titles *st_find_in_file (int file, int section, char *search_
 					curr->next = get_entry_by_id (tbl->block_id, tbl->id, options);
 					if (!curr->next)
 					{
+						DBG (stderr, "Can't find entry \"%s\" in %d:%d\n", tmp->title, tbl->block_id, tbl->id);
 						tmp = tmp->next;
 						continue;
 					} else
 						curr = curr->next;
 				}
 				else
+				{
 					root = curr = get_entry_by_id (tbl->block_id, tbl->id, options);
+					if (!curr)
+						DBG (stderr, "Can't find entry \"%s\" in %d:%d\n", tmp->title, tbl->block_id, tbl->id);
+				}
 				if (curr)
 					curr->name = strdup (tmp->title);
 			}
@@ -2130,7 +2138,8 @@ static struct ency_titles *st_find_fulltext (char *search_string, int section, i
 					curr->name = strdup (title);
 					curr->score = scores->score + ((float) scores->score / ((float)curr->length / (float)1000 + 1));
 					curr->next = NULL;
-				}
+				} else
+					DBG (stderr, "Can't find entry \"%s\" in %d:%d\n", title, tbl->block_id, tbl->id);
 			}
 		}
 		last_score = scores;
