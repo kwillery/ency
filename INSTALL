@@ -30,6 +30,7 @@ or in csh/tcsh/etc:
 (suiting filenames to match :)
 
 --Data files--
+ Data.cxt
  eg_tng.dxr
  eg_ds9.dxr
  omni1.dxr
@@ -37,7 +38,7 @@ or in csh/tcsh/etc:
 
 just set the ENCY_FILENAME variable to one of these, eg:
  setenv ENCY_FILENAME /dose/tng_ep/eg_tng.dxr
-if you are using (t)csh
+(if you are using csh, tcsh, etc.)
 
 If you use the eg_tng.dxr or eg_ds9.dxr (episode guide) files, you will need to look in the EPISODE section, ie:
   findenc -e emissary
