@@ -118,7 +118,7 @@ struct st_photo
 
 struct st_media
 {
-	struct st_photo photos[5];
+	struct st_photo photos[6];
 	struct st_photo video;
 	struct st_photo audio;
 	struct st_photo swf;

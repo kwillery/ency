@@ -227,7 +227,7 @@ int main (int argc, char *argv[])
 			if (media)
 			{
 				fprintf (out, "<b>Associated media</b>\n<ul>");
-				for (i = 0; i < 5; i++)
+				for (i = 0; i < 6; i++)
 					if (strlen (media->photos[i].file))
 					{	/* if there is photos #i */
 						temp_fn = st_format_filename (media->photos[i].file, base_path, picture);

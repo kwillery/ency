@@ -2115,7 +2115,7 @@ struct st_media *st_get_media (char *search_string)
 
 		if ((ret_fnbase = get_fnbase (st_ptbls, search_string)))
 		{
-			for (i = 0; i < 5; i++)
+			for (i = 0; i < 6; i++)
 			{
 				sprintf (temp_fnbase, "%s%d", ret_fnbase, i + 1);
 				media->photos[i] = st_parse_captions (temp_fnbase);
