@@ -16,6 +16,7 @@ extern int st_return_body;
 ----------
 structures
 ----------
+
 struct st_table
   {
     char *title;
@@ -23,6 +24,15 @@ struct st_table
     struct st_table *next;
   };
 a simple linked list, with titles (title) and filename base (eg /cdrom/video98/a/%fnbase%*.mov if fnbase started with an 'a'. email me for a better explanation)
+
+struct st_ency_formatting
+  {
+    int bi;
+    int words;
+    int firstword;
+    struct st_ency_formatting *next;
+  };
+too hard to explain for now. :)
 
 struct ency_titles
   {

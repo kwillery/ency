@@ -38,15 +38,14 @@ int st_ignore_case = 0;
 long int file_pos_is = 0;
 
 long int st_table_starts_at = 0x410c4;
-long int ency_starts_at = 0x7bc28;	// Bytes into file info starts at - 1
-
+long int ency_starts_at = 0x7bc28;
 long int epis_starts_at = 0x3b8e20;
 long int chro_starts_at = 0x41e32c;
 long int set_starts_at = 0x0;
 
 long int ency_lastone = 7068;
 long int epis_lastone = 402;
-long int chro_lastone = 581;
+long int chro_lastone = 582;
 
 long int curr_starts_at, curr_lastone, curr;
 int screwy = 0;
@@ -84,12 +83,12 @@ curr_open (void)
 
   if (ency_filename == NULL)
     {
-       ency_filename = getenv("ENCY_FILENAME");
+      ency_filename = getenv ("ENCY_FILENAME");
       if (ency_filename == NULL)
-        {
-       ency_filename = (char *) malloc (10);
-       strcpy (ency_filename, "Data.cxt");
-        }
+	{
+	  ency_filename = (char *) malloc (10);
+	  strcpy (ency_filename, "Data.cxt");
+	}
     }
   inp = fopen (ency_filename, "r");
 
@@ -159,6 +158,9 @@ ency_cleantext (unsigned char c)
     case 13:
       return ('\n');
       break;
+    case 0xD0:
+      return ('-');
+      break;
     case 0xD1:
       return ('_');
       break;
@@ -183,9 +185,10 @@ ency_cleantext (unsigned char c)
     case 0x8F:
       return ('e');
       break;
-    case 0xA5:
-      return (' ');
+    case 0xA5: 
+      return ('*');
       break;
+ 
     default:
       return (c);
       break;
@@ -217,6 +220,7 @@ curr_return_fmt (void)
   char tmp_txt[50];
   root_fmt = last_fmt = curr_fmt = NULL;
 
+if (st_return_body) {
   root_fmt = (struct st_ency_formatting *) malloc (sizeof (struct st_ency_formatting));
   if (root_fmt == NULL)
     {
@@ -224,19 +228,22 @@ curr_return_fmt (void)
       exit (1);
     }
   memset (root_fmt, 0, sizeof (struct st_ency_formatting));
-  curr_fmt = root_fmt;
+  curr_fmt = root_fmt;		}
+
   c = egetc ();
   while (c != '@')
     {
       if (!first_time)
 	{
+if (st_return_body) {
 	  curr_fmt = (struct st_ency_formatting *) malloc (sizeof (struct st_ency_formatting));
 	  if (curr_fmt == NULL)
 	    {
 	      printf ("Memory allocation failed\n");
 	      exit (1);
 	    }
-	  memset (curr_fmt, 0, sizeof (struct st_ency_formatting));
+	  memset (curr_fmt, 0, sizeof (struct st_ency_formatting)); }
+
 	}
       first_time = 0;
       i = 0;
@@ -247,6 +254,7 @@ curr_return_fmt (void)
 	  c = egetc ();
 	}
       tmp_txt[i] = 0;
+if (st_return_body)
       curr_fmt->firstword = atoi (tmp_txt);	// starts at
 
       c = egetc ();
@@ -258,15 +266,19 @@ curr_return_fmt (void)
 	  tmp_txt[i++] = c;
 	}
       tmp_txt[i] = 0;
+if (st_return_body)
       curr_fmt->words = atoi (tmp_txt);		// words
 
       c = egetc ();
       if (c != 35)
 	c = egetc ();
+
+if (st_return_body)
       curr_fmt->bi = 0;
 
       while ((c = egetc ()) != ']')
-	{
+{
+if (st_return_body) 
 	  switch (c)
 	    {
 	    case 'B':
@@ -283,11 +295,14 @@ curr_return_fmt (void)
 	    }
 	}
       c = egetc ();
-      curr_fmt->next = NULL;
-      if (last_fmt != NULL)
-	last_fmt->next = curr_fmt;
-      last_fmt = curr_fmt;
-      curr_fmt = NULL;
+ if (st_return_body) 
+      {
+	curr_fmt->next = NULL;
+	if (last_fmt != NULL)
+	  last_fmt->next = curr_fmt;
+	last_fmt = curr_fmt;
+	curr_fmt = NULL;
+      }
     }
   c = egetc ();
   return (root_fmt);
@@ -318,7 +333,8 @@ curr_find_start (void)
   while (c != '~')
     {
       c = egetc ();
-      if ((oldc == 0x16) && (c != 0x2E))
+//      if ((oldc == 0x16) && (c != 0x2E))
+if ((oldc == 0x16) && (c != 0x7E))
 	{
 	  eungetc (c);
 	  return (0);
@@ -361,27 +377,11 @@ curr_return_text (void)
       c = ency_cleantext (egetc ());
       if (c == 0)
 	bye = 1;
-      if ((old_c == 10) && (c == 0x7E))
-	bye = 1;
-/*      if (bye)
- *    if (curr == 3)
- *        if (egetc () != 0x7E)
- *          {
- *            bye = 0;
- *            eungetc (c);
- *          }
- *
- *     if (curr == 2)
- *      if ((done_once < 2) && (bye == 1))
- *        {
- *          done_once++;
- *          bye = 0;
- *        }
- */
+      if ((old_c == '\n') && (c == 0x7E))
+	{eungetc(c);bye = 1;}
+
       if (!bye)
 	{
-//              if (c == 0)
-	  //                exit;
 	  temp_text = realloc (temp_text, text_size + 1);
 	  if (temp_text == NULL)
 	    {
@@ -391,7 +391,8 @@ curr_return_text (void)
 	  old_c = c;
 	}
     }
-  temp_text[text_size] = 0;
+  temp_text[text_size-1] = 0;
+printf("\n");
   return (temp_text);
 }
 char *
@@ -527,10 +528,6 @@ curr_find_list (char title[], int exact)
       ttl = ency_return_title ();
 /**Title & number: printf("%d:%s\n",no_so_far,ttl); **/
       c = egetc ();
-
-// printf ("%d: %s\n", no_so_far, ttl);
-      // if (screwy){screwy=0;printf("%s\n",ttl);}
-      // printf("%s=%s:%d",ttl,title,strstr(ttl,title));
 
 // lowerise ttl > ttl2, title > title2
       while (ttl2[i++] = tolower (ttl[i]));
@@ -941,19 +938,10 @@ st_get_table (void)
   return (root_tbl);
 }
 
-
-
-
-
-/*****************/
-
-
-
-
-
 struct ency_titles *
 get_title_at (long filepos)
 {
+  int return_body_was;
   int first_time = 1;
   char c;
   char *temp_text;
@@ -963,7 +951,8 @@ get_title_at (long filepos)
   struct st_ency_formatting *text_fmt;
 
   root_title = NULL;
-
+  return_body_was = st_return_body;
+  st_return_body = 1;
   set_starts_at = filepos;
   curr = 5;
 
@@ -977,9 +966,7 @@ get_title_at (long filepos)
     {
       return (st_title_error (2));
     }
-
   text_fmt = ency_return_fmt ();
-
   i = 0;
 
   ttl = ency_return_title ();
@@ -994,5 +981,6 @@ get_title_at (long filepos)
   root_title->text = temp_text;
   root_title->next = NULL;
   root_title->fmt = text_fmt;
+  st_return_body = return_body_was;
   return (root_title);
 }

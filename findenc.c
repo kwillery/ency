@@ -25,10 +25,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "ency.h"
 extern int st_ignore_case;
 
-main ()
+main (int argc, char *argv[])
 {
   int i = 0;
   char search_string[70];
@@ -38,17 +39,30 @@ main ()
   struct ency_titles *thingy;
   struct ency_titles *kill_me;
   struct st_ency_formatting *fmt1, *fmt2;
+
+  i = getopt (argc, argv, "ech");
+
+  if (i == 'h')
+    {
+      printf ("findenc - Searches Star Trek encyclopedia\nhttp://www.picknowl.com.au/homepages/beemer/ency.html\nUsage: findenc -[c|e]\n-c: searches chronology\n-e: searches episodes\ndefault: search encyclopedia\n");
+      exit (0);
+    }
+
   printf ("Enter search string :");
   scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
 
   st_ignore_case = 1;
 
-
-// thingy = ency_find_list (search_string, 0);
-  thingy = chro_find_list (search_string, 0);
-//  thingy = epis_find_list (search_string, 0);
+  if (i == 'c')
+    thingy = chro_find_list (search_string, 0);
+  if (i == 'e')
+    thingy = epis_find_list (search_string, 0);
+  if ((i != 'c') && (i != 'e'))
+    thingy = ency_find_list (search_string, 0);
   // thingy = get_title_at (0x149310);
   // thingy = ency_find_titles (search_string);
+
+  i = 0;
 
   if ((thingy != NULL) && (thingy->title != NULL))
     {
