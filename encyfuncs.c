@@ -2048,12 +2048,8 @@ void load_block_cache (void)
 						{
 							if (c == '~')
 							{
-								c = getc (inp);
-								if (isdigit (c) || (c == '@'))
-								{
-									id++;
-									add_to_block_cache (i, id, ftell (inp)-1);
-								}
+								id++;
+								add_to_block_cache (i, id, ftell (inp)-1);
 							}
 						}
 					}
