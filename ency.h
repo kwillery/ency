@@ -1,7 +1,7 @@
 /*****************************************************************************/
-/* Mibus's Ency 98 Reader: Reads the Star Trek Encyclopedia (1998 version)   */
-/* Copyright (C) 1998 Robert Mibus                                           */
+/* star trek ency reader: Reads the Star Trek Encyclopedia (1998 version)    */
 /* Also reads the various Omnipedias & Episode guides                        */
+/* Copyright (C) 1998 Robert Mibus                                           */
 /*                                                                           */
 /* This program is free software; you can redistribute it and/or             */
 /* modify it under the terms of the GNU General Public License               */

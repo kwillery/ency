@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/* Mibus's Ency 98 Reader: Reads the Star Trek Encyclopedia (1998 version)   */
+/* star trek ency reader: Reads the Star Trek Encyclopedia (1998 version)    */
 /* Also reads the various Omnipedias & Episode guides                        */
 /* Copyright (C) 1998 Robert Mibus                                           */
 /*                                                                           */
