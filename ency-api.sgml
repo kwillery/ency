@@ -18,38 +18,23 @@ The 'ency' library currently supports five encyclopedias
 <item>The Star Trek Encyclopedia
 <item>The TNG Episode Guide
 <item>The DS9 Episode Guide
+<item>The Star Trek Encyclopedia v3.0
 </itemize>
 
-<sect>Defines
+<sect>Defines &amp; enums
 <sect1>ST_FILE_*<label id="ST_FILE_*">
 <p>
 These are the different file types ency supports.
 <verb>
-#define ST_FILE_TYPES 5
-#define ST_FILE_ENCY98 0
-#define ST_FILE_OMNI1 1
-#define ST_FILE_OMNI2 2
-#define ST_FILE_TNG1 3
-#define ST_FILE_DS91 4
+#define ST_FILE_TYPES st_count_filetypes()
 #define ST_FILE_CURR -1
 </verb>
 
 <p>
-TYPES is how many types there are, 0 to (TYPES-1)
+TYPES is how many types there are, 0 to (TYPES-1). This calls st_count_filetypes(), you can use either. (It exists primarily for compatibility.
 <p>
-ENCY98 is the default, the 1998 version.
+CURR is the last one loaded/used, and is only used with <tt/<ref id="st_fileinfo_get_name" name="st_fileinfo_get_name()"> /
 <p>
-OMNI1 is the original CD based Omnipedia.
-<p>
-OMNI2 is the second CD Omnipedia (Upto the ST:Generations movie).
-<p>
-TNG1 is the TNG Episode guide.
-<p>
-DS91 is the DS9 episode guide.
-<p>
-CURR is the last one loaded/used (default: ENCY98). Only useful with <ref id="st_fileinfo_get_name" name="st_fileinfo_get_name"> 
-<p>
-These are used in the <ref id="st_autofind" name="st_autofind">, <ref id="st_fingerprint" name="st_fingerprint">, and <ref id="st_fileinfo_get_name" name="st_fileinfo_get_name"> functions.
 
 <sect1>ST_SECT_*<label id="ST_SECT_*">
 <p>
@@ -59,41 +44,67 @@ These are the different sections of each encyclopedia.
 #define ST_SECT_ENCY 0
 #define ST_SECT_EPIS 1
 #define ST_SECT_CHRO 2
+#define ST_SECT_EPIS_SORTED 4
 </verb>
 <p>
-<tt/ENCY/ is the Encyclopedia section, <tt/EPIS/ is the Episode section, and <tt/CHRO/ is the Chronology (timeline) section.
+<tt/ENCY/ is the Encyclopedia section, <tt/EPIS/ is the Episode section, and <tt/CHRO/ is the Chronology (timeline) section. <tt/EPIS_SORTED/ is the numerical (as opposed to alphabetical) listing of episodes. Using <tt/EPIS_SORTED/ is equivalent to using <tt/<ref id="ST_OPT_*" name="ST_OPT_SORTEPIS">/ and <tt/ST_SECT_EPIS/.
 <p>
-Used with <ref id="st_find" name="st_find">.
+Used with <tt/<ref id="st_find" name="st_find()">/.
 <sect1>ST_OPT_*<label id="ST_OPT_*">
 <p>
-These are options passed to <ref id="st_find" name="st_find">.
+These are options passed to <tt/<ref id="st_find" name="st_find()">/.
 <verb>
 #define ST_OPT_CASE_SENSITIVE 1
 #define ST_OPT_RETURN_BODY 2
 #define ST_OPT_MATCH_SUBSTRING 4
+#define ST_OPT_NO_FMT 8
+#define ST_OPT_SORTEPIS 16
+#define ST_OPT_FT 32
+#define ST_OPT_NO_FILEPOS 64
 </verb>
 <p>
 <tt/CASE_SENSITIVE/ is whether the search is case-sensitive or not. (default: no)
-<tt/RETURN_BODY/ determines whether the <tt/fmt/ and <tt/text/ parts of an <ref id="ency_titles" name="ency_titles"> struct are returned. (default: no). If they are not returned, <ref id="st_get_title_at" name="st_get_title_at"> can be used to retrieve the full entry.
-<tt/MATCH_SUBSTRING/ determines whether <ref id="st_find" name="st_find"> will match substrings or not. (default: no)
+<tt/RETURN_BODY/ determines whether the <tt/fmt/ and <tt/text/ parts of an <tt/<ref id="ency_titles" name="ency_titles">/ struct are returned. (default: no). If they are not returned, <tt/<ref id="st_get_title_at" name="st_get_title_at()">/ can be used to retrieve the full entry.
+<tt/MATCH_SUBSTRING/ determines whether <tt/<ref id="st_find" name="st_find()">/ will match substrings or not. (default: no)
+<tt/NO_FMT/ means that the -&gt;fmt part of an <tt/<ref id="ency_titles" name="ency_titles">/ struct are returned from <tt/<ref id="st_read_title_at" name="st_read_title_at()">/.
+<tt/SORTEPIS/ is only valid when using <tt/<ref id="ST_SECT_*" name="ST_SECT_EPIS">/, and provides the same behaviour as using <tt/<ref id="ST_SECT_*" name="ST_SECT_EPIS_SORTED">/, that is to have episodes listed in numerical (as opposed to alphabetical) order.
+<tt/FT/ makes <tt/<ref id="st_find" name="st_find()">/ perform a full-text search. N.B. that returns from this are scored and use <tt/<ref id="ency_titles" name="ency_titles">/'s -&gt;score.
+<tt/NO_FILEPOS/ is used with <tt/<ref id="st_find" name="st_find()">/ so that it does not return the position in a file of the entry.
 <p>
-For more information on how to use these, see the <ref id="st_find" name="st_find"> section.
+<tt/RETURN_BODY/, <tt/NO_FMT/, and <tt/NO_FILEPOS/ can be used to speed up searches quite effectively.
+<p>
+For more information on how to use these, see the <tt/<ref id="st_find" name="st_find()">/ section.
+
+<sect1>media_type<label id="media_type">
+<p>
+<verb>
+typedef enum
+{
+        picture,
+        video,
+        audio,
+        swf
+} media_type;
+</verb>
+<p>
+These are used with <tt/<ref id="st_format_filename" name="st_format_filename()">/.
+
 <sect>Struct Types
 
 <sect1>st_ency_formatting<label id="st_ency_formatting">
 <p>
 <verb>
 struct st_ency_formatting
-  {
-    int firstword;
-    int words;
-    int bold;
-    int italic;
-    int underline;
-    struct st_ency_formatting *next;
-  };
+{
+	int firstword;
+	int words;
+	int bold;
+	int italic;
+	int underline;
+	struct st_ency_formatting *next;
+};
 </verb>
-Returned as part of an <ref id="ency_titles" name="ency_titles"> struct.
+Returned as part of an <tt/<ref id="ency_titles" name="ency_titles">/ struct.
 <p>
 <tt/firstword/ is the number of words into an entry the formatting starts (including the title)
 <tt/words/ is how long the formatting goes for
@@ -108,52 +119,27 @@ More than one can be on, eg Bold & Italic.
 This holds information about each entry
 <verb>
 struct ency_titles
-  {
-    char *title;
-    char *text;
-    struct st_ency_formatting *fmt;
-    struct ency_titles *next;
-    int err;
-    long filepos;
-  };
+{
+	char *name;
+	char *title;
+	char *text;
+	struct st_ency_formatting *fmt;
+	struct ency_titles *next;
+	int err;
+	long filepos;
+	float score;
+};
 </verb>
-<tt/title/ is the entry's title.
+<tt/name/ is the entry's actual title.
+<tt/title/ is the entry's title that is written as part of the entry.
 <tt/text/ is the entry's text (body).
 <tt/fmt/ is the entry's formatting information. (see <ref id="st_ency_formatting" name="st_ency_formatting">)
 <tt/next/ leads to the next returned entry (<tt/NULL/ if this is the last one).
-<tt/err/ is a returned error code (see <ref id="st_nice_error" name="st_nice_error">).
+<tt/err/ is a returned error code (see <ref id="st_nice_error" name="st_nice_error">). (N.B. that this is rarely used).
 <tt/filepos/ is the # of bytes into the data file the information starts. (see <ref id="st_get_title_at" name="st_get_title_at">). It should be free'd with one of the <ref id="st_free_entry*" name="st_free_entry*"> functions
-
-
-<sect1>st_table<label id="st_table">
+<tt/score/ is used when doing fulltext searches. (See <tt/<ref id="st_find" name="st_find()">/ and <tt/<ref id="ST_OPT_*" name="ST_OPT_FT">/. It is a number out of 100, but is *not* a percentage. (Well...).
 <p>
-This struct is not commonly used outside of 'ency' itself.
-It is returned by <ref id="st_get_table" name="st_get_table">.
-<verb>
-struct st_table {
-  char *title;
-  char *fnbase;
-  struct st_table *next;
-};
-</verb>
-<tt/title/ is the title of the encyclopedia entry <tt/fnbase/ corresponds to, eg. "Kirk, James T". <tt/fnbase/ is the first six letters of any file to do with the entry, eg. "kirkst".
-
-
-<sect1>st_caption<label id="st_caption">
-<p>
-This struct is not commonly used outside of 'ency' itself.
-It is returned by <ref id="st_get_captions" name="st_get_captions">.
-<verb>
-struct st_caption {
-  char *fnbasen;
-  char *caption;
-  struct st_caption *next;
-};
-</verb>
-Each st_caption corresponds to a picture on the CD.
-<tt/fnbasen/ is the fnbase out of <ref id="st_table" name="st_table">, plus a number 1-5.
-<tt/caption/ is the picture's caption.
-
+The difference between <tt/name/ and <tt/title/ may be hard to understand; <tt/name/ is what the 'official' software puts in the listbox at the top of the screen. <tt/title/ is the first piece of bold text to be placed in the text box at the bottom. (Also, -&gt;name changes when <tt/<ref id="ST_OPT_*" name="ST_OPT_SORTEPIS">/ is used, whereas <tt/title/ never does.
 
 <sect1>st_photo<label id="st_photo">
 <p>
@@ -164,7 +150,7 @@ struct st_photo {
 };
 </verb>
 This struct is returned in <ref id="st_media" name="st_media"> structs (see <ref id="st_get_media" name="st_get_media">)
-<tt/file/ is the first 7 characters of the filename of the photo (or now, video) is being referred to.
+<tt/file/ is the first 7 characters of the filename of the photo (or now, video, sound, or swf) is being referred to.
 <tt/file/ should be processed by <ref id="st_format_filename" name="st_format_filename"> to get a usable filename.
 
 
@@ -174,28 +160,13 @@ This struct is returned in <ref id="st_media" name="st_media"> structs (see <ref
 Returned by <ref id="st_get_media" name="st_get_media">.
 <verb>
 struct st_media {
-  struct st_photo photos[5];
+  struct st_photo photos[6];
   struct st_photo video;
+  struct st_photo audio;
+  struct st_photo swf;
 };
 </verb>
-There are five <ref id="st_photo" name="st_photo"> structs in <tt/photos/. The <tt/video/ struct is the same, but holds the video reference instead.
-
-
-
-<sect>External Variables
-<p> <em/NOTE/ These are being phased out in favour of parameters and may disappear soon.
-
-
-<sect1>st_ignore_case<label id="st_ignore_case">
-<p>
-If <tt/st_ignore_case/ is set to 1, the <ref id="*_find_list" name="*_find_list"> searches are <em/not/ case sensitive. The default is 0.
-
-
-<sect1>st_return_body<label id="st_return_body">
-<p>If <tt/st_return_body/ is set to 0, the <tt/fmt/ and <tt/text/ parts of a <ref id="ency_titles" name="ency_titles"> struct returned from a <ref id="*_find_list" name="*_find_list"> are set to <tt/NULL/. <ref id="st_get_title_at" name="st_get_title_at"> can be used to retrieve the full entry.
-The default is 1, which <em/does/ return <tt/fmt/ and <tt/text/ parts.
-
-
+There are six <ref id="st_photo" name="st_photo"> structs in <tt/photos/. The <tt/video/, <tt/audio/, and <tt/swf/ structs are the same, but holds the video, audio, and 'flash' references instead.
 
 <sect>Functions
 
@@ -205,7 +176,7 @@ The default is 1, which <em/does/ return <tt/fmt/ and <tt/text/ parts.
 <verb>
 int st_init (void);
 </verb>
-<tt/st_init/ should be the first <tt/ency/ function run in simple programs. It initialised the library. In larger programs that use <ref id="st_set_filename" name="st_set_filename">, you don't need to worry about using st_init().
+<tt/st_init/ should be the first <tt/ency/ function run in programs, as it initialises important parts of the library.
 
 
 <sect1>st_finish<label id="st_finish">
@@ -222,9 +193,9 @@ int st_finish (void);
 int st_set_filename (char *filename);
 </verb>
 This function sets the filename which is to be opened.
-Used in conjunction with <ref id="st_autofind" name="st_autofind">
+Often used in conjunction with <ref id="st_autofind" name="st_autofind">
 <p>
-If the filename is not set, ency will check for an environment variable called <tt/ENCY_FILENAME/. Failing that, ency will attempt to look for a file called Data.cxt or data.cxt in <tt>.</tt>, <tt>./Ency98</tt>, or <tt>./ency98</tt>.
+If the filename is not set, ency will check for an environment variable called <tt/ENCY_FILENAME/. Failing that, ency will attempt to look for known files itself.
 
 <sect1>st_get_filename<label id="st_get_filename">
 <p>
@@ -241,7 +212,7 @@ Returns the currently stored filename.
 char *st_fileinfo_get_name (int filetype);
 </verb>
 This returns a descriptive string for a given <ref id="ST_FILE_*" name="ST_FILE_*"> type.
-
+Use either <tt/0/ to <tt/<ref id="st_count_filetypes" name="st_count_filetypes()">/-1, or <tt/<ref id="ST_FILE_*" name="ST_FILE_CURR">/.
 
 <sect1>st_autofind<label id="st_autofind">
 <p>
