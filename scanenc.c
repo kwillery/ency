@@ -48,54 +48,6 @@ guess_section (char *title, char *text, int last_section)
 	return 0;
 }
 
-/*
-static long
-st_find_start (void)
-{
-	unsigned char c = 0, old_c = 0, old_old_c = 0, old_old_old_c = 0;
-	int keep_going = 1, goback = 0;
-	while (keep_going)
-	{
-		if (feof (inp))
-			return 0;
-		c = getc (inp);
-		if (c == '1')
-		{
-			switch (old_c)
-			{
-			case '~':
-				if (old_old_c == 0x0d)
-				{
-					keep_going = 0;
-					fseek (inp, -2, SEEK_CUR);
-				}
-				break;
-			case 0x16:
-				if (old_old_c == 0)
-				{
-					keep_going = 0;
-					fseek (inp, -1, SEEK_CUR);
-				}
-				break;
-			case '@':
-				if ((old_old_c == 0x16) && (old_old_old_c == 0))
-				{
-					keep_going = 0;
-					fseek (inp, -1, SEEK_CUR);
-				}
-				break;
-			}
-		}
-		old_old_old_c = old_old_c;
-		old_old_c = old_c;
-		old_c = c;
-	}
-	if (feof (inp))
-		return 0;
-	return (1);
-}
-*/
-
 int
 main (int argc, char *argv[])
 {
