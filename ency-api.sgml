@@ -164,7 +164,7 @@ struct st_photo {
 };
 </verb>
 This struct is returned in <ref id="st_media" name="st_media"> structs (see <ref id="st_get_media" name="st_get_media">)
-<tt/file/ is the first 7 characters of the filename of the photo the caption is referring to.
+<tt/file/ is the first 7 characters of the filename of the photo (or now, video) is being referred to.
 <tt/file/ should be processed by <ref id="st_format_filename" name="st_format_filename"> to get a usable filename.
 
 
@@ -175,10 +175,10 @@ Returned by <ref id="st_get_media" name="st_get_media">.
 <verb>
 struct st_media {
   struct st_photo photos[5];
-  char *video;
+  struct st_photo video;
 };
 </verb>
-There are five <ref id="st_photo" name="st_photo"> structs in <tt/photos/. The <tt/video/ string is the first 7 letters of the filename, and should be processed by <ref id="st_format_filename" name="st_format_filename"> to get a usable filename.
+There are five <ref id="st_photo" name="st_photo"> structs in <tt/photos/. The <tt/video/ struct is the same, but holds the video reference instead.
 
 
 
@@ -341,7 +341,7 @@ char *st_format_filename (char *fnbasen, char *base_path, int media)
 </verb>
 This function converts a 6-letter filename to a full filename. <tt/fnbasen/ is the <tt/file/ section from the <ref id="st_photo" name="st_photo"> structs in an <ref id="st_media" name="st_media"> struct.
 <tt/base_path/ is where the media is located (eg. "/cdrom").
-<tt/media/ is 0 for pictures, or 1 for videos.
+<tt/media/ is 0 for a picture, or 1 for a video.
 
 
 <sect1>st_get_table<label id="st_get_table">
@@ -442,9 +442,9 @@ int main (int argc, char *argv[])
             printf ("%s: %s\n", temp_fn, media->photos[i].caption);
             free (temp_fn);
           }
-        if (media->video) {   /* if there is a video */
-          temp_fn = st_format_filename (media->video, base_path, 1);
-          printf ("%s: %s\n", temp_fn, thingy->title);
+        if (strlen(media->video.file)) {   /* if there is a video */
+          temp_fn = st_format_filename (media->video.file, base_path, 1);
+          printf ("%s: %s\n", temp_fn, media->video.caption);
           free (temp_fn);
         }
         free (media); media = NULL; /* free the returned media struct */
