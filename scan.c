@@ -363,8 +363,8 @@ static void add_block (FILE *inp, int reverse, char *bname, long block_ind, long
 {
 	long orig_pos = ftell(inp);
 	long block_pos=-1;
-	long cast_pos=-1;
 	long block_size=-1;
+	long cast_pos=-1;
 	char name[5]="1234";
 
 	fseek (inp, 0x4C+20*block_ind, SEEK_SET); /* Go to the block info */
