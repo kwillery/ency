@@ -21,7 +21,6 @@
 /*      Email   mibus@bigpond.com                                            */
 /*      Webpage http://users.bigpond.com/mibus/                              */
 /*****************************************************************************/
-#define free(A) {if (A) free (A); A=NULL;}
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -33,6 +32,8 @@
 #include "ency.h"
 #include "encyfuncs.h"
 #include "data.h"
+
+#define free(A) {if (A) free (A); A=NULL;}
 
 static FILE *inp;
 
@@ -84,7 +85,6 @@ static struct ency_titles *cache = NULL;
 static struct ency_titles *cache_last = NULL;
 static struct ency_titles *cache_quick = NULL;
 
-static struct ency_titles *st_find_in_cache (int, char *, int, int);
 static void st_clear_cache (void);
 
 /* init/de-init stuff */
@@ -108,33 +108,6 @@ int st_finish (void)
 }
 
 /* useful bits */
-static int is_all_ascii (char *string)
-{
-	while (*string)
-		if (isascii (*string++) == 0) return 0;
-	return 1;
-}
-
-static int ends_in_number (char *string, int expected_length)
-{
-	return (isdigit(string[expected_length]) || (string[expected_length] == 'F'));
-}
-
-static int ends_in_quote (char *string, int expected_length)
-{
-	return ((string[1] == '\"') || (string[expected_length] == '\"'));
-}
-
-static int not_embedding_bracket (char *string)
-{
-	return ((string[0] != '[') && (string[1] != '['));
-}
-
-static int doesnt_have_junk (char *string)
-{
-	return (isalpha (string[0]) || isalpha (string[1]) || ispunct (string[0]) || ispunct (string[1]));
-}
-
 char st_cleantext (unsigned char c)
 {
 	switch (c)
@@ -317,33 +290,6 @@ static int cache_has_section (int section)
 	return 0;
 }
 
-static void st_add_to_cache (int section, char *title, long filepos)
-{
-	struct ency_titles *temp_cache=NULL, *curr=NULL;
-
-	temp_cache = malloc (sizeof (struct ency_titles));
-	if (!temp_cache) return;
-
-	temp_cache->title = strdup (title);
-	temp_cache->text = NULL;
-	temp_cache->fmt = NULL;
-	temp_cache->next = NULL;
-	temp_cache->section = section;
-	temp_cache->filepos = filepos;
-
-	curr = cache_last;
-
-	if (!curr)
-	{
-		cache_last = cache = temp_cache;
-		return;
-	}
-
-	cache_last = curr->next = temp_cache;
-
-	return;
-}
-
 static void add_to_table (struct st_table *list, int section)
 {
 	struct st_table *curr=NULL;
@@ -427,7 +373,7 @@ static void add_to_captions (struct st_caption *list, int section)
 /* file stuff */
 void st_force_unknown_file (int true)
 {
-	force_unknown = true;
+/*	force_unknown = true; */
 }
 
 int st_set_filename (char *filename)
@@ -1069,173 +1015,19 @@ static struct st_table *st_get_video_table (int section, int reverse)
 	return (root_tbl);
 }
 
-static void check_for_captions (FILE *input)
-{
-	char c=0;
-	char fnbase[9]="        ";
-	char temp[9] = "        ";
-	long found_at;
-
-	found_at = ftell (input);
-
-	fread (fnbase, 8, 1, input);
-	st_cleanstring (fnbase);
-
-	if (is_all_ascii (fnbase) && ends_in_quote (fnbase, 7) && ends_in_number (fnbase, 6))
-	{
-		if (fnbase[1] == '\"')
-			fseek (input, found_at + 2, SEEK_SET);
-
-		c = getc (input);
-
-		if ((c == ':') || ((c == ' ') && (getc(input) == ':')))
-		{
-			fread (temp, 8, 1, input);
-			if (not_embedding_bracket(temp))
-			{
-				if (doesnt_have_junk(temp))
-				{
-					*strchr (fnbase, '\"') = 0;
-
-					fseek (input, found_at, SEEK_SET);
-					c=0;
-					while ((c != ']') && (c != '\"'))
-						c = getc (input);
-					if (c == ']')
-						return;
-					while ((c = getc (input)) != '\"')
-						;
-					while ((c = getc (input)) != '\"')
-						;
-					while ((c = getc (input)) != '\"')
-						;
-
-					fread (temp, 8, 1, input);
-					if (!is_all_ascii (temp))
-						return;
-					if (!ends_in_quote (temp, 7))
-						return;
-					if (!ends_in_number (temp, 6))
-						return;
-
-					fseek (input, (found_at > 2) ? (found_at - 2) : found_at, SEEK_SET);
-					add_to_captions (read_captions (input, NULL, ST_SECT_PCPT), ST_SECT_PCPT);
-					return;
-				}
-			}
-		}
-	}
-	fseek (input, found_at, SEEK_SET);
-}
-
-static int check_for_table (FILE *input)
-{
-	char c=0;
-	char fnbase[8]="       ";
-	char temp[8] = "       ";
-	long found_at;
-
-	found_at = ftell (input);
-
-	fread (fnbase, 7, 1, input);
-	st_cleanstring (fnbase);
-
-	if (is_all_ascii (fnbase) && ends_in_quote (fnbase, 6))
-	{
-		if (fnbase[1] == '\"')
-			fseek (input, found_at + 2, SEEK_SET);
-
-		if (getc (input) == ':')
-		{
-			fread (temp, 7, 1, input);
-			if (not_embedding_bracket(temp))
-			{
-				if (doesnt_have_junk(temp))
-				{
-					fseek (input, found_at, SEEK_SET);
-					while ((c != ']') && (c != '\"'))
-						c = getc (input);
-					if (c == ']')
-						return 0;
-					while ((c = getc (input)) != '\"')
-						;
-					while ((c = getc (input)) != '\"')
-						;
-					while ((c = getc (input)) != '\"')
-						;
-
-					fread (temp, 7, 1, input);
-					if (!is_all_ascii (temp))
-						return 0;
-					if (!ends_in_quote (temp, 6))
-						return 0;
-
-					*strchr (fnbase, '\"') = 0;
-
-					fseek (input, (found_at > 2) ? (found_at - 2) : found_at, SEEK_SET);
-					add_to_table (read_table (input, NULL), ST_SECT_PTBL);
-
-					return 1;
-				}
-			}
-		}
-	}
-	fseek (input, found_at, SEEK_SET);
-	return 0;
-}
-
-static void get_unknown_tables (FILE *input)
-{
-	unsigned char c=0, old_c=0, old_old_c=0;
-
-	while (!feof(input))
-	{
-		c = getc(input);
-		if ((old_c == '[') && (old_old_c != 0x20))
-		{
-			if (c == '\"')
-			{
-				if (!check_for_table(input))
-					check_for_captions(input);
-			} else if (c == '3')
-			{
-				if ((getc (input) == '9') && (getc (input) == '5') && (getc (input) == ':'))
-				{
-					fseek (input, 0x21, SEEK_CUR);
-					if (getc (input) == '\"')
-						check_for_table(input);
-				}
-			}
-		}
-		old_old_c = old_c;
-		old_c = c;
-	}
-}
-
 int st_load_media (void)
 {
 	/*
 	 * Get the table & captions (if we don't already have them)
 	 */
-	if (st_file_type != ST_FILE_UNKNOWN) {
-		if (!st_ptbls)
-			st_ptbls = st_get_table ();
-		if (!st_pcpts)
-			st_pcpts = st_get_captions (ST_SECT_PCPT);
-		if (!st_vtbls)
-			st_vtbls = st_get_video_table (ST_SECT_VTBL, 0);
-		if (!st_vcpts)
-			st_vcpts = st_get_captions (ST_SECT_VCPT);
-	} else
-	{
-		curr = 5;
-		set_starts_at = 0;
-		
-		if (!st_open())
-			return 0;
-		get_unknown_tables (inp);
-		st_close_file ();
-	}
+	if (!st_ptbls)
+		st_ptbls = st_get_table ();
+	if (!st_pcpts)
+		st_pcpts = st_get_captions (ST_SECT_PCPT);
+	if (!st_vtbls)
+		st_vtbls = st_get_video_table (ST_SECT_VTBL, 0);
+	if (!st_vcpts)
+		st_vcpts = st_get_captions (ST_SECT_VCPT);
 
 	return (1);
 }
@@ -1347,81 +1139,6 @@ static int check_match (char *search_string, char *title, int exact)
 	}
 	return found;
 }
-
-inline int st_find_start (FILE * input)
-{
-	unsigned char c = 0, old_c = 0, old_old_c = 0, old_old_old_c = 0;
-	unsigned char temp;
-
-	int keep_going = 1;
-	while (keep_going && !(feof (input)))
-	{
-		if ((c = getc (input)) == '1')
-		{
-			switch (old_c)
-			{
-			case '~':
-				if ((old_old_c == 0xd) || ((!old_old_c) && (old_old_old_c != 0x3a)))
-				{
-					keep_going = 0;
-					fseek (input, -1, SEEK_CUR);
-				}
-				break;
-			case 0x16:
-				if ((old_old_c == 0) && (old_old_old_c != 0xFC))
-				{
-					temp = getc (input);
-					if ((temp != 0xff) && (temp != 0) && (temp != '.'))
-						ungetc (temp, input);
-					else
-						break;
-					keep_going = 0;
-					fseek (input, -1, SEEK_CUR);
-				}
-				break;
-			case '@':
-				if (((old_old_c == 0x16) && (old_old_old_c == 0)) || ((old_old_c == '~') && (old_old_old_c == 0x0d)))
-				{
-					keep_going = 0;
-					fseek (input, -2, SEEK_CUR);
-				}
-				break;
-			case 0xE2:
-				if (old_old_c)
-				{
-					keep_going = 0;
-					fseek (input, -1, SEEK_CUR);
-				}
-			}
-		} else if (c == 'D')
-		{
-			if ((old_old_old_c == 'B') && (old_old_c == 'I') && (old_c == 'T'))
-				fseek (input, 8, SEEK_CUR);
-		} else if (c == 0x0c)
-		{
-			if ((!old_old_old_c) && (!old_old_c) && (!old_c))
-				fseek (input, 6, SEEK_CUR);
-		}
-
-		if (((c == 'S') && (old_c == 'T') && (old_old_c == 'X') && (old_old_old_c == 'T')) || ((c == 'T') && (old_c == 'X') && (old_old_c == 'T') && (old_old_old_c == 'S')))
-		{
-			fseek (input, 16, SEEK_CUR);
-			return 1;
-		}
-		if ((c != '1') && isdigit (c) && (old_c == '~'))
-		{
-			ungetc (c, inp);
-			return 1;
-		}
-
-		old_old_old_c = old_old_c;
-		old_old_c = old_c;
-		old_c = c;
-	}
-
-	return (feof (input) ? 0 : 1);
-}
-
 
 static struct st_ency_formatting *st_return_fmt (void)
 {
@@ -2157,160 +1874,6 @@ static struct ency_titles *get_entry_by_id (int block_id, int id, int options)
 	return NULL;
 }
 
-static struct ency_titles *st_find_in_cache (int section, char *search_string, int exact, int get_body)
-{
-	struct ency_titles *mine, *r_r = NULL, *r_c = NULL, *r_l = NULL;
-
-	mine = cache;
-
-	while (mine)
-	{
-		if (mine->section == section)
-			if (check_match (search_string, mine->title, exact))
-			{
-				r_l = r_c;
-				if (get_body)
-					r_c = st_get_title_at (mine->filepos);
-				else
-					st_copy_part_entry (&r_c, mine);
-				if (r_l)
-					r_l->next = r_c;
-				if (!r_r)
-					r_r = r_c;
-			}
-		mine = mine->next;
-	}
-	return (r_r);
-}
-
-static int st_guess_section (char *title, char *text, int last_section)
-{
-	char *episode_starts[7] =
-	{
-		"Original Series",
-		"Next Generation",
-		"Deep Space Nine",
-		"Voyager episode",
-		"No episodes",
-		"There are no episodes",
-		"There were no episodes"
-	};
-	int i;
-
-	/* Episodes */
-	if ((*title == '\"') || (strlen (title) == 1))
-		for (i = 0; i < 5; i++)
-		{
-			if (!strncmp (text, episode_starts[i], strlen (episode_starts[i])))
-				return 1;
-			if (!strncmp (text + 1, episode_starts[i], strlen (episode_starts[i])))
-				return 1;
-		}
-	if ((!strncmp (title, "Star Trek", 9)) && (last_section == 1))
-	return 1;
-
-	/* Chronology */
-	if (*title == '\"')
-		return 2;
-	if (!strncmp (text, "\n\n", 2))
-		return 2;
-	if ((!strncmp (title, "Star Trek", 9)) && (last_section == 2))
-		return 2;
-
-	/* Encyclopedia */
-	return 0;
-}
-
-
-static struct ency_titles *st_find_unknown (int section, char *search_string, int exact, int options)
-{
-	long this_one_starts_at = 0;
-	struct ency_titles *curr_title = NULL;
-	char last_start=0;
-	char *new_title=NULL;
-	char last_year[5];
-	int last_section=-1;
-	int prepend_year=0, append_series=0, c=0;
-
-	FILE *input_temp;
-
-	prepend_year = (st_fileinfo_get_data (st_file_type, prepend_year) ? 1 : 0);
-	append_series = (st_fileinfo_get_data (st_file_type, append_series) ? 1 : 0);
-
-	if ((cache == NULL) && st_open ())
-	{
-		while (st_find_start (inp))
-		{
-			/* st_get_title_at opens the file again, so... */
-			input_temp = inp;
-			curr_title = st_read_title_at (this_one_starts_at = ftell (input_temp), ST_OPT_NO_FMT | ST_OPT_RETURN_BODY | ST_OPT_TEXTLEN_MAX32);
-			inp = input_temp;
-			getc (inp);	/* make sure we dont get the same entry again */
-
-			/* determine what section its in */
-			if ((!last_start) || (last_start > tolower (*curr_title->title)) || ((last_start == '\"') && (*curr_title->title != '\"')))
-				last_section = st_guess_section (curr_title->title, curr_title->text, last_section);
-			last_start = *curr_title->title;
-
-			/* some chronology entries need years prepended */
-			if ((last_section == 2) && prepend_year)
-			{
-				/* if it's a year, save it */
-				if (strlen (curr_title->title) == 4)
-				{
-					strcpy (last_year, curr_title->title);
-				}
-				/* if it's an episode or a movie, add the year */
-				if ((*curr_title->title == '\"') || (!strncmp (curr_title->title, "Star Trek", 9)))
-				{
-					new_title = (char *) malloc (strlen (curr_title->title) + 6);
-					sprintf (new_title, "%s %s", last_year, curr_title->title);
-					free (curr_title->title);
-					curr_title->title = new_title;
-				}
-			}
-
-			/* and episode entries need (TOS) etc. appended */
-			if ((curr == 1) && append_series)
-			{
-				getc (inp);
-				c = getc (inp);
-				if (c == 0x0D)
-				{
-					c = getc (inp);
-					fseek (inp, -1, SEEK_CUR);
-				}
-				fseek (inp, -2, SEEK_CUR);
-				new_title = (char *) malloc (strlen (curr_title->title) + 7);
-				switch (c)
-				{
-				case 'O':
-					sprintf (new_title, "%s (TOS)", curr_title->title);
-					break;
-				case 'N':
-					sprintf (new_title, "%s (TNG)", curr_title->title);
-					break;
-				case 'D':
-					sprintf (new_title, "%s (DS9)", curr_title->title);
-					break;
-				case 'V':
-					sprintf (new_title, "%s (VGR)", curr_title->title);
-					break;
-				default:
-					sprintf (new_title, "%s", curr_title->title);
-					break;
-				}
-				free (curr_title->title);
-				curr_title->title = new_title;
-			}
-
-			/* build the cached version of this entry */
-			st_add_to_cache (last_section,curr_title->title,this_one_starts_at);
-		}
-	}
-	return (st_find_in_cache (section, search_string, exact, 1));
-}
-
 static struct ency_titles *st_find_in_file (int file, int section, char *search_string, int exact, int options)
 {
 	struct ency_titles *root = NULL, *curr = NULL;
@@ -2753,13 +2316,8 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 	case ST_SECT_CHRO:
 		if (options & ST_OPT_FT)
 			return (st_find_fulltext (search_string, section, options));
-		if (cache_has_section(section))
-			return (st_find_in_cache (section, search_string, exact, st_return_body ? 1 : 0));
-		else
-			if (st_file_type == ST_FILE_UNKNOWN)
-				return (st_find_unknown (section, search_string, exact, options));
-			else
-				return (st_find_in_file (st_file_type, section, search_string, exact, options));
+
+		return (st_find_in_file (st_file_type, section, search_string, exact, options));
 	default:
 		return (NULL);
 	}
