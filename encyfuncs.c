@@ -194,6 +194,75 @@ static char *st_lcase (char *mcase)
   return (lcase);
 }
 
+int st_free_fmt (struct st_ency_formatting *fmt)
+{
+  if (fmt)
+    free (fmt);
+}
+
+int st_free_fmt_tree (struct st_ency_formatting *fmt)
+{
+  struct st_ency_formatting *last=NULL;
+  while (fmt) {
+    last = fmt;
+    fmt = fmt->next;
+    free (last);
+  }
+  return (1);
+}
+
+int st_free_fmt_and_advance (struct st_ency_formatting **fmt)
+{
+  struct st_ency_formatting *last;
+  if (fmt)
+    if (*fmt)
+    {
+      last=*fmt;
+      *fmt=(*fmt)->next;
+      free (last);
+    }
+  return (1);
+}
+
+int st_free_entry (struct ency_titles *entry)
+{
+  if (entry) {
+
+    if (entry->title)
+      free (entry->title);
+    if (entry->text)
+      free (entry->text);
+    if (entry->fmt)
+      st_free_fmt_tree (entry->fmt);
+
+  free (entry);
+  }
+  return (1);
+}
+
+int st_free_entry_tree (struct ency_titles *entry)
+{
+  struct ency_titles *last;
+
+  while (entry) {
+    last=entry;
+    entry = entry->next;
+    st_free_entry (last);
+  }
+  return (1);
+}
+
+int st_free_entry_and_advance (struct ency_titles **entry)
+{
+  struct ency_titles *last;
+
+  last=*entry;
+  *entry = (*entry)->next;
+  st_free_entry (last);
+
+  return (1);
+}
+
 
 /* file stuff */
 int st_set_filename (char *filename)
@@ -874,7 +943,6 @@ static int st_find_start (void)
 static struct st_ency_formatting *st_return_fmt (void)
 {
   struct st_ency_formatting *root_fmt = NULL, *last_fmt = NULL, *curr_fmt = NULL;
-  int first_time = 1;
   char c = 0;
   int i = 0;
 
@@ -883,16 +951,16 @@ static struct st_ency_formatting *st_return_fmt (void)
   while (c != '@') {
     if (st_return_body) {
       curr_fmt = (struct st_ency_formatting *) malloc (sizeof (struct st_ency_formatting));
+      curr_fmt->firstword = curr_fmt->words = curr_fmt->bold = 0;
+      curr_fmt->italic = curr_fmt->underline = 0;
+      curr_fmt->next = NULL;
 
       if (curr_fmt == NULL) {
 	printf ("Memory allocation failed\n");
 	exit (1);
       }
     }
-    if (first_time)
-      root_fmt = curr_fmt;
 
-    first_time = 0;
     i = 0;
 
     while (c != ':') {
@@ -937,6 +1005,8 @@ static struct st_ency_formatting *st_return_fmt (void)
     c = getc (inp);
 
     if (st_return_body) {
+      if (!root_fmt)
+	root_fmt = curr_fmt;
       curr_fmt->next = NULL;
       if (last_fmt != NULL)
 	last_fmt->next = curr_fmt;
