@@ -263,6 +263,11 @@ int identify_section (char *section)
 		free (temp);
 		return 9;
 	}
+	if (!strncmp (temp, "ency_", 5))
+	{
+		free (temp);
+		return 9;
+	}
 
 	free (temp);
 	return 0;
