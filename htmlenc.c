@@ -198,18 +198,21 @@ int main (int argc, char *argv[])
 	fprintf (out, "<html>\n");
 	fprintf (out, "<head><title>Search results for: %s</title></head>", search_string);
 	fprintf (out, "<h1>Star Trek %s</h1>\n", st_fileinfo_get_name (ST_FILE_CURR));
-	fprintf (out, "You searched for <b>%s</b>.<br>\n", search_string);
+	fprintf (out, "You searched for <b>%s</b>%s.<br>\n", search_string, (options & ST_OPT_FT) ? " in full-text mode" : "");
 	fprintf (out, "<hr><b>Found:</b><br>\n");
 
 	full_body = thingy;
 	while (full_body)
 	{
-		fprintf (out, "<a href=\"#%d\">%s</a><br>\n", count++, full_body->title);
+		if (options & ST_OPT_FT)
+			fprintf (out, "<a href=\"#%d\">%s</a> [%.0f%%]<br>\n", count++, full_body->name, full_body->score);
+		else
+			fprintf (out, "<a href=\"#%d\">%s</a><br>\n", count++, full_body->name);
 		full_body = full_body->next;
 	}
 
 	count = 0;
-	if ((thingy != NULL) && (thingy->title != NULL))
+	if ((thingy != NULL) && (thingy->name != NULL))
 	{
 		do
 		{
