@@ -37,7 +37,6 @@ static char *ency_filename = NULL;
 int st_return_body = 1;
 int st_ignore_case = 0;
 static int force_unknown = 0;
-static int upto = 0;
 static int st_file_type = 0;
 
 /* for pictures */
@@ -432,15 +431,12 @@ static int st_open ()
     case 2:                /* Epis */
     case 3:                /* Chro */
     case 4:                /* table */
-        break;
+		break;
     case 5:                /* Set value */
         curr_starts_at = set_starts_at;
         break;
     case 6:                /* Captions */
-        break;
     case 7:                /* video table */
-        curr_starts_at = st_video_table_starts_at[upto];
-        break;
     case 8:                /* video captions */
         break;
     default:
@@ -554,7 +550,7 @@ char *st_autofind (int st_file_version, char *base_dir)
 
 /* media stuff */
 
-static struct st_table *st_get_table (int section)
+static struct st_table *st_get_table ()
 {
   int i,z;
   struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
@@ -725,28 +721,21 @@ static struct st_table *st_get_video_table (void)
 {
   int i = 0;
   struct st_table *root_tbl = NULL, *curr_tbl = NULL, *last_tbl = NULL;
+  struct st_part *part;
   char c=0;
-  int text_size = 0;
-  int level, commas;
+  int text_size;
+  int level, commas, count=0;
   char *temp_text = NULL;
   
-  upto = 0;
-
   curr = 7;
 
-  for (i = 0; i < st_file_type; i++) {
-    while (st_video_table_starts_at[upto] != 0)
-      upto++;
-    upto++;
-  }
-
-  if (st_video_table_starts_at[upto] != 0x1) {
-    while (st_video_table_starts_at[upto] != 0) {
+    while ((part = get_part (st_file_type, ST_SECT_VTBL, count))) {
+    	curr_starts_at = part->start;
       if (!st_open ()) {
         return (NULL);
       } else {
         
-        for (i = 0; i < st_video_table_lastone[upto]; i++) {
+        for (i = 0; i < part->count; i++) {
           c=0;
           while (c != ']') {     /* main loop */
             
@@ -823,10 +812,9 @@ static struct st_table *st_get_video_table (void)
         }
       
         st_close_file ();
-        upto++;
+        count++;
       }
     }
-  }
   return (root_tbl);
 }
 
@@ -836,7 +824,7 @@ int st_load_media (void)
    * Get the table & captions (if we don't already have them)
    */
   if (!st_ptbls)
-    st_ptbls = st_get_table (ST_SECT_PTBL);
+    st_ptbls = st_get_table ();
   if (!st_pcpts)
     st_pcpts = st_get_captions (ST_SECT_PCPT);
   if (!st_vtbls)
