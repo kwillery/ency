@@ -111,7 +111,6 @@ static void identify_section (struct st_part *part)
 
 		if (strstr (temp, "_epissub"))
 			part->section = 3;
-		return;
 	}
 
 	/* Look Up - ptbl etc. */
@@ -206,6 +205,7 @@ static void process_cast_block (FILE *inp, long size)
 				{
 //					printf (" - ends early!!");
 					tmp->name = strdup ("it ended early!");
+					free (block);
 					return;
 				}
 		tmp->name = (char *) malloc (sizeof (char) * *t + 1);
@@ -218,6 +218,7 @@ static void process_cast_block (FILE *inp, long size)
 				{
 //					printf (" - ends early!!");
 					tmp->name = strdup ("it ended early!");
+					free (block);
 					return;
 				}
 		tmp->name = (char *) malloc (sizeof (char) * *t + 1);
@@ -230,6 +231,7 @@ static void process_cast_block (FILE *inp, long size)
 				{
 //					printf (" - ends early!!");
 					tmp->name = strdup ("it ended early!");
+					free (block);
 					return;
 				}
 		tmp->name = (char *) malloc (sizeof (char) * *t + 1);
@@ -242,6 +244,7 @@ static void process_cast_block (FILE *inp, long size)
 				{
 //					printf (" - ends early!!");
 					tmp->name = strdup ("it ended early!");
+					free (block);
 					return;
 				}
 		tmp->name = (char *) malloc (sizeof (char) * *t + 1);
@@ -254,6 +257,7 @@ static void process_cast_block (FILE *inp, long size)
 				{
 //					printf (" - ends early!!");
 					tmp->name = strdup ("it ended early!");
+					free (block);
 					return;
 				}
 		tmp->name = (char *) malloc (sizeof (char) * *t + 1);

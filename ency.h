@@ -59,8 +59,6 @@ typedef enum
 	picture_dir,
 	video_dir,
 	append_char,
-	prepend_year,
-	append_series
 } st_filename_type;
 
 typedef enum

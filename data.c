@@ -47,8 +47,70 @@ static struct st_data_filenode *get_filenode (int file_type)
 	return tmp;
 }
 
+void free_part (struct st_part *part)
+{
+	if (part->name)
+		free (part->name);
+	if (part->dir)
+		free (part->dir);
+	free (part);
+}
+
+void free_exception (struct st_data_exception *ex)
+{
+	if (ex->type)
+		free (ex->type);
+	if (ex->from)
+		free (ex->from);
+	if (ex->to)
+		free (ex->to);
+	free (ex);
+}
+
+void free_data_filenode (struct st_data_filenode *file)
+{
+	struct st_part *part,*tmp_part;
+	struct st_data_exception *ex, *tmp_ex;
+	part = file->parts;
+	while (part)
+	{
+		tmp_part = part;
+		part = part->next;
+		free_part (tmp_part);
+	}
+	ex = file->exceptions;
+	while (ex)
+	{
+		tmp_ex = ex;
+		ex = ex->next;
+		free_exception (tmp_ex);
+	}
+	if (file->name)
+		free (file->name);
+	if (file->mainfile)
+		free (file->mainfile);
+	if (file->datadir)
+		free (file->datadir);
+	if (file->photodir)
+		free (file->photodir);
+	if (file->videodir)
+		free (file->videodir);
+	if (file->fingerprint)
+		free (file->fingerprint);
+	free (file);
+
+}
+
 void st_data_clear (void)
 {
+	struct st_data_filenode *tmp=NULL;
+
+	while (files)
+	{
+		tmp = files;
+		files = files->next;
+		free_data_filenode (tmp);
+	}
 }
 
 static xmlDocPtr open_xml_file (char *filename)
@@ -125,6 +187,7 @@ struct st_part *new_part()
 
 	if (part)
 	{
+		part->name = NULL;
 		part->type = 0;
 		part->section = 0;
 		part->start = 0;
@@ -282,15 +345,15 @@ int load_xmlfile_info (char *filename)
 			while (dnode)
 			{
 				if (!strcmp (dnode->name, "name"))
-					new_node->name = strdup_if_valid (xmlNodeGetContent (dnode));
+					new_node->name = xmlNodeGetContent (dnode);
 				else if (!strcmp (dnode->name, "mainfile"))
-					new_node->mainfile = strdup_if_valid (xmlNodeGetContent (dnode));
+					new_node->mainfile = xmlNodeGetContent (dnode);
 				else if (!strcmp (dnode->name, "datadir"))
-					new_node->datadir = strdup_if_valid (xmlNodeGetContent (dnode));
+					new_node->datadir = xmlNodeGetContent (dnode);
 				else if (!strcmp (dnode->name, "photodir"))
-					new_node->photodir = strdup_if_valid (xmlNodeGetContent (dnode));
+					new_node->photodir = xmlNodeGetContent (dnode);
 				else if (!strcmp (dnode->name, "videodir"))
-					new_node->videodir = strdup_if_valid (xmlNodeGetContent (dnode));
+					new_node->videodir = xmlNodeGetContent (dnode);
 				else if (!strcmp (dnode->name, "videolist") || !strcmp (dnode->name, "ptable") || !strcmp (dnode->name, "pcaption") || !strcmp (dnode->name, "vtable") || !strcmp (dnode->name, "vcaption"))
 				{
 					curr_parts = new_part_from_xmlnode (dnode);
@@ -301,7 +364,7 @@ int load_xmlfile_info (char *filename)
 					last_parts = curr_parts;
 				}
 				else if (!strcmp (dnode->name, "fingerprint"))
-					new_node->fingerprint = strdup_if_valid (xmlNodeGetContent (dnode));
+					new_node->fingerprint = xmlNodeGetContent (dnode);
 				else if (!strcmp (dnode->name, "append_char"))
 					new_node->append_char = 1;
 				else if (!strcmp (dnode->name, "section"))
@@ -350,7 +413,7 @@ int load_xmlfile_info (char *filename)
 			root_ex = last_ex = curr_ex = NULL;
 			fnode = fnode->next;
 		}
-
+		xmlFreeDoc (xmlroot);
 		return 1;
 	}	
 

@@ -229,7 +229,6 @@ void st_free_entry (struct ency_titles *entry)
 {
 	if (entry)
 	{
-
 		if (entry->title)
 			free (entry->title);
 		if (entry->text)
@@ -286,6 +285,7 @@ static void st_clear_cache ()
 	st_free_entry_tree (cache);
 	cache = NULL;
 	cache_last = NULL;
+	cache_quick = NULL;
 }
 
 /* file stuff */
