@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <getopt.h>
 #include "ency.h"
 
 extern int st_ignore_case;
@@ -33,10 +34,9 @@ extern int optind;
 
 void print_usage (void)
 {
-  printf (" findenc - Searches the Star Trek encyclopedias\n http://users.bigpond.com/mibus/ency/\n Usage: findenc -[c|e]\n  -c: searches chronology\n  -e: searches episodes\n   (default: search encyclopedia)\n  -m: displays associated media\n");
-  exit(0);
+  printf ("findenc - Searches the Star Trek encyclopedias\nUsage: findenc [OPTION...] [search string]\n\n  --chronology\t(-c)\tSearches the chronology section\n  --episode\t(-e)\tSearches the episode guide section\n   (Default: Search the encyclopedia section)\n  --media\t(-m)\tDisplays associated media\n");
+  exit(1);
 }
-
 
 int main (int argc, char *argv[])
 {
@@ -48,9 +48,16 @@ int main (int argc, char *argv[])
   char base_path[] = "/cdrom"; /* where the media dirs etc. are */
   int use_media = 0;
   int section = ST_SECT_ENCY;
+  static struct option long_opts[] = {
+    {"help", 0, 0, 'h'},
+    {"media", 0, 0, 'm'},
+    {"episode", 0, 0, 'e'},
+    {"chronology", 0, 0 ,'c'},
+    {0, 0, 0, 0}};
+
   strcpy (search_string, "");
 
-  while ((i = getopt (argc, argv, "echm")) != EOF) {
+  while ((i = getopt_long (argc, argv, "echm", long_opts, 0)) != EOF) {
     switch (i)
       {
       case 'm':
@@ -61,6 +68,9 @@ int main (int argc, char *argv[])
 	break;
       case 'c':
 	section = ST_SECT_CHRO;
+	break;
+      case 'h':
+	print_usage ();
 	break;
       default:
 	print_usage ();
