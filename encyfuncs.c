@@ -15,7 +15,7 @@
 /*                                                                           */
 /* You should have received a copy of the GNU General Public License         */
 /* along with this program; if not, write to the Free Software               */
-/* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. */
+/* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.*/
 /*                                                                           */
 /* Author:                                                                   */
 /*      Email   mibus@bigpond.com                                            */
@@ -400,7 +400,8 @@ static struct st_part *get_part (int file, int section, int number)
 	}
 
 	/* if there is one there, return the part data */
-	if (starts[tmp])
+	/* a '1' means 'Reserved' ATM */
+	if (starts[tmp] > 1)
 	{
 		ret = (struct st_part *) malloc (sizeof (struct st_part));
 		if (!ret)

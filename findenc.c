@@ -34,116 +34,126 @@ extern int optind;
 
 void print_usage (void)
 {
-  printf ("findenc - Searches the Star Trek encyclopedias\nUsage: findenc [OPTION...] [search string]\n\n  --chronology\t(-c)\tSearches the chronology section\n  --episode\t(-e)\tSearches the episode guide section\n   (Default: Search the encyclopedia section)\n  --media\t(-m)\tDisplays associated media\n  --unknown\t(-u)\tOpens the data file even if it's not recognised\n");
-  exit(1);
+	printf ("findenc - Searches the Star Trek encyclopedias\nUsage: findenc [OPTION...] [search string]\n\n  --chronology\t(-c)\tSearches the chronology section\n  --episode\t(-e)\tSearches the episode guide section\n   (Default: Search the encyclopedia section)\n  --media\t(-m)\tDisplays associated media\n  --unknown\t(-u)\tOpens the data file even if it's not recognised\n");
+	exit (1);
 }
 
 int main (int argc, char *argv[])
 {
-  int i = 0;
-  char search_string[70];
-  char *temp_fn = NULL;
-  struct ency_titles *thingy = NULL;
-  struct st_media *media = NULL;
-  char base_path[] = "/cdrom"; /* where the media dirs etc. are */
-  int use_media = 0;
-  int section = ST_SECT_ENCY;
-  static struct option long_opts[] = {
-    {"help", 0, 0, 'h'},
-    {"media", 0, 0, 'm'},
-    {"episode", 0, 0, 'e'},
-    {"chronology", 0, 0 , 'c'},
-    {"unknown", 0, 0, 'u'},
-    {0, 0, 0, 0}};
+	int i = 0;
+	char search_string[70];
+	char *temp_fn = NULL;
+	struct ency_titles *thingy = NULL;
+	struct st_media *media = NULL;
+	char base_path[] = "/cdrom";	/* where the media dirs etc. are */
+	int use_media = 0;
+	int section = ST_SECT_ENCY;
+	static struct option long_opts[] =
+	{
+		{"help", 0, 0, 'h'},
+		{"media", 0, 0, 'm'},
+		{"episode", 0, 0, 'e'},
+		{"chronology", 0, 0, 'c'},
+		{"unknown", 0, 0, 'u'},
+		{0, 0, 0, 0}};
 
-  strcpy (search_string, "");
+	strcpy (search_string, "");
 
-  while ((i = getopt_long (argc, argv, "echmu", long_opts, 0)) != EOF) {
-    switch (i)
-      {
-      case 'm':
-	use_media = 1;
-	break;
-      case 'e':
-	section = ST_SECT_EPIS;
-	break;
-      case 'c':
-	section = ST_SECT_CHRO;
-	break;
-      case 'h':
-	print_usage ();
-	break;
-      case 'u':
-	st_force_unknown_file(1);
-	break;
-      default:
-	print_usage ();
-      }
-  }
+	while ((i = getopt_long (argc, argv, "echmu", long_opts, 0)) != EOF)
+	{
+		switch (i)
+		{
+		case 'm':
+			use_media = 1;
+			break;
+		case 'e':
+			section = ST_SECT_EPIS;
+			break;
+		case 'c':
+			section = ST_SECT_CHRO;
+			break;
+		case 'h':
+			print_usage ();
+			break;
+		case 'u':
+			st_force_unknown_file (1);
+			break;
+		default:
+			print_usage ();
+		}
+	}
 
-  /* run any ency init stuff */
-  if (!st_init ())
-  {
-    printf ("Error opening data file.\n");
-    exit (1);
-  }
+	/* run any ency init stuff */
+	if (!st_init ())
+	{
+		printf ("Error opening data file.\n");
+		exit (1);
+	}
 
 /* get the search string, one way or another */
-  if (argc > optind) {
-    strcpy (search_string, argv[optind]);
-  } else {
-    printf ("Enter search string :");
-    scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
-  }
-
-  /* tell ency to load the media lookup tables */
-  if (use_media)
-    st_load_media ();
-
-  /* if you want to manually set the filename
-   * st_set_filename ("/dose/trek/Reference/eg_tng.dxr");
-   */
-
-  thingy = st_find (search_string, section, ST_OPT_MATCH_SUBSTRING | ST_OPT_RETURN_BODY);
-
-  /*
-   * get from a certain point in the file...
-   * thingy = get_title_at (0x149310);
-   */
-
-  if ((thingy != NULL) && (thingy->title != NULL)) {
-    do {
-
-      /* print the returned text */
-      printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
-      
-      media = st_get_media(thingy->title);
-
-      if (media)
-      {
-	printf ("Associated media:\n");
-	for (i = 0; i < 5; i++)
-	  if (strlen (media->photos[i].file)) {   /* if there is photos #i */
-            temp_fn = st_format_filename (media->photos[i].file, base_path, 0);
-            printf ("%s: %s\n", temp_fn, media->photos[i].caption);
-	    free (temp_fn);
-	  }
-	if (strlen(media->video.file)) {
-	  temp_fn = st_format_filename (media->video.file, base_path, 1);
-          printf ("%s: %s\n", temp_fn, media->video.caption);
-          free (temp_fn);
+	if (argc > optind)
+	{
+		strcpy (search_string, argv[optind]);
 	}
-	free (media); media = NULL;
-      }
-      
-      st_free_entry_and_advance (&thingy);
-    }
-    while (thingy != NULL);
+	else
+	{
+		printf ("Enter search string :");
+		scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
+	}
 
-  } else
-    printf ("No matches\n");
-  st_unload_media ();
-  st_finish ();
-  return (0);
+	/* tell ency to load the media lookup tables */
+	if (use_media)
+		st_load_media ();
+
+	/* if you want to manually set the filename
+	 * st_set_filename ("/dose/trek/Reference/eg_tng.dxr");
+	 */
+
+	thingy = st_find (search_string, section, ST_OPT_MATCH_SUBSTRING | ST_OPT_RETURN_BODY);
+
+	/*
+	 * get from a certain point in the file...
+	 * thingy = get_title_at (0x149310);
+	 */
+
+	if ((thingy != NULL) && (thingy->title != NULL))
+	{
+		do
+		{
+
+			/* print the returned text */
+			printf ("\n%s\n\n%s\n\n", thingy->title, thingy->text);
+
+			media = st_get_media (thingy->title);
+
+			if (media)
+			{
+				printf ("Associated media:\n");
+				for (i = 0; i < 5; i++)
+					if (strlen (media->photos[i].file))
+					{	/* if there is photos #i */
+						temp_fn = st_format_filename (media->photos[i].file, base_path, 0);
+						printf ("%s: %s\n", temp_fn, media->photos[i].caption);
+						free (temp_fn);
+					}
+				if (strlen (media->video.file))
+				{
+					temp_fn = st_format_filename (media->video.file, base_path, 1);
+					printf ("%s: %s\n", temp_fn, media->video.caption);
+					free (temp_fn);
+				}
+				free (media);
+				media = NULL;
+			}
+
+			st_free_entry_and_advance (&thingy);
+		}
+		while (thingy != NULL);
+
+	}
+	else
+		printf ("No matches\n");
+	st_unload_media ();
+	st_finish ();
+	return (0);
 }
-

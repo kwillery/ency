@@ -11,8 +11,7 @@ FILE *inp;
 int tell = 0;
 long old_ftell;
 
-int
-guess_section (char *title, char *text, int last_section)
+int guess_section (char *title, char *text, int last_section)
 {
 	char *episode_starts[5] =
 	{
@@ -48,8 +47,7 @@ guess_section (char *title, char *text, int last_section)
 	return 0;
 }
 
-int
-main (int argc, char *argv[])
+int main (int argc, char *argv[])
 {
 	char *sections[3] =
 	{"Encylopedia", "Episodes", "Chronology"};
