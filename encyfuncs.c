@@ -1120,6 +1120,8 @@ static void st_add_to_cache (int section, char *title, long filepos)
 inline int st_find_start (FILE * input)
 {
 	unsigned char c = 0, old_c = 0, old_old_c = 0, old_old_old_c = 0;
+	unsigned char temp;
+
 	int keep_going = 1;
 	while (keep_going && !(feof (input)))
 	{
@@ -1128,15 +1130,20 @@ inline int st_find_start (FILE * input)
 			switch (old_c)
 			{
 			case '~':
-				if ((old_old_c == 0xd) || (!old_old_c))
+				if ((old_old_c == 0xd) || ((!old_old_c) && (old_old_old_c != 0x3a)))
 				{
 					keep_going = 0;
 					fseek (input, -2, SEEK_CUR);
 				}
 				break;
 			case 0x16:
-				if (old_old_c == 0)
+				if ((old_old_c == 0) && (old_old_old_c != 0xFC))
 				{
+					temp = getc (input);
+					if ((temp != 0xff) && (temp != 0))
+						ungetc (temp, input);
+					else
+						break;
 					keep_going = 0;
 					fseek (input, -1, SEEK_CUR);
 				}
@@ -1145,15 +1152,24 @@ inline int st_find_start (FILE * input)
 				if ((old_old_c == 0x16) && (old_old_old_c == 0))
 				{
 					keep_going = 0;
-					fseek (input, -1, SEEK_CUR);
+					fseek (input, -2, SEEK_CUR);
 				}
 				break;
 			}
+		} else if (c == 'D')
+		{
+			if ((old_old_old_c == 'B') && (old_old_c == 'I') && (old_c == 'T'))
+				fseek (input, 8, SEEK_CUR);
+		} else if (c == 0x0c)
+		{
+			if ((!old_old_old_c) && (!old_old_c) && (!old_c))
+				fseek (input, 6, SEEK_CUR);
 		}
 		old_old_old_c = old_old_c;
 		old_old_c = old_c;
 		old_c = c;
 	}
+
 	return (feof (input) ? 0 : 1);
 }
 
