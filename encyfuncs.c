@@ -2488,13 +2488,139 @@ void load_ft_list (int section)
 	ftlist = root;
 }
 
+struct entry_scores
+{
+	char fnbase[6];
+	int score;
+	struct entry_scores *next;
+};
+
+struct entry_scores *find_words (struct entry_scores *root, char *words, struct st_ftlist *fl)
+{
+	struct entry_scores *scores=NULL, *curr=NULL, *last=NULL;
+	struct st_wl *wl;
+	char *match=NULL;
+
+	if (!words)
+		return NULL;
+
+	scores = root;
+
+	if ((last = scores))
+		while (last->next)
+			last = last->next;
+
+	while (fl)
+	{
+		if (fl->word)
+			match = fl->word;
+
+		if (!strcasecmp (match, words))
+		{
+			if (!scores)
+			{
+				scores = last = curr = (struct entry_scores *) malloc (sizeof (struct entry_scores));
+				strcpy (curr->fnbase, fl->fnbase);
+
+				curr->score = 5;
+				wl = fl->words;
+				while (wl)
+				{
+					curr->score++;
+					wl = wl->next;
+				}
+				curr->next = NULL;
+			} else
+			{
+				curr = scores;
+				while (curr)
+				{
+					if (!strcasecmp (curr->fnbase, fl->fnbase))
+					{
+						curr->score += 5;
+
+						wl = fl->words;
+						while (wl)
+						{
+							curr->score++;
+							wl = wl->next;
+						}
+						break;
+					}
+					curr = curr->next;
+				}
+				if (!curr)
+				{
+					last->next = curr = (struct entry_scores *) malloc (sizeof (struct entry_scores));
+					strcpy (curr->fnbase, fl->fnbase);
+					curr->score = 5;
+
+					wl = fl->words;
+					while (wl)
+					{
+						curr->score++;
+						wl = wl->next;
+					}
+
+					curr->next = NULL;
+					last = curr;
+				}
+
+			}
+
+		}
+		fl = fl->next;
+	}
+
+
+	return scores;
+}
+
+struct entry_scores *sort_scores (struct entry_scores *scores)
+{
+	struct entry_scores *curr=NULL, *last=NULL, *last_last=NULL, *tmp=NULL;
+	int needs_sorting=1;
+
+	if (!scores)
+		return NULL;
+
+	while (needs_sorting)
+	{
+		needs_sorting = 0;
+		curr = scores->next;
+		last = scores;
+		last_last = NULL;
+		while (curr)
+		{
+			if (last->score < curr->score)
+			{
+				if (last_last)
+					last_last->next = curr;
+				else
+					scores = curr;
+				last->next = curr->next;
+				curr->next = last;
+				tmp = curr;
+				curr = last;
+				last = tmp;
+				needs_sorting = 1;
+			}
+
+			last_last = last;
+			last = curr;
+			curr = curr->next;
+		}
+	}
+	return scores;
+}
+
 struct ency_titles *st_find_fulltext (char *search_string, int section, int options)
 {
-	struct st_ftlist *fl;
-	struct st_wl *wl;
 	struct ency_titles *root=NULL, *curr=NULL;
 	struct st_table *tbl=NULL;
-	char *last=NULL, *title;
+	struct entry_scores *scores=NULL, *last_score;
+	char *title;
+	char single_word[64];
 	int bad;
 
 	if (!ft_list_has_section (section))
@@ -2510,46 +2636,52 @@ struct ency_titles *st_find_fulltext (char *search_string, int section, int opti
 	if (!load_entry_lists ())
 		return NULL;
 
-	fl = ftlist;
-
 	if (options & ST_OPT_NO_CACHE)
 		options -= ST_OPT_NO_CACHE;
 	if (options & ST_OPT_MATCH_SUBSTRING)
 		options -= ST_OPT_MATCH_SUBSTRING;
 	options -= ST_OPT_FT;
 
-	while (fl)
+	while (strlen (search_string))
 	{
-		if (fl->word)
-			last = fl->word;
+		sscanf (search_string, "%[a-zA-Z0-9.\"\'()-]", single_word);
+		search_string += strlen (single_word);
+		while (isblank (*search_string))
+			search_string++;
+		scores = find_words (scores, single_word, ftlist);
+	}
 
-		if (!strcasecmp (last, search_string))
+	scores = sort_scores (scores);
+
+	while (scores)
+	{
+		title = get_title (st_ptbls, scores->fnbase);
+		if (title)
 		{
-			title = get_title (st_ptbls, fl->fnbase);
-			if (title)
+			tbl = get_table_entry_by_title (entrylist_head, title);
+			bad = 0;
+			if (curr)
 			{
-				tbl = get_table_entry_by_title (entrylist_head, title);
-				bad = 0;
-				if (curr)
-				{
-					curr->next = get_entry_by_id (tbl->block_id, tbl->id, options);
-					if (curr->next)
-						curr = curr->next;
-					else
-						bad = 1;
-				}
+				curr->next = get_entry_by_id (tbl->block_id, tbl->id, options);
+				if (curr->next)
+					curr = curr->next;
 				else
-					curr = root = get_entry_by_id (tbl->block_id, tbl->id, options);
+					bad = 1;
+			}
+			else
+				curr = root = get_entry_by_id (tbl->block_id, tbl->id, options);
 
-				if (curr && !bad)
-				{
-					curr->name = strdup (title);
-					curr->next = NULL;
-				}
+			if (curr && !bad)
+			{
+				curr->name = strdup (title);
+				curr->next = NULL;
 			}
 		}
-		fl = fl->next;
+		last_score = scores;
+		scores = scores->next;
+		free (last_score);
 	}
+
 
 	return root;
 }
