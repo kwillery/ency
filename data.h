@@ -8,6 +8,7 @@
 #define ST_SECT_VTBL 11
 #define ST_SECT_PCPT 12
 #define ST_SECT_VCPT 13
+#define ST_SECT_VLST 14
 
 #define ST_PART_OPT_EPISLIST 1
 #define ST_PART_OPT_FTLIST 2
@@ -17,6 +18,7 @@ struct st_part
 	long count;
 	int start_id;
 	int bcount;
+	char *dir;
 };
 
 int load_file_info (char *filename);

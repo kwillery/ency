@@ -385,6 +385,9 @@ struct st_part *get_part (int file, int section, int number, int options)
 	case ST_SECT_VCPT:
 		node = get_nth_xml_node (node, "vcaption", number);
 		break;
+	case ST_SECT_VLST:
+		node = get_nth_xml_node (node, "videolist", number);
+		break;
 	default:
 		return NULL;
 	}
@@ -394,13 +397,13 @@ struct st_part *get_part (int file, int section, int number, int options)
 
 
 	start = xmlGetProp (node, "start");
-	count = xmlGetProp (node, "count");
 
+	if (!start)
+		return NULL;
+
+	count = xmlGetProp (node, "count");
 	start_id = xmlGetProp (node, "start_id");
 	bcount = xmlGetProp (node, "bcount");
-
-	if (!(start && count))
-		return NULL;
 
 	part = (struct st_part *) malloc (sizeof (struct st_part));
 
@@ -408,15 +411,26 @@ struct st_part *get_part (int file, int section, int number, int options)
 		sscanf (start, "%lx", &(part->start));
 	else
 		sscanf (start, "%ld", &(part->start));
-	sscanf (count, "%ld", &(part->count));
+	if (count)
+		sscanf (count, "%ld", &(part->count));
+	else
+		part->count = 1;
 
 	if (start_id)
 		sscanf (start_id, "%d", &(part->start_id));
+	else
+		part->start_id = 0;
+
 	if (bcount)
 		sscanf (bcount, "%d", &(part->bcount));
+	else
+		part->bcount = 1;
+
+	part->dir = xmlGetProp (node, "dir");
 
 	free (start);
-	free (count);
+	if (count)
+		free (count);
 	if (start_id)
 		free (start_id);
 	if (bcount)

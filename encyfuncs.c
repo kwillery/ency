@@ -2152,9 +2152,42 @@ struct st_media *st_get_media (char *search_string)
 	return (media);
 }
 
+char *get_video_dir (char *fnbasen)
+{
+	struct st_part *part=NULL;
+	char *dir;
+	char filename[13];
+	FILE *inp;
+	int count=0;
+
+	while ((part = get_part (st_file_type, ST_SECT_VLST, count++, 0)))
+	{
+		inp = (FILE *) curr_open (part->start);
+		while (getc (inp) != ']')
+		{
+			while (getc (inp) != '\"');
+			fread (filename, 13, 1, inp);
+			filename[12] = 0;
+			if (!strncasecmp (fnbasen, filename, strlen (fnbasen)))
+			{
+				fclose (inp);
+				dir = part->dir;
+				free (part);
+				return dir;
+			}
+		}
+		fclose (inp);
+		free (part);
+	}
+	return (char *) st_fileinfo_get_data(st_file_type,video_dir);
+
+}
+
 char *st_format_filename (char *fnbasen, char *base_path, media_type media)
 {
 	char *filename = NULL;
+	char *dir=NULL;
+
 	int dir_size = 0;
 
 	if (fnbasen)
@@ -2171,7 +2204,8 @@ char *st_format_filename (char *fnbasen, char *base_path, media_type media)
 			dir_size += strlen (st_fileinfo_get_data(st_file_type,picture_dir));
 			break;
 		case video:
-			dir_size += strlen (st_fileinfo_get_data(st_file_type,video_dir));
+			dir = get_video_dir (fnbasen);
+			dir_size += strlen (dir);
 			break;
 		default:
 			return "";
@@ -2194,7 +2228,7 @@ char *st_format_filename (char *fnbasen, char *base_path, media_type media)
 			strcat (filename, st_fileinfo_get_data(st_file_type,picture_dir));
 			break;
 		case video:
-			strcat (filename, st_fileinfo_get_data(st_file_type,video_dir));
+			strcat (filename, dir);
 			break;
 		}
 

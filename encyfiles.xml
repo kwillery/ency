@@ -6,6 +6,7 @@
     <datadir>ENCYprogram/Pro</datadir>
     <photodir>Media99</photodir>
     <videodir>Video98</videodir>
+    <videolist start="509722" dir="Video99"/>
     <append_char/>
     <fingerprint>58;46;49;52;12;a;bc;0;33;39;56;4d;70;61;6d;69;</fingerprint>
       <section name="Encyclopedia">
