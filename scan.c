@@ -29,12 +29,6 @@
 #include "data.h"
 #include "scan.h"
 
-struct block
-{
-	char name[5];
-	long size;
-};
-
 struct st_block *blocks=NULL;
 struct st_block *blast=NULL;
 
@@ -77,24 +71,6 @@ static long get_4b_int (FILE *inp, int reverse)
 			num = num * 256 + getc (inp);
 	}
 	return num;
-}
-
-static struct block *read_block(FILE *inp, int reverse)
-{
-	struct block *b=NULL;
-
-	if (feof (inp))
-		return NULL;
-
-	b = malloc (sizeof (struct block));
-
-	get_4b_string (inp, b->name, reverse);
-
-	b->name[4] = 0;
-
-	b->size = get_4b_int (inp, reverse);
-
-	return b;
 }
 
 static void identify_section (struct st_block *block)
@@ -458,27 +434,23 @@ static void fill_block_ids()
 
 static void search_file (FILE *inp, int reverse)
 {
-	struct block *b=NULL;
-	char c;
+        char name[5]="1234";
 
-	/* Jump to the first useful block    */
-	/* this seems to always be 'imap'    */
-	/* ('pami' in some, due to reversal) */
-	fseek (inp, 12, SEEK_SET);
-	while ((b = read_block (inp, reverse)))
+	fseek (inp, 0x4C, SEEK_SET); /* Go to the mmap */
+	while (!feof (inp))
 	{
-		if (!strcmp (b->name, "KEY*"))
+		get_4b_string (inp, name, reverse);
+		if (!strcmp (name, "KEY*"))
 		{
+			/* Skip the block size info */
+			get_4b_int (inp, reverse);
+			/* Go to the KEY* block, +4 (for "KEY*") +4 (for the size) */
+			fseek (inp, get_4b_int (inp, reverse) + 8, SEEK_SET);
 			process_key (inp, reverse);
 			break;
 		}
 		else
-			fseek (inp, b->size, SEEK_CUR);
-
-		/* if the next byte is a NULL, get rid of it */
-		if ((c = getc (inp)))
-			ungetc (c, inp);
-		free (b);
+			fseek (inp, 16, SEEK_CUR);
 	}
 
 	sort_blocks ();
