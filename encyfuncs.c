@@ -505,7 +505,7 @@ static void find_next_stxt_block (FILE *inp)
 	}
 }
 
-char *get_text_from_file (FILE *inp)
+inline char *get_text_from_file (FILE *inp)
 {
 	char c, *text;
 	int size;
@@ -551,12 +551,18 @@ static struct st_table *read_table (FILE *inp, struct st_table *root)
 	struct st_table *root_tbl = NULL;
 	struct st_table *curr_tbl = NULL;
 	struct st_table *last_tbl = NULL;
+	char c, d;
 
-	int text_size = 0;
-	unsigned char c = 0;
-	unsigned char d = 0;
-	char *temp_text = NULL, *str_text = NULL;
-	int z;
+	c = getc (inp);
+
+	if (c == 0)
+		return root;
+
+	if (ungetc (getc (inp), inp) == ':')
+		return root;
+
+	if (c != '[')
+		ungetc (c, inp);
 
 	if (root)
 	{
@@ -566,32 +572,14 @@ static struct st_table *read_table (FILE *inp, struct st_table *root)
 			last_tbl = last_tbl->next;
 	}
 
-	c = getc (inp);
-
-	if (c != '\"')
+	while (!feof(inp))
 	{
-		d = ungetc (getc (inp), inp);
-		if ((d != '\"') && (!isdigit (d)))
-			return (root);
-	}
-
-	ungetc (c, inp);
-
-	if (c == '\"')
-		ungetc ('[', inp);
-
-	while ((c = getc (inp)) != ']')
-	{	/* main loop */
-
 		curr_tbl = (struct st_table *) malloc (sizeof (struct st_table));
 
 		if (curr_tbl == NULL)
 		{
 			return NULL;
 		}
-
-		if (!root_tbl)
-			root_tbl = curr_tbl;
 
 		curr_tbl->fnbase = get_text_from_file (inp);
 
@@ -601,20 +589,26 @@ static struct st_table *read_table (FILE *inp, struct st_table *root)
 		ungetc (c, inp);
 
 		curr_tbl->title = get_text_from_file (inp);
+
 		curr_tbl->next = NULL;
+
 		if (last_tbl)
 			last_tbl->next = curr_tbl;
+		else
+			root_tbl = curr_tbl;
+
 		last_tbl = curr_tbl;
 		curr_tbl = NULL;
 
 		do {
 			c = getc (inp);
-		} while (c == ',');
+		} while ((c == ' ') || (c == ','));
 		ungetc (c, inp);
 
-	}	/* end main loop */
-
-	return (root_tbl);
+		if (ungetc (getc (inp), inp) == ']')
+			break;
+	}
+	return root_tbl;
 }
 
 static struct st_table *st_get_table ()
@@ -650,11 +644,19 @@ static struct st_table *st_get_table ()
 
 static struct st_caption *read_captions (FILE *inp, struct st_caption *root, int section)
 {
-	int z;
 	struct st_caption *root_cpt = NULL, *curr_cpt = NULL, *last_cpt = NULL;
 	char c = 0;
-	int text_size = 0;
-	char *temp_text = NULL;
+
+	c = getc (inp);
+
+	if (c == 0)
+		return root;
+
+	if (ungetc (getc (inp), inp) == ':')
+		return root;
+
+	if (c != '[')
+		ungetc (c, inp);
 
 	if (root)
 	{
@@ -664,82 +666,39 @@ static struct st_caption *read_captions (FILE *inp, struct st_caption *root, int
 			last_cpt = last_cpt->next;
 	}
 
-	c = getc (inp);
-	if (c == '[')
-		c = ungetc (c, inp);
-
-	while (c != ']')
+	while (!feof (inp))
 	{	/* main loop */
 		curr_cpt = (struct st_caption *) malloc (sizeof (struct st_caption));
 
 		if (curr_cpt == NULL)
-		{
 			return (NULL);
-		}
-		if (!root_cpt)
-			root_cpt = curr_cpt;
 
-		do
-		{
-			while ((c != '\"') && (c != '[') && ((c = getc (inp)) != ' '));
+		curr_cpt->fnbasen = get_text_from_file (inp);
+
+		do {
 			c = getc (inp);
-		}
-		while (!c);
+		} while ((c == ' ') || (c == ':'));
 		ungetc (c, inp);
 
-		if ((c = getc (inp)) != '[')
-			c = ungetc (c, inp);
-		if ((c = getc (inp)) != ' ')
-			c = ungetc (c, inp);
-		if ((c = getc (inp)) != ' ')
-			c = ungetc (c, inp);
-		if ((c = getc (inp)) != ' ')
-			c = ungetc (c, inp);
+		curr_cpt->caption = get_text_from_file (inp);
+		st_cleanstring (curr_cpt->caption);
 
-		if ((c = getc (inp)) != '\"')
-			c = ungetc (c, inp);
-		if ((c = getc (inp)) != ':')
-		{
-			ungetc (c, inp);
-			c = 0;
+		curr_cpt->next = NULL;
+		if (last_cpt)
+			last_cpt->next = curr_cpt;
+		else
+			root_cpt = curr_cpt;
+		last_cpt = curr_cpt;
+		curr_cpt = NULL;
 
-			temp_text = malloc (8);
-
-			text_size = (section == ST_SECT_PCPT) ? 8 : 7;
-
-			fread (temp_text, 1, text_size, inp);
-			if ((temp_text[text_size-1] != '\"') && (temp_text[text_size-1] != ':'))
-				while ((getc (inp)) != '\"');
-
-			temp_text[text_size-1] = 0;
-
-			z = 0;
-			while ((temp_text[z] = tolower (temp_text[z])))
-				z++;
-
+		do {
 			c = getc (inp);
-			if (c == ' ') c = getc (inp);
-			if (c == '\"') c = ungetc (c, inp);
+		} while ((c == ' ') || (c == ','));
+		ungetc (c, inp);
 
-			curr_cpt->fnbasen = temp_text;
+		if (ungetc (getc (inp), inp) == ']')
+			break;
 
-			temp_text = malloc (70);
-			text_size = 0;
-
-			while ((c = getc (inp)) != '\"');
-			while ((c = getc (inp)) != '\"')
-				temp_text[text_size++] = st_cleantext (c);
-			temp_text[text_size] = 0;
-
-			curr_cpt->caption = temp_text;
-			c = getc (inp);
-
-			curr_cpt->next = NULL;
-			if (last_cpt)
-				last_cpt->next = curr_cpt;
-			last_cpt = curr_cpt;
-			curr_cpt = NULL;
-		}
 	}	/* end main loop */
 	return (root_cpt);
 }
