@@ -1114,6 +1114,8 @@ struct st_ency_formatting *st_return_fmt (FILE *inp)
 	int i = 0;
 	char fmt[8]="";
 
+	if ((c = getc(inp)) != 0x0d)
+	  ungetc (c, inp);
 	while (c != '@' && c != 0x0d)
 	{
 		curr_fmt = (struct st_ency_formatting *) malloc (sizeof (struct st_ency_formatting));
