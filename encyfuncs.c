@@ -119,7 +119,7 @@ static struct st_caption *st_vcpts = NULL, *st_oldvcpts = NULL;
 /* cache */
 static struct ency_titles *cache[3] =
 {0, 0, 0};
-static struct ency_titles *st_find_in_cache (int, char *, int);
+static struct ency_titles *st_find_in_cache (int, char *, int, int);
 static void st_clear_cache (void);
 
 /* init/de-init stuff */
@@ -1019,6 +1019,32 @@ static void st_clear_cache ()
 	}
 }
 
+static void st_add_to_cache (int section, char *title, long filepos)
+{
+	struct ency_titles *temp_cache=NULL, *curr=NULL;
+	if ((section < 0) || (section > 2)) return;
+	temp_cache = malloc (sizeof (struct ency_titles));
+	temp_cache->title = strdup (title);
+	temp_cache->text = NULL;
+	temp_cache->fmt = NULL;
+	temp_cache->next = NULL;
+	temp_cache->filepos = filepos;
+
+	curr = cache[section];
+	if (curr)
+		while (curr->next)
+			curr = curr->next;
+	else
+	{
+		cache[section] = temp_cache;
+		return;
+	}
+
+	curr->next = temp_cache;
+
+	return;
+}
+
 int st_find_start (FILE * input)
 {
 	unsigned char c = 0, old_c = 0, old_old_c = 0, old_old_old_c = 0;
@@ -1421,7 +1447,7 @@ static struct ency_titles *curr_find_list (char *search_string, int exact)
 		return (NULL);
 }
 
-static struct ency_titles *st_find_in_cache (int section, char *search_string, int exact)
+static struct ency_titles *st_find_in_cache (int section, char *search_string, int exact, int get_body)
 {
 	struct ency_titles *mine, *r_r = NULL, *r_c = NULL, *r_l = NULL;
 
@@ -1432,7 +1458,10 @@ static struct ency_titles *st_find_in_cache (int section, char *search_string, i
 		if (check_match (search_string, mine->title, exact))
 		{
 			r_l = r_c;
-			st_copy_part_entry (&r_c, mine);
+			if (get_body)
+				r_c = get_title_at (mine->filepos);
+			else
+				st_copy_part_entry (&r_c, mine);
 			if (r_l)
 				r_l->next = r_c;
 			if (!r_r)
@@ -1443,18 +1472,53 @@ static struct ency_titles *st_find_in_cache (int section, char *search_string, i
 	return (r_r);
 }
 
-static struct ency_titles *st_find_unknown (char *search_string, int exact)
+int st_guess_section (char *title, char *text, int last_section)
+{
+	char *episode_starts[5] =
+	{
+		"Original Series",
+		"Next Generation",
+		"Deep Space Nine",
+		"Voyager episode",
+		"No episodes"
+	};
+	int i;
+
+	/* Episodes */
+	if ((*title == '\"') || (strlen (title) == 1))
+		for (i = 0; i < 5; i++)
+		{
+			if (!strncmp (text, episode_starts[i], strlen (episode_starts[i])))
+				return 1;
+			if (!strncmp (text + 1, episode_starts[i], strlen (episode_starts[i])))
+				return 1;
+		}
+	if ((!strncmp (title, "Star Trek", 9)) && (last_section == 1))
+	return 1;
+
+	/* Chronology */
+	if (*title == '\"')
+		return 2;
+	if (!strncmp (text, "\n\n", 2))
+		return 2;
+	if ((!strncmp (title, "Star Trek", 9)) && (last_section == 2))
+		return 2;
+
+	/* Encyclopedia */
+	return 0;
+}
+
+
+static struct ency_titles *st_find_unknown (int section, char *search_string, int exact)
 {
 	long this_one_starts_at = 0;
-	struct ency_titles *root_title = NULL, *curr_title = NULL, *last_title = NULL;
-	struct ency_titles *root_cache = NULL, *curr_cache = NULL;
-	struct ency_titles *old_cache = NULL, *temp_cache = NULL;
-
+	struct ency_titles *curr_title = NULL;
+	char last_start=0;
+	int last_section=-1;
+	
 	FILE *input_temp;
 
-	if (cache[0])
-		return (st_find_in_cache (0, search_string, exact));
-	if (st_open ())
+	if ((cache[section] == NULL) && st_open ())
 	{
 		while (st_find_start (inp))
 		{
@@ -1464,49 +1528,16 @@ static struct ency_titles *st_find_unknown (char *search_string, int exact)
 			inp = input_temp;
 			getc (inp);	/* make sure we dont get the same entry again */
 
-			/* build the cached version of this entry */
-			temp_cache = malloc (sizeof (struct ency_titles));
-			temp_cache->title = strdup (curr_title->title);
-			temp_cache->text = NULL;
-			temp_cache->fmt = NULL;
-			temp_cache->filepos = this_one_starts_at;
-			st_copy_part_entry (&curr_cache, temp_cache);
-			st_free_entry (temp_cache);
-			if (root_cache == NULL)
-				root_cache = curr_cache;
-			else
-			{
-				if (old_cache == NULL)
-					old_cache = root_cache;
-				while (old_cache->next)
-					old_cache = old_cache->next;
-				old_cache->next = curr_cache;
-			}
-			curr_cache = curr_cache->next;
+			/* determine what section its in */
+			if ((!last_start) || (last_start > tolower (*curr_title->title)) || ((last_start == '\"') && (*curr_title->title != '\"')))
+				last_section = st_guess_section (curr_title->title, curr_title->text, last_section);
+			last_start = *curr_title->title;
 
-			if (check_match (search_string, curr_title->title, exact))
-			{
-				if (!root_title)
-					root_title = curr_title;
-				if (last_title)
-					last_title->next = curr_title;
-				last_title = curr_title;
-				if (!st_return_body)
-				{
-					st_free_fmt_tree (curr_title->fmt);
-					curr_title->fmt = NULL;
-					free (curr_title->text);
-					curr_title->text = NULL;
-				}
-			}
-			else
-			{
-				st_free_entry (curr_title);
-			}
+			/* build the cached version of this entry */
+			st_add_to_cache (last_section,curr_title->title,this_one_starts_at);
 		}
 	}
-	cache[0] = root_cache;
-	return (root_title);
+	return (st_find_in_cache (section, search_string, exact, 1));
 }
 
 struct ency_titles *st_find_in_file (int file, int section, char *search_string, int exact)
@@ -1572,7 +1603,7 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 		case ST_SECT_EPIS:
 		case ST_SECT_CHRO:
 			if ((cache[section]) && (!st_return_body))
-				return (st_find_in_cache (section, search_string, exact));
+				return (st_find_in_cache (section, search_string, exact, 0));
 			else
 				return (st_find_in_file (st_file_type, section, search_string, exact));
 		default:
@@ -1582,7 +1613,7 @@ struct ency_titles *st_find (char *search_string, int section, int options)
 	}
 	else
 	{			/* unknown file type */
-		return (st_find_unknown (search_string, exact));
+		return (st_find_unknown (section, search_string, exact));
 	}
 }
 
