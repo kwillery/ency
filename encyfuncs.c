@@ -519,7 +519,8 @@ FILE *curr_open (char *filename, long start)
 	fn = malloc (strlen(ency_directory) + strlen (filename) + 2);
 	sprintf (fn, "%s/%s", ency_directory ? ency_directory : "", filename);
 
-	inp = fopen (filename, "rb");
+	inp = fopen (fn, "rb");
+	free (fn);
 
 	if (inp)
 	{
@@ -618,6 +619,7 @@ int st_is_ency (int st_file_version, char *base_dir)
 	{
 		free (lc_data_dir);
 		free (lc_filename);
+		free (test_filename);
 		return 1;
 	}
 
@@ -626,6 +628,7 @@ int st_is_ency (int st_file_version, char *base_dir)
 	{
 		free (lc_data_dir);
 		free (lc_filename);
+		free (test_filename);
 		return 1;
 	}
 
@@ -634,6 +637,7 @@ int st_is_ency (int st_file_version, char *base_dir)
 	{
 		free (lc_data_dir);
 		free (lc_filename);
+		free (test_filename);
 		return 1;
 	}
 
@@ -642,6 +646,7 @@ int st_is_ency (int st_file_version, char *base_dir)
 	{
 		free (lc_data_dir);
 		free (lc_filename);
+		free (test_filename);
 		return 1;
 	}
 
@@ -650,6 +655,7 @@ int st_is_ency (int st_file_version, char *base_dir)
 	{
 		free (lc_data_dir);
 		free (lc_filename);
+		free (test_filename);
 		return 1;
 	}
 
@@ -658,11 +664,13 @@ int st_is_ency (int st_file_version, char *base_dir)
 	{
 		free (lc_data_dir);
 		free (lc_filename);
+		free (test_filename);
 		return 1;
 	}
 
 	free (lc_filename);
 	free (lc_data_dir);
+	free (test_filename);
 
 	return 0;
 }
