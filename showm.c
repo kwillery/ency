@@ -18,7 +18,7 @@
 /*                                                                            */
 /* Author:                                                                    */
 /*      Email   mibus@hallett-cove.schools.sa.edu.au                          */
-/*              beemer@picknowl.com.au                                        */
+/*              mibus@bigpond.com                                             */
 /*      webpage www.picknowl.com.au/homepages/beemer/                         */
 /******************************************************************************/
 

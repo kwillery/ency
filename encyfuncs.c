@@ -18,7 +18,7 @@
 /*                                                                            */
 /* Author:                                                                    */
 /*      Email   mibus@hallett-cove.schools.sa.edu.au                          */
-/*              beemer@picknowl.com.au                                        */
+/*              mibus@bigpond.com                                             */
 /*      webpage www.picknowl.com.au/homepages/beemer/                         */
 /******************************************************************************/
 
@@ -591,7 +591,7 @@ curr_find_list (char *search_string, int exact)
 
       title = st_return_title ();
       /* Title & number:  printf ("%d:%s\n", no_so_far, title); */
-fflush(NULL);
+
       c = getc (inp);
 
       lc_title = st_lcase(title);

@@ -18,7 +18,7 @@
 /*                                                                            */
 /* Author:                                                                    */
 /*      Email   mibus@hallett-cove.schools.sa.edu.au                          */
-/*              beemer@picknowl.com.au                                        */
+/*              mibus@bigpond.com                                             */
 /*      webpage www.picknowl.com.au/homepages/beemer/                         */
 /******************************************************************************/
 
@@ -284,7 +284,7 @@ main (int argc, char *argv[])
 
       printf ("<hr>\nMibus' ency reader<br>\n");
       printf ("<a href=\"http://www.picknowl.com.au/homepages/beemer/ency.html\">http://www.picknowl.com.au/homepages/beemer/ency.html</a><br>\n");
-      printf ("queries, comments, flames, to <a href=\"mailto:beemer@picknowl.com.au\">Robert Mibus (beemer@picknowl.com.au)</a>");
+      printf ("queries, comments, flames, to <a href=\"mailto:mibus@bigpond.com\">Robert Mibus (mibus@bigpond.com)</a>");
 
       printf ("</html>\n");
     }
