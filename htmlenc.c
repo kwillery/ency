@@ -202,19 +202,19 @@ int main (int argc, char *argv[])
 					if (strlen (media->photos[i].file))
 					{	/* if there is photos #i */
 						temp_fn = st_format_filename (media->photos[i].file, base_path, picture);
-						fprintf (out, "<li><a href=\"%s\">%s</a> (picture)\n</li>", temp_fn, media->photos[i].caption);
+						fprintf (out, "<li><a href=\"%s\">%s</a> (picture)</li>\n", temp_fn, media->photos[i].caption);
 						free (temp_fn);
 					}
 				if (strlen (media->video.file))
 				{
 					temp_fn = st_format_filename (media->video.file, base_path, video);
-					fprintf (out, "<li><a href=\"%s\">%s</a> (video)\n</li>\n", temp_fn, media->video.caption);
+					fprintf (out, "<li><a href=\"%s\">%s</a> (video)</li>\n", temp_fn, media->video.caption);
 					free (temp_fn);
 				}
 				if (strlen (media->swf.file))
 				{
 					temp_fn = st_format_filename (media->swf.file, base_path, swf);
-					fprintf (out, "<li><a href=\"%s\">%s</a> (video)\n</li>\n", temp_fn, media->swf.caption);
+					fprintf (out, "<li><a href=\"%s\">%s</a> (video)</li>\n", temp_fn, media->swf.caption);
 					free (temp_fn);
 				}
 				free (media);
