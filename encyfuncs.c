@@ -796,6 +796,11 @@ static struct st_table *read_attribs_table (FILE *inp, int section, int count)
 	int level, commas;
 	char *temp_text = NULL;
 
+	c = getc (inp);
+	if (ungetc (getc (inp), inp) == ']')
+		return NULL;
+	ungetc (c, inp);
+
 	for (i = 0; i < count; i++)
 	{
 		if (i)
@@ -926,7 +931,7 @@ static struct st_table *st_get_video_table (int section)
 				curr_tbl->next = read_attribs_table (inp, part->section, part->count);
 			}
 			else
-				curr_tbl = root_tbl = read_attribs_table (inp, section, part->count);
+				curr_tbl = root_tbl = read_attribs_table (inp, part->section, part->count);
 
 			st_close_file ();
 			count++;

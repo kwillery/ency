@@ -377,7 +377,7 @@ void process_cast_block (FILE *inp, long size)
 #else
 void process_cast_block (FILE *inp, long size)
 {
-	struct part *tmp;
+	struct part *tmp, *curr;
 	unsigned char *block;
 	unsigned char *t=NULL;
 	int i;
@@ -508,6 +508,21 @@ void process_cast_block (FILE *inp, long size)
 	tmp->count = 1;
 	tmp->start_id = 0;
 	tmp->next = NULL;
+
+	/* We don't want duplicate names being used */
+	/* so we set later ones to Unimportant      */
+	curr = parts;
+
+	while ((curr) && (curr != tmp))
+	{
+		if (!strcmp (curr->name, tmp->name))
+		{
+			tmp->section = 0;
+			printf (" [Dupe - ignored]");
+			break;
+		}
+		curr = curr->next;
+	}
 
 	free (block);
 }
