@@ -270,14 +270,38 @@ const char *st_fileinfo_get_data (int file, st_filename_type type)
 	}
 }
 
+/* ST_BLOCK_SCAN is a pseudo-block entry. It triggers off
+ * a call to scan_file() so that less info needs to be
+ * kept in the rcfile. */
+static void data_scan (struct st_part *part)
+{
+	FILE *inp;
+	struct st_part *tmp=NULL;
+
+	inp = (FILE *) curr_open (0);
+	tmp = scan_file (inp);
+	fclose (inp);
+	/* NB. we don't do 
+		tmp->next = part->next;
+	   because we don't want to have to screw
+	   around w/ the returned list,
+	   so <needscan/> should be the last
+	   parts tag for that file
+	   (not that you need others when using it
+	   :-) */
+	part->next = tmp;
+	part->type = ST_BLOCK_SCANNED;
+
+	return;
+}
+
 /* Gets a 'part' based on its type, section, and number in the list.
  * (The first one matching type & section is '0', the next that matches
  * is '1', etc.) */
 struct st_part *get_part (int file, int type, int section, int number, int options)
 {
-	FILE *inp;
 	struct st_data_filenode *file_node=NULL;
-	struct st_part *part=NULL, *tmp=NULL;
+	struct st_part *part=NULL;
 	int i=0;
 
 	file_node = get_filenode (file);
@@ -296,25 +320,8 @@ struct st_part *get_part (int file, int type, int section, int number, int optio
 			i++;
 		}
 
-		/* ST_BLOCK_SCAN is a pseudo-block entry. It triggers off
-		 * a call to scan_file() so that less info needs to be
-		 * kept in the rcfile. */
 		if (part->type == ST_BLOCK_SCAN)
-		{
-			inp = (FILE *) curr_open (0);
-			tmp = scan_file (inp);
-			fclose (inp);
-			/* NB. we don't do 
-				tmp->next = part->next;
-			   because we don't want to have to screw
-			   around w/ the returned list,
-			   so <needscan/> should be the last
-			   parts tag for that file
-			   (not that you need others when using it
-			   :-) */
-			part->next = tmp;
-			part->type = ST_BLOCK_SCANNED;
-		}
+			data_scan (part);
 
 		if (part)
 			part = part->next;
@@ -342,6 +349,9 @@ struct st_part *get_part_by_id (int file, int block_id)
 	{
 		if (part->start_id == block_id)
 			return part;
+
+		if (part->type == ST_BLOCK_SCAN)
+			data_scan (part);
 
 		part = part->next;
 	}
@@ -372,6 +382,10 @@ struct st_part *get_part_by_name (int file, char *name)
                 if (part->name)
 			if (!strcasecmp (part->name, name))
 	                        return part;
+
+		if (part->type == ST_BLOCK_SCAN)
+			data_scan (part);
+
                 part = part->next;
         }
 

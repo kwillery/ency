@@ -28,6 +28,7 @@ struct st_part
 	long count;
 	int start_id;
 	int bcount;
+	long size;
 	char *dir;
 	struct st_part *next;
 };

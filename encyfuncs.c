@@ -472,6 +472,15 @@ FILE *curr_open (long start)
 	return (inp);
 }
 
+/* Open the file referenced by the part */
+FILE *open_part(struct st_part *part)
+{
+	if (!part)
+		return NULL;
+
+	return curr_open (part->start);
+}
+
 /* Look for a given encyclopedia version in a directory.
  * Try lowering the case of the directory, etc. etc.
  * This will also work if 'base_dir' is the actual
@@ -740,7 +749,7 @@ static struct st_table *st_get_table ()
 
 	while ((part = get_part (st_file_type, ST_SECT_PTBL, 0, count, 0)))
 	{
-		if ((inp = curr_open (part->start)) == 0)
+		if (!(inp = open_part (part)))
 			return (NULL);
 		else
 		{
@@ -838,7 +847,7 @@ static struct st_caption *st_get_captions (int section)
 
 	while ((part = get_part (st_file_type, section, 0, count, 0)))
 	{
-		if ((inp = curr_open (part->start)) == 0)
+		if (!(inp = open_part (part)))
 			return (NULL);
 		else
 		{
@@ -970,7 +979,7 @@ static struct st_table *st_get_video_table (int section)
 
 	while ((part = get_part (st_file_type, ST_BLOCK_ATTRIB, section, count, 0)))
 	{
-		if ((inp = curr_open (part->start)) == 0)
+		if (!(inp = open_part (part)))
 			return (root_tbl);
 		else
 		{
@@ -1544,7 +1553,9 @@ static void load_block_cache (int block_id)
 	if (!part) /* just in case... */
 		return;
 
-	inp = curr_open (part->start);
+	if (!(inp = open_part (part)))
+		return;
+
 	fseek (inp, 12, SEEK_CUR);
 
 	if (inp)
@@ -1829,8 +1840,7 @@ static void load_ft_list (int section)
 
 	while ((part = get_part (st_file_type, ST_BLOCK_FTLIST, section, count++, 0)))
 	{
-		inp = curr_open (part->start);
-		if (!inp)
+		if (!(inp = open_part (part)))
 			return;
 
 		fseek (inp, 12, SEEK_CUR);
@@ -2510,4 +2520,23 @@ char *st_format_filename (char *fnbasen, char *base_path, media_type media)
 	return (filename);
 }
 
+int st_get_picture(char *name, char *file, long width, long height)
+{
+	struct st_part *part=NULL;
+	if (!name)
+		return 1;
 
+	part = get_part_by_name (st_file_type, name);
+
+	if (!part)
+		return 1;
+
+	printf ("Got part '%s' @ %ld, %ld bytes long.\n", name, part->start, part->size);
+
+	return 1;
+}
+
+int st_get_thumbnail(char *name, char *file)
+{
+	return st_get_picture (name, file, 60, 40);
+}

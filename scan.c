@@ -180,7 +180,7 @@ static void identify_section (struct st_part *part)
 	return;
 }
 
-static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock_pos)
+static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock_pos, long pblock_size)
 {
 	struct st_part *tmp, *curr;
 	unsigned char *block;
@@ -211,6 +211,7 @@ static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock
 	plast = tmp;
 
 	tmp->start = pblock_pos;
+	tmp->size = pblock_size;
 
 	if (size > 33 && block[33])
 	{
@@ -397,6 +398,7 @@ static void add_block (FILE *inp, int reverse, char *bname, long block_ind, long
 	long orig_pos = ftell(inp);
 	long block_pos=-1;
 	long cast_pos=-1;
+	long block_size=-1;
 	char name[5]="1234";
 
 	fseek (inp, 0x4C+20*block_ind, SEEK_SET); /* Go to the block info */
@@ -407,7 +409,7 @@ static void add_block (FILE *inp, int reverse, char *bname, long block_ind, long
 		fseek (inp, orig_pos, SEEK_SET);
 		return;
 	}
-	fseek (inp, 4, SEEK_CUR); /* drop size */
+	block_size = get_4b_int (inp, reverse);
 	block_pos = get_4b_int (inp, reverse);
 	fseek (inp, 0x4C+20*cast_ind, SEEK_SET); /* Go to the cast block info */
 	get_4b_string (inp, name, reverse); /* get 'CASt' */
@@ -420,7 +422,7 @@ static void add_block (FILE *inp, int reverse, char *bname, long block_ind, long
 	fseek (inp, 4, SEEK_CUR); /* drop the size */
 	cast_pos = get_4b_int (inp, reverse);
 	fseek (inp, cast_pos, SEEK_SET); /* Go to the CASt */
-	process_cast_block (inp, reverse, bname, block_pos+8); /* load the CASt */
+	process_cast_block (inp, reverse, bname, block_pos+8, block_size); /* load the CASt */
 	fseek (inp, orig_pos, SEEK_SET); /* Set it all back nicely */
 }
 
