@@ -48,7 +48,7 @@ long int st_table_starts_at[] =
 {0x410c4, 0, 0x388f2e, 0, 0x3CD470, 0, 0x2BBA98, 0, 0x322996, 0};
 
 long int st_caption_starts_at[] =
-{0x4e5064, 0};
+{0x4e5064, 0, 0x615552, 0};
 
 long int ency_starts_at[] =
 {0x7bc28, 0x576574, 0, 0x3A9ED8, 0x56BB62, 0, 0x3FC3BE, 0x58B51E, 0x72E89C, 0, 0x1, 0, 0x1, 0};
@@ -75,6 +75,8 @@ long int chro_lastone[] =
 long int st_table_lastone[] =
 {26, 0, 26, 0, 26, 0, 23, 0, 15, 0};
 
+long int st_caption_lastone[] =
+{5, 0, 4, 0, 1, 0, 1, 0, 1, 0};
 
 long int curr_starts_at, curr_lastone, curr;
 
@@ -1320,13 +1322,13 @@ st_get_captions (void)
   curr = 6;
   for (i = 0; i < st_file_type; i++)
     {
-      while (st_table_starts_at[upto] != 0)
+      while (st_caption_starts_at[upto] != 0)
 	upto++;
       upto++;
     }
-  if (st_table_starts_at[upto] != 0x1)
+  if (st_caption_starts_at[upto] != 0x1)
     {
-      while (st_table_starts_at[upto] != 0)
+      while (st_caption_starts_at[upto] != 0)
 	{
 
 	  if (!st_open ())
@@ -1336,7 +1338,7 @@ st_get_captions (void)
 	  else
 	    {
 
-	      for (i = 0; i < 5; i++)
+	      for (i = 0; i < st_caption_lastone[upto]; i++)
 		{
 		  while ((c = getc (inp)) != ']')
 		    {		// main loop
@@ -1355,12 +1357,20 @@ st_get_captions (void)
 		      first_time = 0;
 		      do
 			{
-			  while ((c = getc (inp)) != '\"');
+			  while ((c != '\"') && (c != '[') && (c = getc (inp)) != (' '));	// \"
+
 			  c = getc (inp);
 			}
 		      while (!c);
 		      ungetc (c, inp);
-		      while ((c = getc (inp)) != '\"')
+		      if ((c = getc (inp)) != ' ')
+			c = ungetc (c, inp);
+		      if ((c = getc (inp)) != '\"')
+			c = ungetc (c, inp);
+		      c = 0;
+
+		      while (((c = getc (inp)) != ':') && (c != '\"'))	// \"
+
 			{
 			  temp_text = realloc (temp_text, text_size + 2);
 			  if (temp_text == NULL)
@@ -1385,16 +1395,17 @@ st_get_captions (void)
 			  temp_text[text_size++] = ency_cleantext (c);
 			}
 		      temp_text[text_size] = 0;
+
 		      curr_cpt->caption = temp_text;
 		      if (last_cpt)
 			last_cpt->next = curr_cpt;
 		      last_cpt = curr_cpt;
 		      curr_cpt = NULL;
-
 		    }		// main loop
 
 		}
 	    }
+	  upto++;
 	  curr_close ();
 	}
     }

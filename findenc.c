@@ -104,7 +104,7 @@ main (int argc, char *argv[])
    free (oldtbl->fnbase);
    free (oldtbl);
    } 
- */ 
+ */
     }
   else
     printf ("An error has occurred.\n");
