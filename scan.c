@@ -212,7 +212,7 @@ static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock
 	tmp->start = pblock_pos;
 	tmp->size = pblock_size;
 
-	if (block[39])
+	if (block[39] > 1) /* The 1 is arbitrary - it works in my tests! */
 		t = block + 37 + block[39];
 	else
 		t = block + 13 + block[15];
@@ -226,6 +226,13 @@ static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock
 			free (block);
 			return;
 		}
+	}
+
+	if (*t > 0x80) /* The 0x80 is arbitrary - it works in my tests */
+	{
+		t++;
+		while (*t == 0)
+			t++;
 	}
 
 	j = *t;
