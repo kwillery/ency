@@ -157,7 +157,7 @@ struct st_photo {
 </verb>
 This struct is returned in <tt/<ref id="st_media" name="st_media">/ structs (see <tt/<ref id="st_get_media" name="st_get_media">/)
 <tt/file/ is the first 7 characters of the filename of the photo (or now, video, sound, or swf) is being referred to.
-<tt/file/ should be processed by <tt/<ref id="st_format_filename" name="st_format_filename">/ to get a usable filename. For pictures and swfs, it is often possible to call <tt/<ref id="st_get_thumbnail" name="st_get_thumbnail"/ to get a 60x40 thumbnail picture.
+<tt/file/ should be processed by <tt/<ref id="st_format_filename" name="st_format_filename">/ to get a usable filename. For pictures and swfs, it is often possible to call <tt/<ref id="st_get_thumbnail" name="st_get_thumbnail"/ to get a 60x40 (usually) thumbnail picture.
 
 
 <sect1>st_media<label id="st_media">
