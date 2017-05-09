@@ -189,9 +189,9 @@ void st_free_fmt_and_advance (struct st_ency_formatting **);
 void st_copy_part_entry (struct ency_titles **, struct ency_titles *);
 
 /* lower-level functions */
-char st_cleantext (unsigned char c);
-unsigned char *st_cleanstring (unsigned char *string);
-void st_ultraclean_string (unsigned char *string);
+char st_cleantext (char c);
+char *st_cleanstring (char *string);
+void st_ultraclean_string (char *string);
 char *st_lcase (char *mcase);
 
 #ifdef __cplusplus

@@ -156,7 +156,7 @@ unsigned char *decompress (FILE *inp, int csize, int size)
 	unsigned char *decompressed, *d;
 
 	DBG ((stderr, "Decompressing from %d to %d\n", csize, size));
-	d = decompressed = (char *) malloc (size);
+	d = decompressed = (unsigned char *) malloc (size);
 	for (i=0;i<csize;i++)
 		process_bytes (&d, inp, size-(d-decompressed));
 	return decompressed;
@@ -171,21 +171,23 @@ int create_ppm_from_image (char *file, FILE *inp, long width, long height, long 
 	if (!file || !inp || width<=0 || height <=0)
 		return 4;
 
-	out = fopen (file, "w b");
-	if (!out)
-		return 5;
-
 	/* Decompressed size */
 	size = width*height;
 
 	if (csize == size) /* Its complete */
 	{
-		decompressed = (char *) malloc (size);
-		fread (decompressed, size, 1, inp);
+		decompressed = (unsigned char *) malloc (size);
+		if (fread (decompressed, size, 1, inp) != 1) {
+			fprintf (stderr, "Failed to read picture data.\n");
+			return 6;
+		}
 	}
 	else
 		decompressed = decompress (inp, csize, size);
 
+	out = fopen (file, "w b");
+	if (!out)
+		return 5;
 	write_ppm (out, decompressed, width, height);
 	fclose (out);
 

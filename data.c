@@ -235,7 +235,7 @@ int count_files (void)
 /* Turns a 16-byte array (from the start of a file) into
  * a string (eg. 1;23;a3;d2;...) so that it can be easily
  * stored or compared */
-static void make_text_fingerprint (unsigned char fp[16], unsigned char text_fp[16 * 3 + 1])
+static void make_text_fingerprint (unsigned char fp[16], char text_fp[16 * 3 + 1])
 {
 	char temp_ptr[4];
 	int i;
@@ -259,7 +259,7 @@ int st_fingerprint (char *filename)
 	FILE *inp;
 	struct st_data_filenode *filenode=NULL;
 	unsigned char input_fp[16];
-	unsigned char text_fp[16 * 3 + 1]="";
+	char text_fp[16 * 3 + 1]="";
 	char *match_fp=NULL;
 
 	DBG((stderr, "Beginning fingerprint on '%s'...\n", filename));
@@ -268,7 +268,10 @@ int st_fingerprint (char *filename)
 
 	if (inp)
 	{
-		fread (input_fp,1,16,inp);
+		if (fread (input_fp,1,16,inp) != 16) {
+			fprintf (stderr, "Could not read start of file.");
+			return ST_FILE_ERROR;
+		}
 		fclose (inp);
 
 		make_text_fingerprint (input_fp, text_fp);

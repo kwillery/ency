@@ -235,7 +235,10 @@ int main (int argc, char *argv[])
 	else
 	{
 		printf ("Enter search string :");
-		scanf ("%[a-zA-Z0-9.\"\'() -]", search_string);
+		if (scanf ("%[a-zA-Z0-9.\"\'() -]", search_string) == 0) {
+			printf ("No search term provided, exiting...\n");
+			exit (0);
+		}
 	}
 
 	/* Do the search */

@@ -134,9 +134,9 @@ static int safe_strlen (const char *t)
 
 /* change characters to 'real' ones.
 (eg. smart dbl quotes -> normal dbl quotes */
-char st_cleantext (unsigned char c)
+char st_cleantext (char c)
 {
-	switch (c)
+	switch ((unsigned char)c)
 	{
 	case 13:
 		return ('\n');
@@ -181,9 +181,9 @@ char st_cleantext (unsigned char c)
 	}
 }
 
-static unsigned char st_ultra_cleanchar (unsigned char c)
+static char st_ultra_cleanchar (char c)
 {
-	switch (c)
+	switch ((unsigned char)c)
 	{
 	case 0xE0: /* cleaned 'a' '\' */
 	case 0xE1: /* cleaned 'a' '/' */
@@ -196,10 +196,10 @@ static unsigned char st_ultra_cleanchar (unsigned char c)
 	}
 }
 
-unsigned char *st_cleanstring (unsigned char *string)
+char *st_cleanstring (char *string)
 {
-	unsigned char *new_string=NULL, *s, *t;
-	int append=0;
+	char *new_string=NULL, *s, *t;
+	unsigned int append=0;
 
 	if (!string)
 		return NULL;
@@ -240,7 +240,7 @@ unsigned char *st_cleanstring (unsigned char *string)
 	return NULL;
 }
 
-void st_ultraclean_string (unsigned char *string)
+void st_ultraclean_string (char *string)
 {
 	if (!string)
 		return;
@@ -279,8 +279,10 @@ char *st_lcase_in_place (char *mcase)
 
 	t = mcase;
 
-	while (*t)
-		*t++ = tolower(*t);
+	while (*t) {
+		*t = tolower(*t);
+		t++;
+	}
 
 	return mcase;
 }
@@ -712,7 +714,10 @@ static inline char *get_text_from_file (FILE *inp)
 	if (!text)
 		return NULL;
 	fseek (inp, start_pos, SEEK_SET);
-	fread (text, size, sizeof (char), inp);
+	if (fread (text, size, sizeof (char), inp) != sizeof (char)) {
+		fprintf(stderr, "Failed to read text from %ld\n", start_pos);
+		return NULL;
+	}
 	text[size-1] = 0;
 
 	DBG ((stderr,"get_text_from_file: read '%s', ending at %ld\n", text, ftell(inp)));
@@ -909,48 +914,59 @@ static struct st_table *read_attribs_table (FILE *inp, int section)
 						level--;
 					if ((level == 1) && (c == ','))
 						commas++;
-					switch (commas)
-					{
-					case 1: // # of thumbnails
-						fscanf (inp, "%d", &(curr_tbl->pictures));
-						break;
-					case 2: // List of thumbnail pointers
-						if (curr_tbl->pictures == 0)
+					if (level == 1) {
+						switch (commas)
+						{
+						case 1: // # of thumbnails
+							if (fscanf (inp, "%d", &(curr_tbl->pictures)) == 0) {
+								fprintf (stderr, "Failed to parse picture-count.\n");
+							}
 							break;
-						while ((c = getc (inp)) != '[')
-							;
-						for (i=0;i<curr_tbl->pictures;i++)
-							fscanf(inp, "%d, ", &(curr_tbl->picture[i]));
-						while ((c = getc (inp)) != ']')
-							;
-						break;
-					case 4: // Video
-						if (c != '"')
+						case 2: // List of thumbnail pointers
+							if (curr_tbl->pictures == 0)
+								break;
+							while ((c = getc (inp)) != '[')
+								;
+							for (i=0;i<curr_tbl->pictures;i++) {
+								if (fscanf(inp, "%d, ", &(curr_tbl->picture[i])) == 0) {
+									fprintf (stderr, "Failed to read thumbnail pointers.\n");
+								}
+							}
+							while ((c = getc (inp)) != ']')
+								;
 							break;
-						ungetc (c, inp);
-						curr_tbl->fnbase = get_text_from_file_max_length (inp, 20);
-						c=0;
-						break;
-					case 5: // Audio
-						if (c != '"')
+						case 4: // Video
+							if (c != '"')
+								break;
+							ungetc (c, inp);
+							curr_tbl->fnbase = get_text_from_file_max_length (inp, 20);
+							c=0;
 							break;
-						ungetc (c, inp);
-						curr_tbl->audio = get_text_from_file_max_length (inp, 20);
-						c=0;
-						break;
-					case 6: // 'Resource' link
-						if (c != '"')
+						case 5: // Audio
+							if (c != '"')
+								break;
+							ungetc (c, inp);
+							curr_tbl->audio = get_text_from_file_max_length (inp, 20);
+							c=0;
 							break;
-						ungetc (c, inp);
-						curr_tbl->resource = get_text_from_file (inp);
-						c=0;
-						break;
-					case 8: // Block ID
-						fscanf (inp, "%d", &(curr_tbl->block_id));
-						break;
-					case 9: // Entry ID (in block)
-						fscanf (inp, "%d", &(curr_tbl->id));
-						break;
+						case 6: // 'Resource' link
+							if (c != '"')
+								break;
+							ungetc (c, inp);
+							curr_tbl->resource = get_text_from_file (inp);
+							c=0;
+							break;
+						case 8: // Block ID
+							if (fscanf (inp, "%d", &(curr_tbl->block_id)) == 0) {
+								fprintf (stderr, "Could not read block id.\n");
+							}
+							break;
+						case 9: // Entry ID (in block)
+							if (fscanf (inp, "%d", &(curr_tbl->id)) == 0) {
+								fprintf (stderr, "Could not read entry id @%ld for '%s' (%d).\n", ftell(inp), curr_tbl->title, curr_tbl->id);
+							}
+							break;
+						}
 					}
 				}
 				if (c == '\"')
@@ -1130,7 +1146,10 @@ struct st_ency_formatting *st_return_fmt (FILE *inp)
 			exit (1);
 		}
 
-		fscanf (inp,"%d : [ %d , %[#buiBUI] ]",&curr_fmt->firstword,&curr_fmt->words,fmt);
+		if (fscanf (inp,"%d : [ %d , %[#buiBUI] ]",&curr_fmt->firstword,&curr_fmt->words,fmt) == 0) {
+			fprintf (stderr, "Could not read formatting @%ld, returning none.\n", ftell(inp));
+			return NULL;
+		}
 
 		c=getc(inp);
 
@@ -1204,7 +1223,10 @@ char *st_return_text (FILE *inp)
 
 	temp_text = malloc (text_size + 1);
 	fseek (inp, text_starts_at, SEEK_SET);
-	fread (temp_text, 1, text_size, inp);
+	if (fread (temp_text, 1, text_size, inp) != text_size) {
+		fprintf (stderr, "Could not read text from %ld.\n", text_starts_at);
+		return NULL;
+	};
 
 	temp_text[text_size] = 0;
 
@@ -1238,7 +1260,7 @@ static char *st_return_title (FILE *inp)
  * NB. if the section isn't present
  * (eg. ST_SECT_ENCY in the episode guides), it
  * will return 0, but that shouldn't matter */
-static int entry_list_has_section (section)
+static int entry_list_has_section (int section)
 {
 	struct st_table *lst;
 	lst = entrylist_head;
@@ -1344,7 +1366,6 @@ static struct st_table *get_table_entry_by_title (struct st_table *tbl, char *ti
  * on what options are set (in 'options' :-). */
 static struct ency_titles *read_entry (FILE *inp, int options)
 {
-	char c;
 	char *temp_text = NULL;
 	struct ency_titles *root_title = NULL;
 	char *ttl = NULL;
@@ -1369,7 +1390,7 @@ static struct ency_titles *read_entry (FILE *inp, int options)
 
 	ttl = st_return_title (inp);
 
-	c = getc (inp);
+	getc (inp);
 
 	if (options & ST_OPT_RETURN_BODY)
 		temp_text = st_return_text (inp);
@@ -1706,7 +1727,10 @@ static struct st_wl *load_ft_word (FILE *inp)
 			multi = 0;
 		}
 
-		fscanf (inp, "%d", &found_word);
+		if (fscanf (inp, "%d", &found_word) == 0) {
+			fprintf (stderr, "Could not read word number.\n");
+			exit(255);
+		}
 		wl_curr->word = found_word;
 
 		if (wl_last)
@@ -1723,7 +1747,10 @@ static struct st_wl *load_ft_word (FILE *inp)
 				wl_curr->fnbase = NULL;
 				wl_last->next = wl_curr;
 
-				fscanf (inp, "%d", &found_word);
+				if (fscanf (inp, "%d", &found_word) == 0) {
+					fprintf (stderr, "Could not read subsequent words.\n");
+					exit(255);
+				}
 				wl_curr->word = found_word;
 			}
 		}
@@ -2171,7 +2198,10 @@ static int in_simple_list (long filepos, int entrylen, char *match)
 	while (getc (inp) != ']')
 	{
 		while (getc (inp) != '\"');
-		fread (entry, entrylen, 1, inp);
+		if (fread (entry, entrylen, 1, inp) != 1) {
+			fprintf (stderr, "Could not read list entry.\n");
+			exit(255);
+		}
 		entry[entrylen] = 0;
 		getc (inp);
 		if (!strncasecmp (match, entry, strlen (match)))
@@ -2211,13 +2241,10 @@ struct st_media *st_get_media (char *search_string)
 	struct st_media *media = NULL;
 	char *temp_fnbase = NULL;
 	char *ret_fnbase = NULL;
-	struct st_table *temp_vtbls = NULL;
 	struct st_table *ret_tbl = NULL;
 
 	if (st_loaded_media ())
 	{
-
-		temp_vtbls = st_vtbls;
 
 		temp_fnbase = malloc (9);
 

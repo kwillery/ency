@@ -43,12 +43,20 @@ static void get_4b_string (FILE *inp, char *string, int reverse)
 	if (!string)
 		return;
 
+	if (fread (string, 4, 1, inp) != 1) {
+		fprintf (stderr, "Failed to read string at %ld (got %d).\n", ftell(inp), i);
+		return;
+	}
 	if (reverse)
 	{
-		for (i=3;i>=0;i--)
-			string[i] = getc (inp);
-	} else
-		fread (string, 4, 1, inp);
+		char x;
+		x = string[0];
+		string[0] = string[3];
+		string[3] = x;
+		x = string[1];
+		string[1] = string[2];
+		string[2] = x;
+	}
 }
 
 static long get_4b_int (FILE *inp, int reverse)
@@ -200,7 +208,10 @@ static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock
 		return;
 
 	block = malloc (size * sizeof (char));
-	fread (block, size, 1, inp);
+	if (fread (block, size, 1, inp) != 1) {
+		fprintf(stderr, "Unexpected error reading from %ld...\n", starts_at);
+		return;
+	}
 
 	tmp = new_block();
 
@@ -252,7 +263,7 @@ static void process_cast_block (FILE *inp, int reverse, char *btype, long pblock
 
 	if (tmp->name && (t - block + *t < size))
 	{
-		strncpy (tmp->name, t+1, *t);
+		strncpy (tmp->name, (char *)(t+1), *t);
 		tmp->name[(int)*t] = 0;
 	} else
 		tmp->name = strdup ("???"); // Damn - can't get the name, Maybe it doesn't have one.
@@ -297,7 +308,10 @@ static void load_cast_table (FILE *inp)
 	while (getc (inp) != ']')
 	{
 		/* Read the block name & ID */
-		fscanf (inp, "%d: ", &id);
+		if (fscanf (inp, "%d: ", &id) == 0) {
+			fprintf(stderr, "Fatal error parsing @%ld\n", ftell(inp));
+			exit(255);
+		}
 		if (getc (inp) == '\"')
 		{
 			t = name;
@@ -465,7 +479,7 @@ static void load_cast_tables (FILE *inp, int reverse)
 	{
 		if (!strncmp (p->name, "CastTable", 9))
 		{
-			fseek (inp, p->start + 16, SEEK_SET);
+			fseek (inp, p->start + 12, SEEK_SET);
 			load_cast_table (inp);
 		}
 		p = p->next;
@@ -539,7 +553,10 @@ struct st_block *scan_file (FILE *inp)
 	int reverse=0;
 	struct st_block *ret;
 
-	fread (start, 4, 1, inp);
+	if (fread (start, 4, 1, inp) != 1) {
+		fprintf (stderr, "Error beginning file scan.\n");
+		return NULL;
+	}
 	start[4] = 0;
 
 	if (!strcmp (start, "XFIR"))
