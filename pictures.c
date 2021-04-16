@@ -1,4 +1,4 @@
-/* This file is under the GPL
+/* This file is under the GPL 2.0
  * see http://www.gnu.org/copyleft/gpl.html
  */
 #include <stdio.h>

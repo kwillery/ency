@@ -3,7 +3,7 @@
  * the rc file loader is in here
  * (C) 2001 Robert Mibus <mibus@bigpond.com>
  *
- * licensed under the GNU GPL 2.0 or greater
+ * licensed under the GNU GPL 2.0
  */
 
 #include <stdlib.h>

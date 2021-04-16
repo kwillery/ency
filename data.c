@@ -3,7 +3,7 @@
  * data-related stuff goes here 
  * (C) 2000 Robert Mibus <mibus@bigpond.com>
  *
- * licensed under the GNU GPL 2.0 or greater
+ * licensed under the GNU GPL 2.0
  */
 
 #include <stdio.h>
