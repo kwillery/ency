@@ -1,13 +1,95 @@
 file
- name: "TNG Companion"
- dfile: type=ency, filename=eg_tng.dxr
- dfile: type=data, filename=TNGdata.cxt
- dfile: type=picon, filename=TNGpicns.cxt
- datadir: TNGprogram/Pro
- photodir: MEDIA
- videodir: MEDIA
+ name: "Omnipedia"
+ dfile: type=ency, filename=OMNI1.DXR
+ dfile: type=data, filename=OMNI1.DXR
+ dfile: type=picon, filename=OMNI1.DXR
+ datadir: ""
+ photodir: media
+ videodir: media
  append_char
- fingerprint: 58;46;49;52;98;76;3b;0;33;39;56;4d;70;61;6d;69;
+ fingerprint: 58;46;49;52;bc;42;b7;0;33;39;56;4d;70;61;6d;69;
+ needscan
+endfile
+file
+ name: "Picard Dossier (Borg D2)"
+ dfile: type=ency, filename=OMNIBORG.DXR
+ dfile: type=data, filename=OMNIBORG.DXR
+ dfile: type=picon, filename=OMNIBORG.DXR
+ datadir: startrek
+ photodir: media
+ videodir: media
+ append_char
+ fingerprint: 52;49;46;58;0;69;c5;48;4d;56;39;33;69;6d;61;70;
+endfile
+file
+ name: "Trek Academy Files"
+ dfile: type=ency, filename=OMNI_V2.DXR
+ dfile: type=data, filename=OMNI_V2.DXR
+ dfile: type=picon, filename=OMNI_V2.DXR 
+ datadir: startrek
+ photodir: media
+ videodir: media
+ append_char
+ fingerprint: 52;49;46;58;0;6e;23;a8;4d;56;39;33;69;6d;61;70;
+endfile
+file
+ name: "Omnipedia Update"
+ dfile: type=ency, filename=omni_v2.dxr
+ dfile: type=data, filename=omni_v2.dxr
+ dfile: type=picon, filename=omni_v2.dxr
+ datadir: startrek
+ photodir: media
+ videodir: media
+ append_char
+ fingerprint: 52;49;46;58;0;fa;1c;7a;4d;56;39;33;69;6d;61;70;
+ needscan
+endfile
+file
+ name: "TNG Episode Guide (1996)"
+ dfile: type=ency, filename=eg_tng.dxr
+ dfile: type=data, filename=eg_tng.dxr
+ dfile: type=picon, filename=eg_tng.dxr
+ datadir: source
+ photodir: media
+ videodir: media
+ append_char
+ fingerprint: 52;49;46;58;0;51;91;f4;4d;56;39;33;69;6d;61;70;
+ needscan
+endfile
+file
+ name: "Encyclopedia (1998)"
+ dfile: type=ency, filename=Ency98.dxr
+ dfile: type=data, filename=Data.cxt
+ dfile: type=picon, filename=Picons.cxt
+ datadir: Ency98
+ photodir: media98
+ videodir: video98
+ append_char
+ fingerprint: 52;49;46;58;0;99;d7;6e;4d;43;39;35;69;6d;61;70;
+ needscan
+endfile
+file
+ name: "TNG Episode Guide (1998)"
+ dfile: type=ency, filename=eg_tng.dxr
+ dfile: type=data, filename=eg_tng.dxr
+ dfile: type=picon, filename=eg_tng.dxr
+ datadir: source
+ photodir: media
+ videodir: media
+ append_char
+ fingerprint: 52;49;46;58;0;51;91;f4;4d;56;39;33;69;6d;61;70;
+ needscan
+endfile
+file
+ name: "DS9 Episode Guide"
+ dfile: type=ency, filename=eg_ds9.dxr
+ dfile: type=data, filename=eg_ds9.dxr
+ dfile: type=picon, filename=eg_ds9.dxr
+ datadir: DS9Program/Pro
+ photodir: media
+ videodir: media
+ append_char
+ fingerprint: 52;49;46;58;0;4c;ae;c4;4d;56;39;33;69;6d;61;70;
  needscan
 endfile
 file
@@ -25,62 +107,24 @@ file
  exception: type="LU fnbase", from="EEntNG", to="EEntOS"
 endfile
 file
- name: Encyclopedia
- dfile: type=ency, filename=Ency98.dxr
- dfile: type=data, filename=Data.cxt
- dfile: type=picon, filename=Picons.cxt
- datadir: Ency98
- photodir: media98
- videodir: video98
+ name: "TNG Companion"
+ dfile: type=ency, filename=EG_TNG.dxr
+ dfile: type=data, filename=TNGdata.cxt
+ dfile: type=picon, filename=TNGpicns.cxt
+ datadir: TNGprogram/Pro
+ photodir: MEDIA
+ videodir: MEDIA
  append_char
- fingerprint: 52;49;46;58;0;99;d7;6e;4d;43;39;35;69;6d;61;70;
+ fingerprint: 58;46;49;52;48;3d;27;0;33;39;56;4d;70;61;6d;69;
  needscan
 endfile
 file
- name: Omnipedia
- dfile: type=ency, filename=OMNI1.DXR
- dfile: type=data, filename=OMNI1.DXR
- dfile: type=picon, filename=OMNI1.DXR
- datadir: ""
- photodir: media
- videodir: media
- append_char
- fingerprint: 58;46;49;52;bc;42;b7;0;33;39;56;4d;70;61;6d;69;
- needscan
-endfile
-file
- name: "Omnipedia (updated)"
- dfile: type=ency, filename=omni_v2.dxr
- dfile: type=data, filename=omni_v2.dxr
- dfile: type=picon, filename=omni_v2.dxr
- datadir: startrek
- photodir: media
- videodir: media
- append_char
- fingerprint: 52;49;46;58;0;fa;1c;7a;4d;56;39;33;69;6d;61;70;
- needscan
-endfile
-file
- name: "TNG Episode guide"
- dfile: type=ency, filename=eg_tng.dxr
- dfile: type=data, filename=eg_tng.dxr
- dfile: type=picon, filename=eg_tng.dxr
- datadir: source
- photodir: media
- videodir: media
- append_char
- fingerprint: 52;49;46;58;0;51;91;f4;4d;56;39;33;69;6d;61;70;
- needscan
-endfile
-file
- name: "DS9 Episode guide"
- dfile: type=ency, filename=eg_ds9.dxr
- dfile: type=data, filename=eg_ds9.dxr
- dfile: type=picon, filename=eg_ds9.dxr
- datadir: ds9
- photodir: media
- videodir: media
- append_char
- fingerprint: 52;49;46;58;0;4c;ae;c4;4d;56;39;33;69;6d;61;70;
- needscan
+ name: "DS9 Companion"
+ dfile: type=ency, filename=EG_DS9.dxr
+ dfile: type=data, filename=DS9data.cxt
+ dfile: type=picon, filename=DS9picns.cxt
+ datadir: DS9Program/Pro
+ photodir: MEDIA
+ videodir: MEDIA
+ fingerprint: 58;46;49;52;22;9c;26;0;33;39;56;4d;70;61;6d;69;
 endfile
