@@ -20,20 +20,34 @@ file
  videodir: media
  append_char
  fingerprint: 52;49;46;58;0;69;c5;48;4d;56;39;33;69;6d;61;70;
+ needscan
 endfile
 file
  name: "Trek Academy Files"
- dfile: type=ency, filename=OMNI_V2.DXR
- dfile: type=data, filename=OMNI_V2.DXR
- dfile: type=picon, filename=OMNI_V2.DXR 
+ dfile: type=ency, filename=omni_v2.dxr
+ dfile: type=data, filename=omni_v2.dxr
+ dfile: type=picon, filename=omni_v2.dxr
  datadir: startrek
  photodir: media
  videodir: media
  append_char
  fingerprint: 52;49;46;58;0;6e;23;a8;4d;56;39;33;69;6d;61;70;
+ needscan
 endfile
 file
- name: "Omnipedia Update"
+ name: "Omnipedia Update A"
+ dfile: type=ency, filename=OMNI_V2.DXR
+ dfile: type=data, filename=OMNI_V2.DXR
+ dfile: type=picon, filename=OMNI_V2.DXR
+ datadir: STARTREK
+ photodir: MEDIA
+ videodir: MEDIA
+ append_char
+ fingerprint: 52;49;46;58;0;fa;1c;7a;4d;56;39;33;69;6d;61;70;
+ needscan
+endfile
+file
+ name: "Omnipedia Update B"
  dfile: type=ency, filename=omni_v2.dxr
  dfile: type=data, filename=omni_v2.dxr
  dfile: type=picon, filename=omni_v2.dxr
@@ -85,7 +99,7 @@ file
  dfile: type=ency, filename=eg_ds9.dxr
  dfile: type=data, filename=eg_ds9.dxr
  dfile: type=picon, filename=eg_ds9.dxr
- datadir: DS9Program/Pro
+ datadir: ds9
  photodir: media
  videodir: media
  append_char
@@ -123,8 +137,9 @@ file
  dfile: type=ency, filename=EG_DS9.dxr
  dfile: type=data, filename=DS9data.cxt
  dfile: type=picon, filename=DS9picns.cxt
- datadir: DS9Program/Pro
+ datadir: DS9program/Pro
  photodir: MEDIA
  videodir: MEDIA
  fingerprint: 58;46;49;52;22;9c;26;0;33;39;56;4d;70;61;6d;69;
+ needscan
 endfile
